@@ -1,0 +1,52 @@
+# ==========================================
+# 1. Maven & Java Compiled Files
+# ==========================================
+# Ignore the entire target folder (Maven's workspace)
+target/
+# Ignore compiled Java bytecode
+*.class
+# Ignore packaged files
+*.jar
+*.war
+*.zip
+# Ignore crash reports and logs
+*.log
+hs_err_pid*
+
+# ==========================================
+# 2. IntelliJ IDEA Settings
+# ==========================================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ==========================================
+# 3. VS Code Settings
+# ==========================================
+.vscode/
+*.code-workspace
+
+# ==========================================
+# 4. Eclipse Settings (Just in case!)
+# ==========================================
+.settings/
+.project
+.classpath
+bin/
+
+# ==========================================
+# 5. Operating System Junk
+# ==========================================
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+# Linux / Text Editor Backup Files
+*~
+*.swp
