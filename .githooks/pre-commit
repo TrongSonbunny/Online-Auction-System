@@ -1,0 +1,22 @@
+#!/bin/bash
+
+echo "========================================================="
+echo "🛡️  PRE-COMMIT HOOK: Running Maven Clean Verify..."
+echo "========================================================="
+
+# Run the maven command
+mvn clean verify
+
+# Check if the maven command failed (exit code is not 0)
+if [ $? -ne 0 ]; then
+  echo "========================================================="
+  echo "❌ COMMIT BLOCKED: Checkstyle or Tests failed!"
+  echo "Fix the errors above and try committing again."
+  echo "========================================================="
+  exit 1
+fi
+
+echo "========================================================="
+echo "✅ BUILD PASSED: Committing code to local branch..."
+echo "========================================================="
+exit 0
