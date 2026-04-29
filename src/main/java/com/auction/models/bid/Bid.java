@@ -3,14 +3,14 @@ package com.auction.models.bid;
 import com.auction.models.user.User;
 import java.time.LocalDateTime;
 
-
 /**
  * Lớp đại diện cho một lượt đấu giá.
  */
 public class Bid {
-  private User bidder;
-  private double amount;
-  private LocalDateTime time;
+
+  private final User bidder;
+  private final double amount;
+  private final LocalDateTime time;
 
   /**
    * Khởi tạo một bid mới.
@@ -21,12 +21,12 @@ public class Bid {
     this.time = LocalDateTime.now();
   }
 
-  public User getBidder() { 
-    return bidder; 
+  public User getBidder() {
+    return bidder;
   }
 
-  public double getAmount() { 
-    return amount; 
+  public double getAmount() {
+    return amount;
   }
 
   public LocalDateTime getTime() {

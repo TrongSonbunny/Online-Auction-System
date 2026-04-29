@@ -1,5 +1,6 @@
 package com.auction.models.state;
 
+import com.auction.exceptions.AuctionClosedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.bid.Bid;
 
@@ -8,24 +9,27 @@ import com.auction.models.bid.Bid;
  */
 public class OpenState implements AuctionState {
 
+  private static final String STATE_NAME = "OPEN";
+
   @Override
   public void start(Auction auction) {
-    System.out.println("Bắt đầu phiên đấu giá...");
     auction.setState(new RunningState());
   }
 
   @Override
-  public void placeBid(Auction auction, Bid bid) {
-    System.out.println("Lỗi: Phiên đấu giá chưa bắt đầu!");
+  public void placeBid(Auction auction, Bid bid)
+      throws AuctionClosedException {
+    throw new AuctionClosedException("Lỗi: Phiên đấu giá chưa bắt đầu!");
   }
 
   @Override
-  public void end(Auction auction) {
-    System.out.println("Phiên chưa chạy thì không thể kết thúc.");
+  public void end(Auction auction)
+      throws AuctionClosedException {
+    throw new AuctionClosedException("Phiên chưa chạy thì không thể kết thúc.");
   }
 
   @Override
-  public String getStateName() { 
-    return "OPEN"; 
+  public String getStateName() {
+    return STATE_NAME;
   }
 }
