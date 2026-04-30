@@ -1,5 +1,8 @@
 package com.auction.network;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +30,23 @@ public class ClientHandler implements Runnable {
     try {
       logger.info("Luồng ảo đang xử lý máy khách từ: {}", clientSocket.getRemoteSocketAddress());
 
-      // Mã nguồn của Cột mốc 2 (Milestone 2) sẽ được đặt ở đây
-      // (Bao gồm BufferedReader và PrintWriter để đọc/ghi chuỗi JSON)
+      // Khởi tạo input
+      BufferedReader reader =
+          new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+      // Khởi tạo output
+      PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
+
+      String clientMessage;
+      while ((clientMessage = reader.readLine()) != null) {
+        logger.info("Nhận được tin nhắn từ client: {}", clientMessage);
+
+        // Trả lời lại để chứng minh server đã nghe thấy
+        writer.println("Server đã nhận tin nhắn của bạn: " + clientMessage);
+      }
+
+      logger.info("Client đã ngắt kết nối chủ động.");
+
 
     } catch (Exception e) {
       logger.error("Máy khách đã ngắt kết nối đột ngột: {}", e.getMessage(), e);
