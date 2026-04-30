@@ -5,27 +5,47 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * The main entry point for the Auction TCP Server.
- * Initializes the server socket and manages incoming connections via Virtual
- * Threads.
+ * Điểm bắt đầu chính của Máy chủ Đấu giá (TCP Server). Khởi tạo server socket và quản lý các kết
+ * nối đến thông qua Luồng ảo (Virtual Threads).
  */
 public class ServerMain {
+
+  private static final Logger logger = LoggerFactory.getLogger(ServerMain.class);
+  private static final int PORT = 8080;
+
+  /**
+   * Phương thức main để khởi chạy máy chủ.
+   *
+   * @param args các tham số dòng lệnh (không sử dụng)
+   */
   public static void main(String[] args) {
-    try (ServerSocket server = new ServerSocket(8080);
-        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();) {
+    logger.info("Đang khởi động Máy chủ Đấu giá trên cổng {}...", PORT);
+
+    // Khởi tạo ServerSocket và Trình quản lý Luồng ảo
+    try (ServerSocket server = new ServerSocket(PORT);
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+
+      logger.info("Máy chủ đã hoạt động và đang chờ kết nối từ máy khách...");
 
       while (true) {
         try {
-          Socket clientSocket = server.accept();
-          executor.submit(new HandleClient(clientSocket));
+          Socket clientConnection = server.accept();
+          logger.info("Máy khách mới đã kết nối từ: {}", clientConnection.getRemoteSocketAddress());
+
+          // Chuyển giao máy khách cho một Luồng ảo xử lý
+          executor.submit(new ClientHandler(clientConnection));
+
         } catch (IOException ex) {
-          System.err.println("Error in creating connection with client");
+          logger.error("Lỗi khi chấp nhận kết nối từ máy khách: {}", ex.getMessage(), ex);
         }
       }
-    } catch (IOException e) {
-      System.err.println("CRITICAL: Couldn't start server on port 8080");
+    } catch (IOException ex) {
+      logger.error("NGHIÊM TRỌNG: Không thể khởi động máy chủ trên cổng {}. Có thể cổng này đang "
+          + "được sử dụng?", PORT, ex);
     }
   }
 }
