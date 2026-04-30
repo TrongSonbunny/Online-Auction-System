@@ -1,11 +1,14 @@
 package com.auction.network;
 
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.gson.Gson;
+
 
 /**
  * Xử lý vòng đời kết nối mạng của từng máy khách riêng biệt. Được thiết kế để chạy bên trong một
@@ -37,12 +40,35 @@ public class ClientHandler implements Runnable {
       // Khởi tạo output
       PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
 
+      // Khởi tạo Gson để chuyển dữ liệu Json thành một object chứa dữ liệu dùng từ AuctionMessage.
+      Gson gson = new Gson();
+
       String clientMessage;
       while ((clientMessage = reader.readLine()) != null) {
-        logger.info("Nhận được tin nhắn từ client: {}", clientMessage);
+        logger.info("Nhận được dữ liệu Json từ client: {}", clientMessage);
 
-        // Trả lời lại để chứng minh server đã nghe thấy
-        writer.println("Server đã nhận tin nhắn của bạn: " + clientMessage);
+        try {
+          // Gson magic: convert the text from a json format to the real object with its attribut
+          // including action, username, amount
+          AuctionMessage message = gson.fromJson(clientMessage, AuctionMessage.class);
+
+          // Lợi khi dùng Gson: Ví dụ như khi Client nhập thiếu một trường dữ liệu ({"action":
+          // "BID"} nhưng không có username,...) thì những biến bị bỏ trống đó sẽ được cho vào thành
+          // null/0/false/... mà không làm crash chương trình.
+          logger.info("Nhận Action: {}", message.getAction());
+          logger.info("Nhận User: {}", message.getUsername());
+
+          if ("BID".equalsIgnoreCase(message.getAction())) {
+            writer.println("Thành công! Bid of $" + message.getAmount() + " accepted.");
+          } else {
+            writer.println("Unknown action command.");
+          }
+
+        } catch (com.google.gson.JsonSyntaxException jsonError) {
+          // Gson throws a specific JsonSyntaxException when the JSON is malformed
+          logger.warn("Máy khách thiết lập Dữ liệu Json sai định dạng: {}", clientMessage);
+          writer.println("ERROR: Không đúng định dạng Json");
+        }
       }
 
       logger.info("Client đã ngắt kết nối chủ động.");
@@ -50,6 +76,7 @@ public class ClientHandler implements Runnable {
 
     } catch (Exception e) {
       logger.error("Máy khách đã ngắt kết nối đột ngột: {}", e.getMessage(), e);
+
     } finally {
       // DỌN DẸP: Đóng socket một cách an toàn khi máy khách rời đi hoặc xảy ra lỗi
       try {
