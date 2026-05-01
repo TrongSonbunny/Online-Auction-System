@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 
-
 /**
  * Xử lý vòng đời kết nối mạng của từng máy khách riêng biệt. Được thiết kế để chạy bên trong một
  * Luồng ảo (Virtual Thread) của Java 21.
@@ -30,18 +29,23 @@ public class ClientHandler implements Runnable {
 
   @Override
   public void run() {
+    BufferedReader reader = null; // Put reader, writer outside tryblock cause if put them in tryblc
+    PrintWriter writer = null; // They cant be access in the finally and the catch block.
     try {
       logger.info("Luồng ảo đang xử lý máy khách từ: {}", clientSocket.getRemoteSocketAddress());
 
       // Khởi tạo input
-      BufferedReader reader =
-          new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+      reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
       // Khởi tạo output
-      PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
+      writer = new PrintWriter(clientSocket.getOutputStream(), true);
 
       // Khởi tạo Gson để chuyển dữ liệu Json thành một object chứa dữ liệu dùng từ AuctionMessage.
       Gson gson = new Gson();
+
+      // 1. SUBSCRIBE: Add this client's pipe to the global roster
+      ServerMain.activeClients.add(writer);
+      logger.info("Client joined! Total active clients: {}", ServerMain.activeClients.size());
 
       String clientMessage;
       while ((clientMessage = reader.readLine()) != null) {
@@ -55,13 +59,24 @@ public class ClientHandler implements Runnable {
           // Lợi khi dùng Gson: Ví dụ như khi Client nhập thiếu một trường dữ liệu ({"action":
           // "BID"} nhưng không có username,...) thì những biến bị bỏ trống đó sẽ được cho vào thành
           // null/0/false/... mà không làm crash chương trình.
-          logger.info("Nhận Action: {}", message.getAction());
-          logger.info("Nhận User: {}", message.getUsername());
+          logger.info("Nhận action: {}", message.getAction());
+          logger.info("Nhận username: {}", message.getUsername());
 
           if ("BID".equalsIgnoreCase(message.getAction())) {
-            writer.println("Thành công! Bid of $" + message.getAmount() + " accepted.");
+            // Format the announcement
+            String announcement = String.format("ANNOUNCEMENT: %s just placed a bid of $%d!",
+                message.getUsername(), message.getAmount());
+
+            logger.info("Broadcasting to {} clients: {}", ServerMain.activeClients.size(),
+                announcement);
+
+            // 2. NOTIFY: Loop through the thread-safe list and tell everyone
+            for (PrintWriter clientWriter : ServerMain.activeClients) {
+              clientWriter.println(announcement);
+            }
+
           } else {
-            writer.println("Unknown action command.");
+            writer.println("Private Server Msg: Unknown command.");
           }
 
         } catch (com.google.gson.JsonSyntaxException jsonError) {
@@ -78,6 +93,14 @@ public class ClientHandler implements Runnable {
       logger.error("Máy khách đã ngắt kết nối đột ngột: {}", e.getMessage(), e);
 
     } finally {
+      // 3. UNSUBSCRIBE: Safely remove them from the roster so we don't broadcast to a dead pipe
+      if (writer != null) {
+        ServerMain.activeClients.remove(writer);
+        logger.info("Client left. Total active clients remaining: {}",
+            ServerMain.activeClients.size());
+      }
+
+
       // DỌN DẸP: Đóng socket một cách an toàn khi máy khách rời đi hoặc xảy ra lỗi
       try {
         if (clientSocket != null && !clientSocket.isClosed()) {
