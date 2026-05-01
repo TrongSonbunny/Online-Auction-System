@@ -100,7 +100,6 @@ public class ClientHandler implements Runnable {
             ServerMain.activeClients.size());
       }
 
-
       // DỌN DẸP: Đóng socket một cách an toàn khi máy khách rời đi hoặc xảy ra lỗi
       try {
         if (clientSocket != null && !clientSocket.isClosed()) {
