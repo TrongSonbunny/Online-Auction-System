@@ -89,6 +89,15 @@
                     <consoleOutput>true</consoleOutput>
                     <outputFile>${project.build.directory}/checkstyle/checkstyle-report.xml</outputFile>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>auto-checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
