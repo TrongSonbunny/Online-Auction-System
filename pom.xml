@@ -88,7 +88,17 @@
                     <failsOnError>true</failsOnError>
                     <consoleOutput>true</consoleOutput>
                     <outputFile>${project.build.directory}/checkstyle/checkstyle-report.xml</outputFile>
+                    <violationSeverity>warning</violationSeverity>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>auto-checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
