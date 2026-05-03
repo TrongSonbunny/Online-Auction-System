@@ -2,15 +2,25 @@
 
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
 <?import javafx.geometry.Insets?>
 
-<VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.PrimaryController">
-   <children>
-      <Label text="Primary View" />
-      <Button fx:id="primaryButton" text="Switch to Secondary View" onAction="#switchToSecondary"/>
-   </children>
-   <padding>
-      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-   </padding>
+<VBox alignment="TOP_CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" 
+      fx:controller="com.auction.PrimaryController">
+    
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <Label text="DANH SÁCH SẢN PHẨM ĐẤU GIÁ" style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+    <TableView fx:id="productTable">
+        <columns>
+            <TableColumn fx:id="colId" text="Mã SP" />
+            <TableColumn fx:id="colName" text="Tên Sản Phẩm" />
+            <TableColumn fx:id="colPrice" text="Giá Hiện Tại ($)" />
+        </columns>
+    </TableView>
+
 </VBox>
