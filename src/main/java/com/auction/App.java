@@ -30,12 +30,13 @@ public class App extends Application {
 
   /**
    * Thay đổi giao diện gốc (Root) của Scene hiện tại.
+   * LƯU Ý: Phải có từ khóa 'public' để các Controller ở package khác có thể gọi
+   * được.
    *
    * @param fxml Tên file FXML cần tải (không bao gồm phần mở rộng .fxml)
    * @throws IOException Nếu không thể tải được file FXML
    */
-  static void setRoot(String fxml) throws IOException {
-    // Đã sửa loadFXML thành loadFxml
+  public static void setRoot(String fxml) throws IOException {
     scene.setRoot(loadFxml(fxml));
   }
 

@@ -1,5 +1,6 @@
-package com.auction;
+package com.auction.controllers;
 
+import com.auction.App;
 import java.io.IOException;
 import javafx.fxml.FXML;
 

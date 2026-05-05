@@ -7,6 +7,8 @@ module com.auction {
 	requires javafx.fxml;
 
 	opens com.auction to javafx.fxml;
+	// --- THÊM DÒNG NÀY ĐỂ JAVAFX ĐỌC ĐƯỢC CONTROLLER MỚI ---
+	opens com.auction.controllers to javafx.fxml;
 
 	exports com.auction;
 
