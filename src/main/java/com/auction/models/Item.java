@@ -1,9 +1,11 @@
 package com.auction.models;
 
+import java.io.Serializable;
+
 /**
  * Lớp cơ sở trừu tượng đại diện cho một sản phẩm trong hệ thống đấu giá.
  */
-public abstract class Item extends Entity {
+public abstract class Item extends Entity implements Serializable {
 
   protected String name;
   protected double startingPrice;

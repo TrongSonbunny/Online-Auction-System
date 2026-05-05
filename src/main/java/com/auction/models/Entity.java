@@ -1,12 +1,13 @@
 package com.auction.models;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * Lớp cơ sở trừu tượng (abstract base class) cho các thực thể trong hệ thống,
  * cung cấp thuộc tính định danh duy nhất (ID).
  */
-public abstract class Entity {
+public abstract class Entity implements Serializable {
 
   protected String id;
 

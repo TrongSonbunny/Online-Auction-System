@@ -1,9 +1,11 @@
 package com.auction.models;
 
+import java.io.Serializable;
+
 /**
  * Lớp cơ sở trừu tượng đại diện cho một người dùng trong hệ thống.
  */
-public abstract class User extends Entity {
+public abstract class User extends Entity implements Serializable {
 
   protected String username;
   protected String password;

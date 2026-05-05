@@ -1,11 +1,12 @@
 package com.auction.models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
  * Lớp đại diện cho một giao dịch đặt giá trong phiên đấu giá.
  */
-public class BidTransaction extends Entity {
+public class BidTransaction extends Entity implements Serializable {
 
   private Bidder bidder;
   private double bidAmount;

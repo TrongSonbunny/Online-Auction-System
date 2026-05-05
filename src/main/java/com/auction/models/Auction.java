@@ -1,5 +1,6 @@
 package com.auction.models;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +8,7 @@ import java.util.List;
 /**
  * Lớp đại diện cho một phiên đấu giá.
  */
-public class Auction extends Entity {
+public class Auction extends Entity implements Serializable {
 
   private Item item;
   private Seller seller;
