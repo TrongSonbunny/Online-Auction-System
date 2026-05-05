@@ -10,14 +10,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Lớp trung tâm quản lý một phiên đấu giá.
  * Triển khai IAuctionSubject để broadcast sự kiện đến tất cả Observer.
  * Điểm quan trọng về Concurrency:
- *   - placeBid() được đánh dấu synchronized để tránh race condition.
- *   - Danh sách observer dùng CopyOnWriteArrayList để thread-safe khi duyệt.
+ * - placeBid() được đánh dấu synchronized để tránh race condition.
+ * - Danh sách observer dùng CopyOnWriteArrayList để thread-safe khi duyệt.
  */
 public class Auction implements AuctionSubject {
 
+  private Bidder currentLeader;
   private final String auctionId; // ID phiên đấu giá
-  private final String itemName; // Tên sản phẩm đấu giá
-  private final String itemDescription; // Mô tả sản phẩm
+  private final AuctionItem item;
   private final String sellerId; // ID người bán tạo phiên
   private final double startingPrice; // Giá khởi điểm
 
@@ -37,18 +37,17 @@ public class Auction implements AuctionSubject {
   /** Constructor khởi tạo phiên đấu giá. */
   public Auction(
       String auctionId,
-      String itemName,
-      String itemDescription,
+      AuctionItem item,
       String sellerId,
       double startingPrice,
       LocalDateTime endTime) {
     this.auctionId = auctionId;
-    this.itemName = itemName;
-    this.itemDescription = itemDescription;
+    this.item = item;
     this.sellerId = sellerId;
     this.startingPrice = startingPrice;
     this.currentHighestBid = startingPrice;
     this.currentLeaderId = null; // Chưa có ai đặt giá
+    this.currentLeader = null;
     this.status = AuctionStatus.OPEN;
     this.startTime = LocalDateTime.now();
     this.endTime = endTime;
@@ -142,6 +141,7 @@ public class Auction implements AuctionSubject {
 
     currentHighestBid = bidAmount;
     currentLeaderId = bidder.getUserId();
+    currentLeader = bidder;
 
     BidTransaction transaction = new BidTransaction(bidder, bidAmount, auctionId);
     bidHistory.add(transaction);
@@ -219,6 +219,15 @@ public class Auction implements AuctionSubject {
       throw new IllegalStateException("Không thể chuyển sang PAID từ trạng thái: " + status);
     }
 
+    if (currentLeader == null) {
+      throw new IllegalStateException("Không có người thắng để thanh toán.");
+    }
+
+    if (currentLeader.getPaymentStrategy() == null) {
+      throw new IllegalStateException("Chưa chọn phương thức thanh toán.");
+    }
+
+    currentLeader.getPaymentStrategy().pay(currentHighestBid); // ← gọi strategy ở đây
     status = AuctionStatus.PAID;
 
     notifyObservers(
@@ -254,12 +263,8 @@ public class Auction implements AuctionSubject {
     return auctionId;
   }
 
-  public String getItemName() {
-    return itemName;
-  }
-
-  public String getItemDescription() {
-    return itemDescription;
+  public AuctionItem getItem() {
+    return item;
   }
 
   public String getSellerId() {
@@ -294,15 +299,22 @@ public class Auction implements AuctionSubject {
     return Collections.unmodifiableList(bidHistory); // Chỉ đọc, không sửa
   }
 
+  public synchronized Bidder getCurrentLeader() {
+    return currentLeader;
+  }
+
   @Override
   public String toString() {
     return "Auction{"
-              + "auctionId='" + auctionId + '\''
-              + ", itemName='" + itemName + '\''
-              + ", currentHighestBid=" + currentHighestBid
-              + ", currentLeaderId='" + currentLeaderId + '\''
-              + ", status=" + status
-              + ", endTime=" + endTime
-              + '}';
+        + "auctionId='" + auctionId + '\''
+        + ", item=" + item
+        + ", currentHighestBid=" + item.getCurrentPrice()
+        + ", currentLeader='" 
+        + (currentLeader != null ? currentLeader.getName() + " (" 
+        + currentLeader.getUserId() + ")" : "Chưa có") 
+        + '\''
+        + ", status=" + status
+        + ", endTime=" + item.getEndTime()
+        + '}';
   }
 }

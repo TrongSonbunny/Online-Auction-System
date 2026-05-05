@@ -12,9 +12,18 @@ public class Bidder extends User {
   // Tổng số tiền đã chi qua các phiên đấu giá
   private double totalSpent;
 
+  // Payments
+  private final PaymentStrategy paymentStrategy;
+
   /** Constructor khởi tạo Bidder. */
-  public Bidder(String userId, String name, String email, String passwordHash) {
+  public Bidder(
+      String userId,
+      String name,
+      String email,
+      String passwordHash,
+      PaymentStrategy paymentStrategy) {
     super(userId, name, email, passwordHash);
+    this.paymentStrategy = paymentStrategy;
     this.totalWins = 0;
     this.totalSpent = 0.0;
   }
@@ -118,5 +127,9 @@ public class Bidder extends User {
 
   public void addToTotalSpent(double amount) {
     this.totalSpent += amount;
+  }
+
+  public PaymentStrategy getPaymentStrategy() {
+    return paymentStrategy;
   }
 }

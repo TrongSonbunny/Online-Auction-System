@@ -21,8 +21,8 @@ import com.auction.exceptions.InvalidBidException;
 /**
  * Unit Test cho toan bo Custom Exception - JUnit 5.
  *
- * <p>EP = Equivalence Partitioning : chia input thanh nhom hop le / khong hop le 
- * BVA = Boundary Value Analysis : kiem tra gia tri tai bien
+ * <p>Ep = Equivalence Partitioning : chia input thanh nhom hop le / khong hop le.
+ * Bva = Boundary Value Analysis : kiem tra gia tri tai bien.
  *
  * <p>Luu y quan trong: Tat ca exception deu extends Exception (checked exception), 
  * KHONG phai RuntimeException -> phai dung assertThrows() hoac throws trong test.
@@ -39,18 +39,17 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Message binh thuong -> getMessage() tra dung")
-    void constructor_EP_messageBinhThuong_traDung() {
+    void constructor_Ep_messageBinhThuong_traDung() {
       AuctionClosedException ex = new AuctionClosedException("Phien dau gia da ket thuc");
 
       assertAll(
           () -> assertNotNull(ex),
-          () -> assertEquals("Phien dau gia da ket thuc", ex.getMessage())
-      );
+          () -> assertEquals("Phien dau gia da ket thuc", ex.getMessage()));
     }
 
     @Test
     @DisplayName("BVA: Message rong -> khong crash, getMessage() tra chuoi rong")
-    void constructor_BVA_messageRong_khongCrash() {
+    void constructor_Bva_messageRong_khongCrash() {
       AuctionClosedException ex = new AuctionClosedException("");
       assertNotNull(ex);
       assertEquals("", ex.getMessage());
@@ -58,14 +57,14 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("BVA: Message null -> getMessage() tra null")
-    void constructor_BVA_messageNull_traNullAnToan() {
+    void constructor_Bva_messageNull_traNullAnToan() {
       AuctionClosedException ex = new AuctionClosedException(null);
       assertNull(ex.getMessage());
     }
 
     @Test
     @DisplayName("EP: Message rat dai -> luu du, khong bi cat")
-    void constructor_EP_messageRatDai_luuDu() {
+    void constructor_Ep_messageRatDai_luuDu() {
       String longMsg = "X".repeat(1000);
       AuctionClosedException ex = new AuctionClosedException(longMsg);
       assertEquals(1000, ex.getMessage().length());
@@ -80,13 +79,13 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Nem va bat AuctionClosedException -> bat duoc dung")
-    void throwAndCatch_EP_batDuocDung() {
-      AuctionClosedException caught = assertThrows(
-          AuctionClosedException.class,
-          () -> {
-            throw new AuctionClosedException("Phien da dong");
-          }
-      );
+    void throwAndCatch_Ep_batDuocDung() {
+      AuctionClosedException caught =
+          assertThrows(
+              AuctionClosedException.class,
+              () -> {
+                throw new AuctionClosedException("Phien da dong");
+              });
       assertEquals("Phien da dong", caught.getMessage());
     }
   }
@@ -100,21 +99,21 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Message sai mat khau -> luu dung")
-    void constructor_EP_messageSaiMatKhau_luuDung() {
+    void constructor_Ep_messageSaiMatKhau_luuDung() {
       AuthenticationException ex = new AuthenticationException("Sai mat khau");
       assertEquals("Sai mat khau", ex.getMessage());
     }
 
     @Test
     @DisplayName("EP: Message tai khoan khong ton tai -> luu dung")
-    void constructor_EP_messageTaiKhoanKhongTonTai_luuDung() {
+    void constructor_Ep_messageTaiKhoanKhongTonTai_luuDung() {
       AuthenticationException ex = new AuthenticationException("Tai khoan khong ton tai");
       assertEquals("Tai khoan khong ton tai", ex.getMessage());
     }
 
     @Test
     @DisplayName("BVA: Message rong -> khong crash")
-    void constructor_BVA_messageRong_khongCrash() {
+    void constructor_Bva_messageRong_khongCrash() {
       AuthenticationException ex = new AuthenticationException("");
       assertNotNull(ex);
       assertEquals("", ex.getMessage());
@@ -122,7 +121,7 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("BVA: Message null -> tra null an toan")
-    void constructor_BVA_messageNull_traNullAnToan() {
+    void constructor_Bva_messageNull_traNullAnToan() {
       AuthenticationException ex = new AuthenticationException(null);
       assertNull(ex.getMessage());
     }
@@ -136,13 +135,13 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Nem va bat AuthenticationException -> bat duoc dung")
-    void throwAndCatch_EP_batDuocDung() {
-      AuthenticationException caught = assertThrows(
-          AuthenticationException.class,
-          () -> {
-            throw new AuthenticationException("Xac thuc that bai");
-          }
-      );
+    void throwAndCatch_Ep_batDuocDung() {
+      AuthenticationException caught =
+          assertThrows(
+              AuthenticationException.class,
+              () -> {
+                throw new AuthenticationException("Xac thuc that bai");
+              });
       assertEquals("Xac thuc that bai", caught.getMessage());
     }
   }
@@ -156,14 +155,14 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Message loi ket noi -> luu dung")
-    void constructor_EP_messageLoiKetNoi_luuDung() {
+    void constructor_Ep_messageLoiKetNoi_luuDung() {
       ConnectionException ex = new ConnectionException("Khong the ket noi den server");
       assertEquals("Khong the ket noi den server", ex.getMessage());
     }
 
     @Test
     @DisplayName("BVA: Message rong -> khong crash")
-    void constructor_BVA_messageRong_khongCrash() {
+    void constructor_Bva_messageRong_khongCrash() {
       ConnectionException ex = new ConnectionException("");
       assertNotNull(ex);
       assertEquals("", ex.getMessage());
@@ -171,14 +170,14 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("BVA: Message null -> tra null an toan")
-    void constructor_BVA_messageNull_traNullAnToan() {
+    void constructor_Bva_messageNull_traNullAnToan() {
       ConnectionException ex = new ConnectionException(null);
       assertNull(ex.getMessage());
     }
 
     @Test
     @DisplayName("EP: Message chua dia chi IP -> luu day du")
-    void constructor_EP_messageChuaIP_luuDayDu() {
+    void constructor_Ep_messageChuaIp_luuDayDu() {
       String msg = "Timeout khi ket noi toi 192.168.1.1:8080";
       ConnectionException ex = new ConnectionException(msg);
       assertEquals(msg, ex.getMessage());
@@ -193,13 +192,13 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Nem va bat ConnectionException -> bat duoc dung")
-    void throwAndCatch_EP_batDuocDung() {
-      ConnectionException caught = assertThrows(
-          ConnectionException.class,
-          () -> {
-            throw new ConnectionException("Mat ket noi");
-          }
-      );
+    void throwAndCatch_Ep_batDuocDung() {
+      ConnectionException caught =
+          assertThrows(
+              ConnectionException.class,
+              () -> {
+                throw new ConnectionException("Mat ket noi");
+              });
       assertEquals("Mat ket noi", caught.getMessage());
     }
   }
@@ -213,20 +212,19 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Message va cause hop le -> luu ca hai dung")
-    void constructor_EP_messageVaCauseHopLe_luuCaHai() {
+    void constructor_Ep_messageVaCauseHopLe_luuCaHai() {
       Throwable cause = new RuntimeException("Loi goc tu database");
       DataException ex = new DataException("Loi doc du lieu", cause);
 
       assertAll(
           () -> assertEquals("Loi doc du lieu", ex.getMessage()),
           () -> assertSame(cause, ex.getCause()),
-          () -> assertEquals("Loi goc tu database", ex.getCause().getMessage())
-      );
+          () -> assertEquals("Loi goc tu database", ex.getCause().getMessage()));
     }
 
     @Test
     @DisplayName("BVA: Message rong, cause hop le -> khong crash")
-    void constructor_BVA_messageRong_causeHopLe_khongCrash() {
+    void constructor_Bva_messageRong_causeHopLe_khongCrash() {
       Throwable cause = new RuntimeException("cause");
       DataException ex = new DataException("", cause);
       assertNotNull(ex);
@@ -236,7 +234,7 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("BVA: Message null, cause hop le -> getMessage() tra null")
-    void constructor_BVA_messageNull_causeHopLe_traNullAnToan() {
+    void constructor_Bva_messageNull_causeHopLe_traNullAnToan() {
       Throwable cause = new RuntimeException("cause");
       DataException ex = new DataException(null, cause);
       assertNull(ex.getMessage());
@@ -245,7 +243,7 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("BVA: Cause null -> getCause() tra null")
-    void constructor_BVA_causeNull_getCauseTraNull() {
+    void constructor_Bva_causeNull_getCauseTraNull() {
       DataException ex = new DataException("Loi du lieu", null);
       assertEquals("Loi du lieu", ex.getMessage());
       assertNull(ex.getCause());
@@ -253,7 +251,7 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Cause la IOException -> getCause() la IOException")
-    void constructor_EP_causeIOException_getCauseLayDung() {
+    void constructor_Ep_causeIoException_getCauseLayDung() {
       java.io.IOException ioEx = new java.io.IOException("File not found");
       DataException ex = new DataException("Loi ghi file", ioEx);
       assertInstanceOf(java.io.IOException.class, ex.getCause());
@@ -269,14 +267,14 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Nem va bat DataException -> bat duoc dung voi cause")
-    void throwAndCatch_EP_batDuocDungVoiCause() {
+    void throwAndCatch_Ep_batDuocDungVoiCause() {
       Throwable cause = new RuntimeException("nguyen nhan");
-      DataException caught = assertThrows(
-          DataException.class,
-          () -> {
-            throw new DataException("Loi xu ly du lieu", cause);
-          }
-      );
+      DataException caught =
+          assertThrows(
+              DataException.class,
+              () -> {
+                throw new DataException("Loi xu ly du lieu", cause);
+              });
       assertEquals("Loi xu ly du lieu", caught.getMessage());
       assertSame(cause, caught.getCause());
     }
@@ -291,9 +289,9 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Message gia thap hon -> luu dung")
-    void constructor_EP_messagGiaThapHon_luuDung() {
-      InvalidBidException ex = new InvalidBidException(
-          "Gia dat 50.0 phai cao hon gia hien tai 100.0");
+    void constructor_Ep_messagGiaThapHon_luuDung() {
+      InvalidBidException ex =
+          new InvalidBidException("Gia dat 50.0 phai cao hon gia hien tai 100.0");
       assertNotNull(ex);
       assertTrue(ex.getMessage().contains("50.0"));
       assertTrue(ex.getMessage().contains("100.0"));
@@ -301,16 +299,15 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Message gia bang gia hien tai -> luu dung")
-    void constructor_EP_messageGiaBangHienTai_luuDung() {
-      InvalidBidException ex = new InvalidBidException(
-          "Gia dat phai VUOT QUA gia hien tai, khong duoc bang");
-      assertEquals("Gia dat phai VUOT QUA gia hien tai, khong duoc bang",
-          ex.getMessage());
+    void constructor_Ep_messageGiaBangHienTai_luuDung() {
+      InvalidBidException ex =
+          new InvalidBidException("Gia dat phai VUOT QUA gia hien tai, khong duoc bang");
+      assertEquals("Gia dat phai VUOT QUA gia hien tai, khong duoc bang", ex.getMessage());
     }
 
     @Test
     @DisplayName("BVA: Message rong -> khong crash")
-    void constructor_BVA_messageRong_khongCrash() {
+    void constructor_Bva_messageRong_khongCrash() {
       InvalidBidException ex = new InvalidBidException("");
       assertNotNull(ex);
       assertEquals("", ex.getMessage());
@@ -318,14 +315,14 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("BVA: Message null -> tra null an toan")
-    void constructor_BVA_messageNull_traNullAnToan() {
+    void constructor_Bva_messageNull_traNullAnToan() {
       InvalidBidException ex = new InvalidBidException(null);
       assertNull(ex.getMessage());
     }
 
     @Test
     @DisplayName("EP: Message chua gia tri cu the -> lay dung thong tin")
-    void constructor_EP_messageChuaGiaTri_layDungThongTin() {
+    void constructor_Ep_messageChuaGiaTri_layDungThongTin() {
       String msg = "Gia dat [99.99] khong hop le, gia hien tai la [100.0]";
       InvalidBidException ex = new InvalidBidException(msg);
       assertTrue(ex.getMessage().contains("99.99"));
@@ -341,13 +338,13 @@ class CustomExceptionTest {
 
     @Test
     @DisplayName("EP: Nem va bat InvalidBidException -> bat duoc dung")
-    void throwAndCatch_EP_batDuocDung() {
-      InvalidBidException caught = assertThrows(
-          InvalidBidException.class,
-          () -> {
-            throw new InvalidBidException("Gia khong hop le");
-          }
-      );
+    void throwAndCatch_Ep_batDuocDung() {
+      InvalidBidException caught =
+          assertThrows(
+              InvalidBidException.class,
+              () -> {
+                throw new InvalidBidException("Gia khong hop le");
+              });
       assertEquals("Gia khong hop le", caught.getMessage());
     }
   }
