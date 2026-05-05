@@ -3,10 +3,19 @@ package com.auction;
 import java.io.IOException;
 import javafx.fxml.FXML;
 
+/**
+ * Controller xử lý các sự kiện giao diện cho màn hình phụ (Secondary).
+ */
 public class SecondaryController {
 
-    @FXML
-    private void switchToPrimary() throws IOException {
-        App.setRoot("primary");
-    }
+  /**
+   * Chuyển đổi giao diện hiện tại về màn hình chính (primary).
+   *
+   * @throws IOException Nếu có lỗi trong quá trình tải file FXML của màn hình
+   *                     chính
+   */
+  @FXML
+  private void switchToPrimary() throws IOException {
+    App.setRoot("primary");
+  }
 }
