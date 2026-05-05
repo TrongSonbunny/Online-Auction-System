@@ -1,69 +1,79 @@
 package com.auction.models.user;
 
-import com.auction.models.item.AuctionItem;
-import com.auction.models.permission.AdminPermission;
-import com.auction.models.permission.BidderPermission;
-import com.auction.models.permission.Permission;
-import com.auction.models.permission.PermissionStrategy;
-import com.auction.models.permission.SellerPermission;
+import com.auction.models.observer.AuctionEvent;
+import com.auction.models.observer.AuctionObserver;
 
 /**
- * Lớp đại diện cho người dùng trong hệ thống.
+ * Lớp trừu tượng đại diện cho người dùng trong hệ thống đấu giá.
+ * Chứa các thuộc tính chung và triển khai IAuctionObserver để nhận thông báo.
+ *
+ * <p>Cây kế thừa:
+ * User (abstract)
+ * ├── Bidder (người mua)
+ * ├── Seller (người bán)
+ * └── Admin (quản trị viên)
  */
-public class User {
+public abstract class User implements AuctionObserver {
 
-  private String id;
-  private String username;
-  private Role role;
-  private PermissionStrategy permissionStrategy;
+    private final String userId;
+    private String name;
+    private String email;
+    private String passwordHash;
+    private String phoneNumber;
 
-  /**
-   * Khởi tạo user.
-   */
-  public User(String id, String username, Role role) {
-    this.id = id;
-    this.username = username;
-    setRole(role); 
-  }
-
-  //  GETTER 
-  public String getId() {
-    return id;
-  }
-
-  public String getUsername() {
-    return username;
-  }
-
-  public Role getRole() {
-    return role;
-  }
-
-  public PermissionStrategy getPermissionStrategy() {
-    return permissionStrategy;
-  }
-
-  // SETTER
-  public void setUsername(String username) {
-    this.username = username;
-  }
-
-  public void setRole(Role role) {
-    this.role = role;
-    this.permissionStrategy = initStrategy(role); // update strategy theo role
-  }
-
-  // LOGIC 
-  private PermissionStrategy initStrategy(Role role) {
-    switch (role) {
-      case BIDDER: return new BidderPermission();
-      case SELLER: return new SellerPermission();
-      case ADMIN: return new AdminPermission();
-      default: throw new IllegalArgumentException("Invalid role");
+    public User(String userId, String name, String email, String passwordHash) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.passwordHash = passwordHash;
     }
-  }
 
-  public boolean can(Permission permission, AuctionItem item) {
-    return permissionStrategy.hasPermission(permission, this, item);
-  }
+    @Override
+    public abstract void update(AuctionEvent event);
+
+    public abstract String getRole();
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    @Override
+    public String toString() {
+        return getRole()
+                + "{userId='" + userId + '\''
+                + ", name='" + name + '\''
+                + ", email='" + email + '\'' + '}';
+    }
 }

@@ -1,12 +1,32 @@
 package com.auction.models.item;
 
-import com.auction.models.user.User;
+import com.auction.models.user.Seller;
+import java.time.LocalDateTime;
 
-/**
- * Lớp đại diện cho sản phẩm đồ điện tử.
- */
+/** Sản phẩm loại: Đồ điện tử. */
 public class ElectronicsItem extends AuctionItem {
-  public ElectronicsItem(String id, String name, double price, User seller) {
-    super(id, name, price, seller);
-  }
+
+    public ElectronicsItem(
+            String id,
+            String name,
+            String description,
+            double startPrice,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Seller seller) {
+
+        super(id, name, description, startPrice, startTime, endTime, seller);
+    }
+
+    @Override
+    public void printInfo() {
+        System.out.println("[Đồ điện tử]"
+                + " | Tên: " + getName()
+                + " | Mô tả: " + getDescription()
+                + " | Giá khởi điểm: " + getStartPrice()
+                + " | Giá hiện tại: " + getCurrentPrice()
+                + " | Người bán: " + getSeller().getName()
+                + " | Bắt đầu: " + getStartTime()
+                + " | Kết thúc: " + getEndTime());
+    }
 }
