@@ -72,9 +72,6 @@ public class LoginController {
    * @param title    Tiêu đề mới của cửa sổ.
    * @throws IOException Nếu không tìm thấy file FXML.
    */
-  /**
-   * Thực hiện chuyển đổi Scene trong khi bảo toàn tuyệt đối kích thước Stage.
-   */
   private void switchScene(ActionEvent event, String fxmlPath, String title) throws IOException {
     Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
 
