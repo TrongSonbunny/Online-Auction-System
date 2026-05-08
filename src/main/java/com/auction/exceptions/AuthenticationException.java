@@ -1,7 +1,9 @@
 package com.auction.exceptions;
 
-/** Exception đối với các lỗi xác thực. */
-public class AuthenticationException extends Exception {
+/**
+ * Exception khi xác thực thất bại.
+ */
+public class AuthenticationException extends AuctionException {
 
   public AuthenticationException(String message) {
     super(message);

@@ -17,7 +17,6 @@ import com.auction.exceptions.AuthenticationException;
 import com.auction.exceptions.ConnectionException;
 import com.auction.exceptions.DataException;
 import com.auction.exceptions.InvalidBidException;
-
 /**
  * Unit Test cho toan bo Custom Exception - JUnit 5.
  *
@@ -27,6 +26,7 @@ import com.auction.exceptions.InvalidBidException;
  * <p>Luu y quan trong: Tat ca exception deu extends Exception (checked exception), 
  * KHONG phai RuntimeException -> phai dung assertThrows() hoac throws trong test.
  */
+
 @DisplayName("Custom Exception Tests - Huong")
 class CustomExceptionTest {
 

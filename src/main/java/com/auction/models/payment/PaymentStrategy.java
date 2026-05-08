@@ -5,10 +5,10 @@ package com.auction.models.payment;
  */
 public interface PaymentStrategy {
 
-    /**
+  /**
      * Thực hiện thanh toán.
      *
      * @param amount Số tiền cần thanh toán
      */
-    void pay(double amount);
+  void pay(double amount);
 }

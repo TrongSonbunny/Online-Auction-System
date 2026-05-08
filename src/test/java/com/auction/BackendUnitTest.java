@@ -15,13 +15,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import com.auction.backend.Admin;
-import com.auction.backend.AuctionStatus;
-import com.auction.backend.BidTransaction;
-import com.auction.backend.Bidder;
-import com.auction.backend.MomoPayments;
-import com.auction.backend.Seller;
-import com.auction.backend.User;
+import com.auction.models.user.Admin;
+import com.auction.backend.core.AuctionStatus;
+import com.auction.backend.bid.BidTransaction;
+import com.auction.models.user.Bidder;
+import com.auction.models.payment.MomoPayments;
+import com.auction.models.user.Seller;
+import com.auction.models.user.User;
+
+
 
 /**
  * Unit Test toan bo backend: AuctionStatus, BidTransaction, User - JUnit 5.

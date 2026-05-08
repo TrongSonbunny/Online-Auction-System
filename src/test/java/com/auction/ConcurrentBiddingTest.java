@@ -17,15 +17,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import com.auction.backend.Auction;
-import com.auction.backend.AuctionItem;
-import com.auction.backend.AuctionObserver;
-import com.auction.backend.BankPayments;
-import com.auction.backend.BidTransaction;
-import com.auction.backend.Bidder;
-import com.auction.backend.MomoPayments;
-import com.auction.backend.Seller;
-import com.auction.backend.VnPayPayments;
+import com.auction.backend.bid.BidTransaction;
+import com.auction.backend.core.Auction;
+import com.auction.backend.observer.AuctionObserver;
+import com.auction.models.item.AuctionItem;
+import com.auction.models.payment.BankPayments;
+import com.auction.models.payment.MomoPayments;
+import com.auction.models.payment.VnPayPayments;
+import com.auction.models.user.Bidder;
+import com.auction.models.user.Seller;
+
 
 /**
  * Test dam bao dau gia dong thoi (Multi-threading) an toan - JUnit 5.

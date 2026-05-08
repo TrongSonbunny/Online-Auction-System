@@ -1,7 +1,9 @@
 package com.auction.exceptions;
 
-/** Exception khi phiên đấu giá kết thúc. */
-public class AuctionClosedException extends Exception {
+/**
+ * Exception khi thao tác trên phiên đã đóng.
+ */
+public class AuctionClosedException extends AuctionException {
 
   public AuctionClosedException(String message) {
     super(message);
