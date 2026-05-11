@@ -1,29 +1,29 @@
 package com.auction.exceptions;
 
 /**
- * Exception khi auction đã đóng.
+ * Exception khi user không có quyền.
  */
-public class AuctionClosedException
+public class UnauthorizedException
     extends AuctionException {
 
   /**
-   * Constructor auction closed exception.
+   * Constructor unauthorized exception.
    *
    * @param message nội dung lỗi
    */
-  public AuctionClosedException(
+  public UnauthorizedException(
       String message) {
 
     super(message);
   }
 
   /**
-   * Constructor auction closed exception.
+   * Constructor unauthorized exception.
    *
    * @param message nội dung lỗi
    * @param cause nguyên nhân lỗi
    */
-  public AuctionClosedException(
+  public UnauthorizedException(
       String message,
       Throwable cause) {
 

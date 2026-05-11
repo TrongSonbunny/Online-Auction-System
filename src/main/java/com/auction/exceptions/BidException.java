@@ -1,29 +1,29 @@
 package com.auction.exceptions;
 
 /**
- * Exception khi auction đã đóng.
+ * Exception liên quan tới bid.
  */
-public class AuctionClosedException
+public class BidException
     extends AuctionException {
 
   /**
-   * Constructor auction closed exception.
+   * Constructor bid exception.
    *
    * @param message nội dung lỗi
    */
-  public AuctionClosedException(
+  public BidException(
       String message) {
 
     super(message);
   }
 
   /**
-   * Constructor auction closed exception.
+   * Constructor bid exception.
    *
    * @param message nội dung lỗi
    * @param cause nguyên nhân lỗi
    */
-  public AuctionClosedException(
+  public BidException(
       String message,
       Throwable cause) {
 

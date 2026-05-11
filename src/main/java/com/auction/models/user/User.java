@@ -1,102 +1,186 @@
 package com.auction.models.user;
 
-import com.auction.backend.observer.AuctionEvent;
-import com.auction.backend.observer.AuctionObserver;
+import com.auction.models.user.permission.PermissionStrategy;
+import java.util.Objects;
 
 /**
- * Lớp trừu tượng đại diện cho người dùng trong hệ thống đấu giá.
- * Chứa các thuộc tính chung và triển khai AuctionObserver để nhận thông báo.
+ * Lớp cơ sở cho mọi loại user trong hệ thống.
  */
-public abstract class User implements AuctionObserver {
+public abstract class User {
 
   private final String userId;
   private String name;
   private String email;
-  private String passwordHash;
-  private String phoneNumber;
+  private final UserRole role;
+  private final PermissionStrategy permissionStrategy;
 
   /**
-   * Khởi tạo một người dùng mới.
+   * Constructor tạo user.
    *
-   * @param userId mã định danh duy nhất
-   * @param name tên hiển thị
-   * @param email địa chỉ email
-   * @param passwordHash mật khẩu đã được mã hóa
+   * @param userId mã user
+   * @param name tên user
+   * @param email email
+   * @param role role user
+   * @param permissionStrategy strategy quyền
    */
-  public User(String userId, String name, String email, String passwordHash) {
+  protected User(
+      String userId,
+      String name,
+      String email,
+      UserRole role,
+      PermissionStrategy permissionStrategy) {
+
+    validateUserId(userId);
+    validateName(name);
+    validateEmail(email);
+
     this.userId = userId;
     this.name = name;
     this.email = email;
-    this.passwordHash = passwordHash;
+    this.role = Objects.requireNonNull(
+        role,
+        "Role không được null.");
+
+    this.permissionStrategy = Objects.requireNonNull(
+        permissionStrategy,
+        "Permission strategy không được null.");
   }
 
   /**
-   * Nhận thông báo khi có sự kiện đấu giá xảy ra.
-   * Các lớp con (Bidder, Seller, Admin) sẽ triển khai logic xử lý riêng.
+   * Kiểm tra quyền tạo auction.
    *
-   * @param event đối tượng chứa thông tin sự kiện
+   * @return true nếu có quyền
    */
-  @Override
-  public abstract void update(AuctionEvent event);
+  public boolean canCreateAuction() {
+    return permissionStrategy.canCreateAuction();
+  }
 
   /**
-   * Lấy vai trò của người dùng trong hệ thống.
+   * Kiểm tra quyền đặt giá.
    *
-   * @return chuỗi đại diện cho vai trò (ví dụ: "BIDDER", "SELLER")
+   * @return true nếu có quyền
    */
-  public abstract String getRole();
+  public boolean canPlaceBid() {
+    return permissionStrategy.canPlaceBid();
+  }
 
-  /*
-  * @return mã định danh người dùng. */
+  /**
+   * Kiểm tra quyền xóa auction.
+   *
+   * @return true nếu có quyền
+   */
+  public boolean canDeleteAuction() {
+    return permissionStrategy.canDeleteAuction();
+  }
+
+  /**
+   * Kiểm tra quyền khóa user.
+   *
+   * @return true nếu có quyền
+   */
+  public boolean canBanUser() {
+    return permissionStrategy.canBanUser();
+  }
+
+  /**
+   * Kiểm tra quyền quản lý hệ thống.
+   *
+   * @return true nếu có quyền
+   */
+  public boolean canManageSystem() {
+    return permissionStrategy.canManageSystem();
+  }
+
+  /**
+   * Validate userId.
+   *
+   * @param id userId
+   */
+  private void validateUserId(String id) {
+    if (id == null || id.isBlank()) {
+      throw new IllegalArgumentException(
+          "UserId không hợp lệ.");
+    }
+  }
+
+  /**
+   * Validate name.
+   *
+   * @param userName tên user
+   */
+  private void validateName(String userName) {
+    if (userName == null || userName.isBlank()) {
+      throw new IllegalArgumentException(
+          "Tên user không hợp lệ.");
+    }
+  }
+
+  /**
+   * Validate email.
+   *
+   * @param userEmail email
+   */
+  private void validateEmail(String userEmail) {
+    if (userEmail == null
+        || userEmail.isBlank()
+        || !userEmail.contains("@")) {
+
+      throw new IllegalArgumentException(
+          "Email không hợp lệ.");
+    }
+  }
+
   public String getUserId() {
     return userId;
   }
 
-  /*
-  * @return tên hiển thị của người dùng. */
   public String getName() {
     return name;
   }
 
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  /*
-  * @return địa chỉ email đăng ký. */
   public String getEmail() {
     return email;
   }
 
-  public void setEmail(String email) {
-    this.email = email;
+  public UserRole getRole() {
+    return role;
   }
 
-  /*
-  * @return mã băm mật khẩu. */
-  public String getPasswordHash() {
-    return passwordHash;
+  /**
+   * Cập nhật tên user.
+   *
+   * @param newName tên mới
+   */
+  public void setName(String newName) {
+    validateName(newName);
+    this.name = newName;
   }
 
-  public void setPasswordHash(String passwordHash) {
-    this.passwordHash = passwordHash;
-  }
-
-  /*
-  * @return số điện thoại liên lạc. */
-  public String getPhoneNumber() {
-    return phoneNumber;
-  }
-
-  public void setPhoneNumber(String phoneNumber) {
-    this.phoneNumber = phoneNumber;
+  /**
+   * Cập nhật email.
+   *
+   * @param newEmail email mới
+   */
+  public void setEmail(String newEmail) {
+    validateEmail(newEmail);
+    this.email = newEmail;
   }
 
   @Override
   public String toString() {
-    return getRole()
-        + "{userId='" + userId + '\''
-        + ", name='" + name + '\''
-        + ", email='" + email + '\'' + '}';
+
+    return "User{"
+        + "userId='"
+        + userId
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", email='"
+        + email
+        + '\''
+        + ", role="
+        + role
+        + '}';
   }
 }

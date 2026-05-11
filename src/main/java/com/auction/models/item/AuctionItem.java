@@ -1,136 +1,227 @@
 package com.auction.models.item;
 
-import java.time.LocalDateTime;
-
-import com.auction.models.user.Seller;
+import java.util.Objects;
 
 /**
- * Lớp trừu tượng đại diện cho sản phẩm đấu giá.
- * Là lớp cơ sở cho các loại mặt hàng cụ thể trong hệ thống.
+ * Đại diện cho item được đưa lên đấu giá.
  */
-public abstract class AuctionItem {
+public class AuctionItem {
 
-  protected String id;
-  protected String name;
-  protected String description;
-  protected double startPrice;
-  protected double currentPrice;
-  protected LocalDateTime startTime;
-  protected LocalDateTime endTime;
-  protected Seller seller;
+  private final String itemId;
+
+  private String name;
+
+  private String description;
+
+  private ItemCategory category;
+
+  private String itemCondition;
+
+  private double estimatedPrice;
 
   /**
-   * Khởi tạo sản phẩm đấu giá.
+   * Constructor tạo item đấu giá.
    *
-   * @param id mã định danh duy nhất của sản phẩm
-   * @param name tên sản phẩm
-   * @param description mô tả chi tiết sản phẩm
-   * @param startPrice giá khởi điểm
-   * @param startTime thời điểm bắt đầu đấu giá
-   * @param endTime thời điểm kết thúc đấu giá
-   * @param seller đối tượng người bán sở hữu sản phẩm
+   * @param itemId mã item
+   * @param name tên item
+   * @param description mô tả item
+   * @param category danh mục item
+   * @param itemCondition tình trạng item
+   * @param estimatedPrice giá ước tính
    */
   public AuctionItem(
-      String id,
+      String itemId,
       String name,
       String description,
-      double startPrice,
-      LocalDateTime startTime,
-      LocalDateTime endTime,
-      Seller seller) {
-    this.id = id;
+      ItemCategory category,
+      String itemCondition,
+      double estimatedPrice) {
+
+    validateItemId(itemId);
+    validateName(name);
+    validateDescription(description);
+    validateEstimatedPrice(estimatedPrice);
+
+    this.itemId = itemId;
     this.name = name;
     this.description = description;
-    this.startPrice = startPrice;
-    this.currentPrice = startPrice;
-    this.startTime = startTime;
-    this.endTime = endTime;
-    this.seller = seller;
+    this.category = Objects.requireNonNull(
+        category,
+        "Category không được null.");
+
+    this.itemCondition = Objects.requireNonNull(
+        itemCondition,
+        "Tình trạng item không được null.");
+
+    this.estimatedPrice = estimatedPrice;
   }
 
-  /*
-  * @return đối tượng người bán sản phẩm. */
-  public Seller getSeller() {
-    return seller;
+  /**
+   * Validate itemId.
+   *
+   * @param id mã item
+   */
+  private void validateItemId(String id) {
+
+    if (id == null || id.isBlank()) {
+      throw new IllegalArgumentException(
+          "ItemId không hợp lệ.");
+    }
   }
 
-  /*
-  * @return tên của sản phẩm. */
+  /**
+   * Validate tên item.
+   *
+   * @param itemName tên item
+   */
+  private void validateName(String itemName) {
+
+    if (itemName == null || itemName.isBlank()) {
+      throw new IllegalArgumentException(
+          "Tên item không hợp lệ.");
+    }
+  }
+
+  /**
+   * Validate mô tả item.
+   *
+   * @param itemDescription mô tả item
+   */
+  private void validateDescription(
+      String itemDescription) {
+
+    if (itemDescription == null
+        || itemDescription.isBlank()) {
+
+      throw new IllegalArgumentException(
+          "Mô tả item không hợp lệ.");
+    }
+  }
+
+  /**
+   * Validate giá ước tính.
+   *
+   * @param price giá ước tính
+   */
+  private void validateEstimatedPrice(
+      double price) {
+
+    if (price < 0) {
+      throw new IllegalArgumentException(
+          "Giá ước tính không được âm.");
+    }
+  }
+
+  public String getItemId() {
+    return itemId;
+  }
+
   public String getName() {
     return name;
   }
 
-  /*
-  * @return giá hiện tại của sản phẩm (giá cao nhất đã đặt). */
-  public double getCurrentPrice() {
-    return currentPrice;
-  }
-
-  /*
-  * @return mã định danh của sản phẩm. */
-  public String getId() {
-    return id;
-  }
-
-  /*
-   @return giá khởi điểm ban đầu. */
-  public double getStartPrice() {
-    return startPrice;
-  }
-
-  /*
-  * @return mô tả chi tiết về sản phẩm. */
   public String getDescription() {
     return description;
   }
 
-  /*
-  * @return thời gian bắt đầu phiên đấu giá sản phẩm. */
-  public LocalDateTime getStartTime() {
-    return startTime;
+  public ItemCategory getCategory() {
+    return category;
   }
 
-  /*
-  * @return thời gian kết thúc phiên đấu giá sản phẩm. */
-  public LocalDateTime getEndTime() {
-    return endTime;
+  public String getItemCondition() {
+    return itemCondition;
   }
 
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public void setStartTime(LocalDateTime startTime) {
-    this.startTime = startTime;
-  }
-
-  public void setEndTime(LocalDateTime endTime) {
-    this.endTime = endTime;
-  }
-
-  public void setCurrentPrice(double price) {
-    this.currentPrice = price;
+  public double getEstimatedPrice() {
+    return estimatedPrice;
   }
 
   /**
-   * In thông tin chi tiết của sản phẩm ra console.
+   * Cập nhật tên item.
+   *
+   * @param newName tên mới
    */
-  public void printInfo() {
-    System.out.println("Sản phẩm: " + name
-        + " | Giá khởi điểm: " + startPrice
-        + " | Giá hiện tại: " + currentPrice
-        + " | Người bán: " + seller.getName());
+  public void setName(String newName) {
+
+    validateName(newName);
+    this.name = newName;
+  }
+
+  /**
+   * Cập nhật mô tả item.
+   *
+   * @param newDescription mô tả mới
+   */
+  public void setDescription(
+      String newDescription) {
+
+    validateDescription(newDescription);
+    this.description = newDescription;
+  }
+
+  /**
+   * Cập nhật category.
+   *
+   * @param newCategory category mới
+   */
+  public void setCategory(
+      ItemCategory newCategory) {
+
+    this.category = Objects.requireNonNull(
+        newCategory,
+        "Category không được null.");
+  }
+
+  /**
+   * Cập nhật tình trạng item.
+   *
+   * @param newCondition tình trạng mới
+   */
+  public void setItemCondition(
+      String newCondition) {
+
+    if (newCondition == null
+        || newCondition.isBlank()) {
+
+      throw new IllegalArgumentException(
+          "Tình trạng item không hợp lệ.");
+    }
+
+    this.itemCondition = newCondition;
+  }
+
+  /**
+   * Cập nhật giá ước tính.
+   *
+   * @param newPrice giá mới
+   */
+  public void setEstimatedPrice(
+      double newPrice) {
+
+    validateEstimatedPrice(newPrice);
+    this.estimatedPrice = newPrice;
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName()
-        + "{id='" + id + '\''
-        + ", name='" + name + '\''
-        + ", currentPrice=" + currentPrice + '}';
+
+    return "AuctionItem{"
+        + "itemId='"
+        + itemId
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", description='"
+        + description
+        + '\''
+        + ", category="
+        + category
+        + ", itemCondition='"
+        + itemCondition
+        + '\''
+        + ", estimatedPrice="
+        + estimatedPrice
+        + '}';
   }
 }

@@ -1,15 +1,32 @@
 package com.auction.exceptions;
 
 /**
- * Exception liên quan đến thanh toán.
+ * Exception liên quan tới payment.
  */
-public class PaymentException extends AuctionException {
+public class PaymentException
+    extends AuctionException {
 
-  public PaymentException(String message) {
+  /**
+   * Constructor payment exception.
+   *
+   * @param message nội dung lỗi
+   */
+  public PaymentException(
+      String message) {
+
     super(message);
   }
 
-  public PaymentException(String message, Throwable cause) {
+  /**
+   * Constructor payment exception.
+   *
+   * @param message nội dung lỗi
+   * @param cause nguyên nhân lỗi
+   */
+  public PaymentException(
+      String message,
+      Throwable cause) {
+
     super(message, cause);
   }
 }

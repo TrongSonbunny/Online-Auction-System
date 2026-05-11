@@ -1,15 +1,32 @@
 package com.auction.exceptions;
 
 /**
- * Base exception cho toàn bộ hệ thống Auction.
+ * Exception cơ sở cho toàn bộ hệ thống auction.
  */
-public class AuctionException extends Exception {
+public class AuctionException
+    extends RuntimeException {
 
-  public AuctionException(String message) {
+  /**
+   * Constructor exception.
+   *
+   * @param message nội dung lỗi
+   */
+  public AuctionException(
+      String message) {
+
     super(message);
   }
 
-  public AuctionException(String message, Throwable cause) {
+  /**
+   * Constructor exception.
+   *
+   * @param message nội dung lỗi
+   * @param cause nguyên nhân lỗi
+   */
+  public AuctionException(
+      String message,
+      Throwable cause) {
+
     super(message, cause);
   }
 }

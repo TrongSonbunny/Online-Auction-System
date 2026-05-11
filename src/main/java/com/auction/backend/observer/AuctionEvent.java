@@ -1,100 +1,106 @@
 package com.auction.backend.observer;
 
-import com.auction.backend.core.AuctionStatus;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
- * Đối tượng chứa thông tin sự kiện được gửi đến các Observer.
- * Khi có bid mới hoặc trạng thái phiên thay đổi,
- * một AuctionEvent sẽ được tạo và broadcast.
+ * Đại diện cho event trong hệ thống đấu giá.
  */
 public class AuctionEvent {
 
-  /**
-   * Các loại sự kiện có thể xảy ra trong phiên đấu giá.
-   */
-  public enum EventType {
-    NEW_BID,
-    AUCTION_STARTED,
-    AUCTION_FINISHED,
-    AUCTION_CANCELED,
-    AUCTION_PAID
-  }
+  private final AuctionEventType eventType;
 
   private final String auctionId;
-  private final EventType eventType;
-  private final double currentHighestBid;
-  private final String currentLeader;
-  private final AuctionStatus newStatus;
-  private final long timestamp;
+
+  private final String message;
+
+  private final LocalDateTime createdAt;
 
   /**
-   * Constructor tạo một sự kiện đấu giá.
+   * Constructor auction event.
    *
-   * @param auctionId mã định danh phiên đấu giá
-   * @param eventType loại sự kiện xảy ra
-   * @param currentHighestBid giá cao nhất hiện tại
-   * @param currentLeader ID người đang dẫn đầu
-   * @param newStatus trạng thái mới của phiên
+   * @param eventType loại event
+   * @param auctionId mã auction
+   * @param message nội dung event
    */
   public AuctionEvent(
+      AuctionEventType eventType,
       String auctionId,
-      EventType eventType,
-      double currentHighestBid,
-      String currentLeader,
-      AuctionStatus newStatus) {
+      String message) {
+
+    this.eventType = Objects.requireNonNull(
+        eventType,
+        "Event type không được null.");
+
+    validateAuctionId(auctionId);
+    validateMessage(message);
+
     this.auctionId = auctionId;
-    this.eventType = eventType;
-    this.currentHighestBid = currentHighestBid;
-    this.currentLeader = currentLeader;
-    this.newStatus = newStatus;
-    this.timestamp = System.currentTimeMillis();
+    this.message = message;
+    this.createdAt = LocalDateTime.now();
   }
 
-  /*
-  * @return ID của phiên đấu giá liên quan. */
+  /**
+   * Validate auctionId.
+   *
+   * @param id auctionId
+   */
+  private void validateAuctionId(
+      String id) {
+
+    if (id == null || id.isBlank()) {
+
+      throw new IllegalArgumentException(
+          "AuctionId không hợp lệ.");
+    }
+  }
+
+  /**
+   * Validate message.
+   *
+   * @param eventMessage message
+   */
+  private void validateMessage(
+      String eventMessage) {
+
+    if (eventMessage == null
+        || eventMessage.isBlank()) {
+
+      throw new IllegalArgumentException(
+          "Message không hợp lệ.");
+    }
+  }
+
+  public AuctionEventType getEventType() {
+    return eventType;
+  }
+
   public String getAuctionId() {
     return auctionId;
   }
 
-  /*
-  * @return loại sự kiện (BID, START, FINISH, ...). */
-  public EventType getEventType() {
-    return eventType;
+  public String getMessage() {
+    return message;
   }
 
-  /*
-  * @return mức giá cao nhất tại thời điểm xảy ra sự kiện. */
-  public double getCurrentHighestBid() {
-    return currentHighestBid;
-  }
-
-  /*
-  * @return ID của người dùng đang giữ giá cao nhất. */
-  public String getCurrentLeader() {
-    return currentLeader;
-  }
-
-  /*
-  * @return trạng thái mới của phiên đấu giá sau sự kiện. */
-  public AuctionStatus getNewStatus() {
-    return newStatus;
-  }
-
-  /*
-  * @return thời điểm (miligiây) sự kiện được tạo. */
-  public long getTimestamp() {
-    return timestamp;
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
   }
 
   @Override
   public String toString() {
+
     return "AuctionEvent{"
-        + "auctionId='" + auctionId + '\''
-        + ", eventType=" + eventType
-        + ", currentHighestBid=" + currentHighestBid
-        + ", currentLeader='" + currentLeader + '\''
-        + ", newStatus=" + newStatus
-        + ", timestamp=" + timestamp
+        + "eventType="
+        + eventType
+        + ", auctionId='"
+        + auctionId
+        + '\''
+        + ", message='"
+        + message
+        + '\''
+        + ", createdAt="
+        + createdAt
         + '}';
   }
 }

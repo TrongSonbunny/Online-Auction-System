@@ -1,0 +1,52 @@
+package com.auction.backend.observer.observers;
+
+import com.auction.backend.observer.AuctionEvent;
+import com.auction.backend.observer.AuctionObserver;
+
+/**
+ * Observer dành cho seller.
+ */
+public class SellerObserver
+    implements AuctionObserver {
+
+  private final String sellerName;
+
+  /**
+   * Constructor seller observer.
+   *
+   * @param sellerName tên seller
+   */
+  public SellerObserver(
+      String sellerName) {
+
+    if (sellerName == null
+        || sellerName.isBlank()) {
+
+      throw new IllegalArgumentException(
+          "Seller name không hợp lệ.");
+    }
+
+    this.sellerName = sellerName;
+  }
+
+  @Override
+  public void update(
+      AuctionEvent event) {
+
+    System.out.println(
+        "[SELLER NOTIFICATION] "
+            + sellerName
+            + " nhận event: "
+            + event.getMessage());
+  }
+
+  @Override
+  public String toString() {
+
+    return "SellerObserver{"
+        + "sellerName='"
+        + sellerName
+        + '\''
+        + '}';
+  }
+}
