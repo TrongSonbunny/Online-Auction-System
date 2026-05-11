@@ -3,6 +3,7 @@ package com.auction.models.user;
 import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.permission.BidderPermission;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * User bidder.
@@ -11,7 +12,7 @@ public class Bidder extends User {
 
   private PaymentStrategy paymentStrategy;
 
-  private int totalBidsPlaced;
+  private final AtomicInteger totalBidsPlaced;
 
   /**
    * Constructor bidder.
@@ -38,14 +39,14 @@ public class Bidder extends User {
         paymentStrategy,
         "Payment strategy không được null.");
 
-    this.totalBidsPlaced = 0;
+    this.totalBidsPlaced = new AtomicInteger(0);
   }
 
   /**
    * Tăng số lần bid.
    */
   public void incrementTotalBidsPlaced() {
-    totalBidsPlaced++;
+    totalBidsPlaced.incrementAndGet();
   }
 
   public PaymentStrategy getPaymentStrategy() {
@@ -66,7 +67,7 @@ public class Bidder extends User {
   }
 
   public int getTotalBidsPlaced() {
-    return totalBidsPlaced;
+    return totalBidsPlaced.get();
   }
 
   @Override

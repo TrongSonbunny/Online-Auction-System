@@ -18,10 +18,8 @@ public class BidService {
    * Constructor bid service.
    */
   public BidService() {
-
     this.bidValidator = new BidValidator();
-    this.bidHistoryManager =
-        new BidHistoryManager();
+    this.bidHistoryManager = new BidHistoryManager();
   }
 
   /**
@@ -32,32 +30,35 @@ public class BidService {
    * @param amount số tiền bid
    * @return BidTransaction được tạo
    */
-  public synchronized BidTransaction placeBid(
+  public BidTransaction placeBid(
       Auction auction,
       Bidder bidder,
       double amount) {
 
-    bidValidator.validateBid(
-        auction,
-        bidder,
-        amount);
+    synchronized (auction) {
 
-    auction.updateHighestBid(
-        bidder,
-        amount);
+      bidValidator.validateBid(
+          auction,
+          bidder,
+          amount);
 
-    bidder.incrementTotalBidsPlaced();
+      auction.updateHighestBid(
+          bidder,
+          amount);
 
-    BidTransaction transaction =
-        createTransaction(
-            bidder,
-            auction.getAuctionId(),
-            amount);
+      bidder.incrementTotalBidsPlaced();
 
-    bidHistoryManager.addTransaction(
-        transaction);
+      BidTransaction transaction =
+          createTransaction(
+              bidder,
+              auction.getAuctionId(),
+              amount);
 
-    return transaction;
+      bidHistoryManager.addTransaction(
+          transaction);
+
+      return transaction;
+    }
   }
 
   /**
@@ -85,9 +86,7 @@ public class BidService {
    *
    * @return BidHistoryManager
    */
-  public BidHistoryManager
-      getBidHistoryManager() {
-
+  public BidHistoryManager getBidHistoryManager() {
     return bidHistoryManager;
   }
 }
