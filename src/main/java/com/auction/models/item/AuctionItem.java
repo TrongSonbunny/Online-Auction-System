@@ -1,8 +1,7 @@
 package com.auction.models.item;
 
-import java.util.Objects;
-
 import com.auction.exceptions.AuctionException;
+import java.util.Objects;
 
 /**
  * Đại diện cho item được đưa lên đấu giá.

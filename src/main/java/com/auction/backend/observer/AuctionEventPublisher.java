@@ -1,9 +1,8 @@
 package com.auction.backend.observer;
 
+import com.auction.exceptions.AuctionException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import com.auction.exceptions.AuctionException;
 
 /**
  * Publisher quản lý observer và publish event.

@@ -1,9 +1,8 @@
 package com.auction.backend.observer;
 
+import com.auction.exceptions.AuctionException;
 import java.time.LocalDateTime;
 import java.util.Objects;
-
-import com.auction.exceptions.AuctionException;
 
 /**
  * Đại diện cho event trong hệ thống đấu giá.
