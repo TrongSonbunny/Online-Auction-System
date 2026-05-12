@@ -2,6 +2,8 @@ package com.auction.models.item;
 
 import java.util.Objects;
 
+import com.auction.exceptions.AuctionException;
+
 /**
  * Đại diện cho item được đưa lên đấu giá.
  */
@@ -64,7 +66,7 @@ public class AuctionItem {
   private void validateItemId(String id) {
 
     if (id == null || id.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "ItemId không hợp lệ.");
     }
   }
@@ -77,7 +79,7 @@ public class AuctionItem {
   private void validateName(String itemName) {
 
     if (itemName == null || itemName.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Tên item không hợp lệ.");
     }
   }
@@ -93,7 +95,7 @@ public class AuctionItem {
     if (itemDescription == null
         || itemDescription.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Mô tả item không hợp lệ.");
     }
   }
@@ -107,7 +109,7 @@ public class AuctionItem {
       double price) {
 
     if (price < 0) {
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Giá ước tính không được âm.");
     }
   }
@@ -183,7 +185,7 @@ public class AuctionItem {
     if (newCondition == null
         || newCondition.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Tình trạng item không hợp lệ.");
     }
 

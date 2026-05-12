@@ -3,6 +3,8 @@ package com.auction.backend.observer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.auction.exceptions.AuctionException;
+
 /**
  * Publisher quản lý observer và publish event.
  */
@@ -30,7 +32,7 @@ public class AuctionEventPublisher {
 
     if (observer == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Observer không được null.");
     }
 
@@ -58,7 +60,7 @@ public class AuctionEventPublisher {
 
     if (event == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Event không được null.");
     }
 

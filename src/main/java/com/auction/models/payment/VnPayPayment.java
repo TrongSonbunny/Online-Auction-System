@@ -1,5 +1,7 @@
 package com.auction.models.payment;
 
+import com.auction.exceptions.PaymentException;
+
 /**
  * Payment strategy cho VNPay.
  */
@@ -53,7 +55,7 @@ public class VnPayPayment implements PaymentStrategy {
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số tiền phải lớn hơn 0.");
     }
   }
@@ -64,7 +66,7 @@ public class VnPayPayment implements PaymentStrategy {
         || email.isBlank()
         || !email.contains("@")) {
 
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Email không hợp lệ.");
     }
   }

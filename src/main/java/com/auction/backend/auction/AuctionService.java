@@ -1,6 +1,9 @@
 package com.auction.backend.auction;
 
 import com.auction.backend.util.IdGenerator;
+import com.auction.exceptions.AuctionClosedException;
+import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.item.AuctionItem;
 import com.auction.models.user.Seller;
@@ -87,7 +90,7 @@ public class AuctionService {
 
     if (auction == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionClosedException(
           "Không tìm thấy auction.");
     }
 
@@ -108,7 +111,7 @@ public class AuctionService {
 
     if (auction == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionClosedException(
           "Không tìm thấy auction.");
     }
 
@@ -125,13 +128,13 @@ public class AuctionService {
 
     if (seller == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Seller không được null.");
     }
 
     if (!seller.canCreateAuction()) {
 
-      throw new IllegalStateException(
+      throw new UnauthorizedException(
           "Seller không có quyền tạo auction.");
     }
   }

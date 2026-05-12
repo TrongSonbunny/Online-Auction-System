@@ -1,5 +1,7 @@
 package com.auction.backend.payment;
 
+import com.auction.exceptions.PaymentException;
+
 /**
  * Validate payment business rules.
  */
@@ -14,7 +16,7 @@ public class PaymentValidator {
       double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số tiền thanh toán phải lớn hơn 0.");
     }
   }
@@ -32,7 +34,7 @@ public class PaymentValidator {
     validatePaymentAmount(amount);
 
     if (balance < amount) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số dư không đủ để thanh toán.");
     }
   }

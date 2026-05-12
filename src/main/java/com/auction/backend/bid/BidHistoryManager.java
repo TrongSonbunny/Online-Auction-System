@@ -1,5 +1,6 @@
 package com.auction.backend.bid;
 
+import com.auction.exceptions.BidException;
 import com.auction.models.bid.BidTransaction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +29,7 @@ public class BidHistoryManager {
       BidTransaction transaction) {
 
     if (transaction == null) {
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Transaction không được null.");
     }
 

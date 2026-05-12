@@ -1,5 +1,9 @@
 package com.auction.backend.bid;
 
+import com.auction.exceptions.AuctionClosedException;
+import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.BidException;
+import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.user.Bidder;
 
@@ -37,7 +41,7 @@ public class BidValidator {
       Auction auction) {
 
     if (auction == null) {
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Auction không được null.");
     }
   }
@@ -51,7 +55,7 @@ public class BidValidator {
       Bidder bidder) {
 
     if (bidder == null) {
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bidder không được null.");
     }
   }
@@ -65,7 +69,7 @@ public class BidValidator {
       double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bid amount phải lớn hơn 0.");
     }
   }
@@ -79,7 +83,7 @@ public class BidValidator {
       Auction auction) {
 
     if (!auction.isActive()) {
-      throw new IllegalStateException(
+      throw new AuctionClosedException(
           "Auction không còn hoạt động.");
     }
   }
@@ -96,7 +100,7 @@ public class BidValidator {
 
     if (amount <= auction.getCurrentHighestBid()) {
 
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bid phải lớn hơn giá hiện tại.");
     }
   }
@@ -111,7 +115,7 @@ public class BidValidator {
 
     if (!bidder.canPlaceBid()) {
 
-      throw new IllegalStateException(
+      throw new UnauthorizedException(
           "User không có quyền đặt giá.");
     }
   }

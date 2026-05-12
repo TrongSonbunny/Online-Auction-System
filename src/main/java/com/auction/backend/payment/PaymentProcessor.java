@@ -1,5 +1,6 @@
 package com.auction.backend.payment;
 
+import com.auction.exceptions.PaymentException;
 import com.auction.models.payment.PaymentStrategy;
 import java.util.Objects;
 
@@ -53,7 +54,7 @@ public class PaymentProcessor {
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số tiền phải lớn hơn 0.");
     }
   }

@@ -1,5 +1,9 @@
 package com.auction.models.auction;
 
+import com.auction.exceptions.AuctionClosedException;
+import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.BidException;
+import com.auction.exceptions.InvalidBidException;
 import com.auction.models.item.AuctionItem;
 import com.auction.models.user.Bidder;
 import com.auction.models.user.Seller;
@@ -126,13 +130,13 @@ public class Auction {
 
     if (!isActive()) {
 
-      throw new IllegalStateException(
+      throw new AuctionClosedException(
           "Auction không hoạt động.");
     }
 
     if (amount <= currentHighestBid) {
 
-      throw new IllegalArgumentException(
+      throw new InvalidBidException(
           "Bid phải lớn hơn giá hiện tại.");
     }
 
@@ -158,7 +162,7 @@ public class Auction {
 
     if (id == null || id.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "AuctionId không hợp lệ.");
     }
   }
@@ -173,7 +177,7 @@ public class Auction {
 
     if (price < 0) {
 
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Starting price không được âm.");
     }
   }
@@ -188,7 +192,7 @@ public class Auction {
 
     if (bidder == null) {
 
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bidder không được null.");
     }
   }
@@ -203,7 +207,7 @@ public class Auction {
 
     if (amount <= 0) {
 
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bid amount phải lớn hơn 0.");
     }
   }

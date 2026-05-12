@@ -1,5 +1,6 @@
 package com.auction.models.user;
 
+import com.auction.exceptions.BidException;
 import com.auction.models.user.permission.PermissionStrategy;
 import java.util.Objects;
 
@@ -98,7 +99,7 @@ public abstract class User {
    */
   private void validateUserId(String id) {
     if (id == null || id.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new BidException(
           "UserId không hợp lệ.");
     }
   }
@@ -110,7 +111,7 @@ public abstract class User {
    */
   private void validateName(String userName) {
     if (userName == null || userName.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Tên user không hợp lệ.");
     }
   }
@@ -125,7 +126,7 @@ public abstract class User {
         || userEmail.isBlank()
         || !userEmail.contains("@")) {
 
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Email không hợp lệ.");
     }
   }

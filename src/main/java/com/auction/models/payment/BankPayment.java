@@ -1,5 +1,7 @@
 package com.auction.models.payment;
 
+import com.auction.exceptions.PaymentException;
+
 /**
  * Payment strategy cho ngân hàng.
  */
@@ -67,7 +69,7 @@ public class BankPayment implements PaymentStrategy {
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số tiền phải lớn hơn 0.");
     }
   }
@@ -75,7 +77,7 @@ public class BankPayment implements PaymentStrategy {
   private void validateBankName(String name) {
 
     if (name == null || name.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Tên ngân hàng không hợp lệ.");
     }
   }
@@ -85,7 +87,7 @@ public class BankPayment implements PaymentStrategy {
     if (accountNumber == null
         || accountNumber.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số tài khoản không hợp lệ.");
     }
   }
@@ -95,7 +97,7 @@ public class BankPayment implements PaymentStrategy {
     if (holderName == null
         || holderName.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Tên chủ tài khoản không hợp lệ.");
     }
   }

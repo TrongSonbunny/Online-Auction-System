@@ -1,5 +1,6 @@
 package com.auction.backend.auction;
 
+import com.auction.exceptions.AuctionException;
 import com.auction.models.auction.Auction;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,13 +35,13 @@ public class AuctionScheduler {
 
     if (auction == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Auction không được null.");
     }
 
     if (durationSeconds <= 0) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Duration phải lớn hơn 0.");
     }
 

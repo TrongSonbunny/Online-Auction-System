@@ -1,5 +1,7 @@
 package com.auction.models.payment;
 
+import com.auction.exceptions.PaymentException;
+
 /**
  * Payment strategy cho ví Momo.
  */
@@ -60,7 +62,7 @@ public class MomoPayment implements PaymentStrategy {
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số tiền phải lớn hơn 0.");
     }
   }
@@ -71,7 +73,7 @@ public class MomoPayment implements PaymentStrategy {
         || number.isBlank()
         || number.length() < 10) {
 
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Số điện thoại không hợp lệ.");
     }
   }
@@ -79,7 +81,7 @@ public class MomoPayment implements PaymentStrategy {
   private void validateWalletOwnerName(String name) {
 
     if (name == null || name.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new PaymentException(
           "Tên chủ ví không hợp lệ.");
     }
   }

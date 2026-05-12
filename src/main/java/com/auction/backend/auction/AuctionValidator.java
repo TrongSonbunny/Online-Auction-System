@@ -1,5 +1,7 @@
 package com.auction.backend.auction;
 
+import com.auction.exceptions.AuctionClosedException;
+import com.auction.exceptions.AuctionException;
 import com.auction.models.auction.Auction;
 
 /**
@@ -17,7 +19,7 @@ public class AuctionValidator {
 
     if (auction == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Auction không được null.");
     }
   }
@@ -34,7 +36,7 @@ public class AuctionValidator {
 
     if (!auction.isActive()) {
 
-      throw new IllegalStateException(
+      throw new AuctionClosedException(
           "Auction không active.");
     }
   }

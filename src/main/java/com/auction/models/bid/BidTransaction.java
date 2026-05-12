@@ -1,5 +1,7 @@
 package com.auction.models.bid;
 
+import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.BidException;
 import com.auction.models.user.Bidder;
 import java.util.Objects;
 
@@ -49,7 +51,7 @@ public class BidTransaction extends Transaction {
   private void validateAuctionId(String id) {
 
     if (id == null || id.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "AuctionId không hợp lệ.");
     }
   }
@@ -62,7 +64,7 @@ public class BidTransaction extends Transaction {
   private void validateBidAmount(double amount) {
 
     if (amount <= 0) {
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bid amount phải lớn hơn 0.");
     }
   }

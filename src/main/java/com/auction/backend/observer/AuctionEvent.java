@@ -3,6 +3,8 @@ package com.auction.backend.observer;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+import com.auction.exceptions.AuctionException;
+
 /**
  * Đại diện cho event trong hệ thống đấu giá.
  */
@@ -50,7 +52,7 @@ public class AuctionEvent {
 
     if (id == null || id.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "AuctionId không hợp lệ.");
     }
   }
@@ -66,7 +68,7 @@ public class AuctionEvent {
     if (eventMessage == null
         || eventMessage.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Message không hợp lệ.");
     }
   }

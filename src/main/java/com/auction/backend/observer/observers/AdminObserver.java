@@ -2,6 +2,7 @@ package com.auction.backend.observer.observers;
 
 import com.auction.backend.observer.AuctionEvent;
 import com.auction.backend.observer.AuctionObserver;
+import com.auction.exceptions.AuctionException;
 
 /**
  * Observer dành cho admin.
@@ -22,7 +23,7 @@ public class AdminObserver
     if (adminName == null
         || adminName.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Admin name không hợp lệ.");
     }
 

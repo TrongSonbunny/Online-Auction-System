@@ -1,5 +1,6 @@
 package com.auction.backend.auction;
 
+import com.auction.exceptions.AuctionException;
 import com.auction.models.auction.Auction;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,7 +51,7 @@ public class AuctionManager {
 
     if (auction == null) {
 
-      throw new IllegalArgumentException(
+      throw new AuctionException(
           "Auction không được null.");
     }
 

@@ -2,6 +2,7 @@ package com.auction.backend.observer.observers;
 
 import com.auction.backend.observer.AuctionEvent;
 import com.auction.backend.observer.AuctionObserver;
+import com.auction.exceptions.BidException;
 
 /**
  * Observer dành cho bidder.
@@ -22,7 +23,7 @@ public class BidderObserver
     if (bidderName == null
         || bidderName.isBlank()) {
 
-      throw new IllegalArgumentException(
+      throw new BidException(
           "Bidder name không hợp lệ.");
     }
 
