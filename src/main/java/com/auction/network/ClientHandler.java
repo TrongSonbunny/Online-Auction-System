@@ -43,46 +43,29 @@ public class ClientHandler implements Runnable {
       Gson gson = new Gson();
 
       // 1. SUBSCRIBE: Add this client's pipe to the global roster
-      ServerMain.activeClients.add(writer);
-      logger.info("Client joined! Total active clients: {}", ServerMain.activeClients.size());
+      
 
-      String clientMessage;
-      while ((clientMessage = reader.readLine()) != null) {
-        logger.info("Nhận được dữ liệu Json từ client: {}", clientMessage);
+      String clientInput;
+      while ((clientInput = reader.readLine()) != null) {
+        logger.info("Nhận được dữ liệu Json từ client: {}", clientInput);
 
         try {
           // Gson magic: convert the text from a json format to the real object with its attribut
           // including action, username, amount
-          AuctionMessage message = gson.fromJson(clientMessage, AuctionMessage.class);
-
+          ClientMessage message = gson.fromJson(clientInput, ClientMessage.class);
           // Lợi khi dùng Gson: Ví dụ như khi Client nhập thiếu một trường dữ liệu ({"action":
           // "BID"} nhưng không có username,...) thì những biến bị bỏ trống đó sẽ được cho vào thành
-          // null/0/false/... mà không làm crash chương trình.
-          logger.info("Nhận action: {}", message.getAction());
-          logger.info("Nhận username: {}", message.getUsername());
+          // null/0/false/... mà không làm crash chương trình.:w
 
-          if ("BID".equalsIgnoreCase(message.getAction())) {
-            // Format the announcement
-            String announcement = String.format("ANNOUNCEMENT: %s just placed a bid of $%d!",
-                message.getUsername(), message.getAmount());
-
-            logger.info("Broadcasting to {} clients: {}", ServerMain.activeClients.size(),
-                announcement);
-
-            // 2. NOTIFY: Loop through the thread-safe list and tell everyone
-            for (PrintWriter clientWriter : ServerMain.activeClients) {
-              clientWriter.println(announcement);
-            }
-
-          } else {
-            writer.println("Private Server Msg: Unknown command.");
-          }
+          
 
         } catch (com.google.gson.JsonSyntaxException jsonError) {
           // Gson throws a specific JsonSyntaxException when the JSON is malformed
-          logger.warn("Máy khách thiết lập Dữ liệu Json sai định dạng: {}", clientMessage);
+          logger.warn("Máy khách thiết lập Dữ liệu Json sai định dạng: {}", clientInput);
           writer.println("ERROR: Không đúng định dạng Json");
         }
+
+        // AuctionManager.doAction(message); Đây là phần đưa 
       }
 
       logger.info("Client đã ngắt kết nối chủ động.");
