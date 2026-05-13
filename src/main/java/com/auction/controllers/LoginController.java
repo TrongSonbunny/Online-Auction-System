@@ -66,9 +66,9 @@ public class LoginController {
   @FXML
   private Label lblError;
 
-  // Biến lưu tọa độ khi kéo cửa sổ
-  private double xOffset = 0;
-  private double yOffset = 0;
+  // Biến lưu tọa độ khi kéo cửa sổ đã được đổi tên thành offsetX và offsetY
+  private double offsetX = 0.0;
+  private double offsetY = 0.0;
 
   // Giả lập cơ sở dữ liệu người dùng tại local
   private static final Map<String, String> USER_DATABASE = new HashMap<>();
@@ -84,19 +84,16 @@ public class LoginController {
    */
   @FXML
   public void initialize() {
-    // Lưu lại tọa độ chuột khi nhấn vào thanh tiêu đề
     titleBar.setOnMousePressed(event -> {
-      xOffset = event.getSceneX();
-      yOffset = event.getSceneY();
+      offsetX = event.getSceneX();
+      offsetY = event.getSceneY();
     });
 
-    // Tính toán và di chuyển cửa sổ khi kéo chuột
     titleBar.setOnMouseDragged(event -> {
       Stage stage = (Stage) titleBar.getScene().getWindow();
-      // Chỉ cho kéo khi không ở chế độ toàn màn hình
       if (!stage.isMaximized()) {
-        stage.setX(event.getScreenX() - xOffset);
-        stage.setY(event.getScreenY() - yOffset);
+        stage.setX(event.getScreenX() - offsetX);
+        stage.setY(event.getScreenY() - offsetY);
       }
     });
   }
