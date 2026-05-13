@@ -1,7 +1,8 @@
 package com.auction.controllers;
 
+import com.auction.models.Message;
+import com.auction.network.AuctionClient;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -66,21 +67,11 @@ public class LoginController {
   @FXML
   private Label lblError;
 
-  // Biến lưu tọa độ khi kéo cửa sổ đã được đổi tên thành offsetX và offsetY
   private double offsetX = 0.0;
   private double offsetY = 0.0;
 
-  // Giả lập cơ sở dữ liệu người dùng tại local
-  private static final Map<String, String> USER_DATABASE = new HashMap<>();
-
-  static {
-    USER_DATABASE.put("seller", "123456");
-    USER_DATABASE.put("bidder", "123456");
-  }
-
   /**
    * Phương thức chạy ngay khi FXML được load.
-   * Dùng để thiết lập tính năng kéo thả cho thanh tiêu đề.
    */
   @FXML
   public void initialize() {
@@ -98,40 +89,24 @@ public class LoginController {
     });
   }
 
-  /**
-   * Thu nhỏ ứng dụng xuống taskbar.
-   *
-   * @param event Sự kiện click.
-   */
   @FXML
   private void handleMinimize(ActionEvent event) {
     Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
     stage.setIconified(true);
   }
 
-  /**
-   * Phóng to hoặc thu nhỏ cửa sổ ứng dụng.
-   *
-   * @param event Sự kiện click.
-   */
   @FXML
   private void handleMaximize(ActionEvent event) {
     Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
     stage.setMaximized(!stage.isMaximized());
   }
 
-  /**
-   * Tắt hoàn toàn ứng dụng.
-   */
   @FXML
   private void handleClose() {
     Platform.exit();
     System.exit(0);
   }
 
-  /**
-   * Hiển thị giao diện form đăng nhập.
-   */
   @FXML
   private void showLoginView() {
     loginForm.setVisible(true);
@@ -141,9 +116,6 @@ public class LoginController {
     lblError.setText("");
   }
 
-  /**
-   * Hiển thị giao diện form đăng ký.
-   */
   @FXML
   private void showRegisterView() {
     loginForm.setVisible(false);
@@ -154,27 +126,57 @@ public class LoginController {
   }
 
   /**
-   * Xử lý luồng đăng nhập của người dùng.
+   * Xử lý luồng đăng nhập bằng Đa luồng (Background Thread) để không đơ UI.
    */
   @FXML
   private void handleLogin() {
     String user = txtUsername.getText();
     String pass = txtPassword.getText();
 
-    if (USER_DATABASE.containsKey(user) && USER_DATABASE.get(user).equals(pass)) {
-      headerSection.setVisible(false);
-      loginForm.setVisible(false);
-      registerForm.setVisible(false);
-      roleSelection.setVisible(true);
-      lblError.setText("");
-    } else {
+    if (user.isEmpty() || pass.isEmpty()) {
       lblError.setStyle("-fx-text-fill: #ff4c4c;");
-      lblError.setText("Sai tài khoản hoặc mật khẩu!");
+      lblError.setText("Không được để trống!");
+      return;
     }
+
+    lblError.setStyle("-fx-text-fill: #00c6ff;");
+    lblError.setText("Đang kết nối Server...");
+
+    // Tạo luồng mạng chạy ngầm
+    new Thread(() -> {
+      try {
+        Message request = new Message();
+        request.setAction("LOGIN_REQUEST");
+        request.setRole("UNKNOWN");
+        request.setUsername(user);
+        request.setPassword(pass);
+
+        Message response = AuctionClient.getInstance().sendRequest(request);
+
+        // Đẩy kết quả ngược lại luồng UI (FX Thread)
+        Platform.runLater(() -> {
+          if ("SUCCESS".equals(response.getStatus())) {
+            headerSection.setVisible(false);
+            loginForm.setVisible(false);
+            registerForm.setVisible(false);
+            roleSelection.setVisible(true);
+            lblError.setText("");
+          } else {
+            lblError.setStyle("-fx-text-fill: #ff4c4c;");
+            lblError.setText("Đăng nhập thất bại (Tài khoản/MK sai)");
+          }
+        });
+      } catch (Exception e) {
+        Platform.runLater(() -> {
+          lblError.setStyle("-fx-text-fill: #ff4c4c;");
+          lblError.setText("Lỗi mạng: " + e.getMessage());
+        });
+      }
+    }).start();
   }
 
   /**
-   * Xử lý luồng đăng ký tài khoản mới.
+   * Xử lý luồng đăng ký bằng Đa luồng (Background Thread) để không đơ UI.
    */
   @FXML
   private void handleRegister() {
@@ -194,27 +196,43 @@ public class LoginController {
       return;
     }
 
-    if (USER_DATABASE.containsKey(user)) {
-      lblError.setStyle("-fx-text-fill: #ff4c4c;");
-      lblError.setText("Tài khoản đã tồn tại!");
-      return;
-    }
+    lblError.setStyle("-fx-text-fill: #00c6ff;");
+    lblError.setText("Đang đăng ký...");
 
-    USER_DATABASE.put(user, pass);
-    lblError.setStyle("-fx-text-fill: #27ae60;");
-    lblError.setText("Đăng ký thành công! Hãy đăng nhập.");
+    // Tạo luồng mạng chạy ngầm
+    new Thread(() -> {
+      try {
+        Message request = new Message();
+        request.setAction("REGISTER");
+        request.setRole("BIDDER");
+        request.setUsername(user);
+        request.setPassword(pass);
 
-    txtRegUser.clear();
-    txtRegPass.clear();
-    txtRegConfirm.clear();
-    showLoginView();
+        Message response = AuctionClient.getInstance().sendRequest(request);
+
+        // Đẩy kết quả ngược lại luồng UI (FX Thread)
+        Platform.runLater(() -> {
+          if ("SUCCESS".equals(response.getStatus())) {
+            lblError.setStyle("-fx-text-fill: #27ae60;");
+            lblError.setText("Đăng ký thành công! Hãy đăng nhập.");
+            txtRegUser.clear();
+            txtRegPass.clear();
+            txtRegConfirm.clear();
+            showLoginView();
+          } else {
+            lblError.setStyle("-fx-text-fill: #ff4c4c;");
+            lblError.setText("Tài khoản đã tồn tại!");
+          }
+        });
+      } catch (Exception e) {
+        Platform.runLater(() -> {
+          lblError.setStyle("-fx-text-fill: #ff4c4c;");
+          lblError.setText("Lỗi mạng: " + e.getMessage());
+        });
+      }
+    }).start();
   }
 
-  /**
-   * Xử lý sự kiện khi người dùng click chọn vai trò Bidder.
-   *
-   * @param event Sự kiện MouseEvent do JavaFX kích hoạt.
-   */
   @FXML
   private void selectBidderRole(MouseEvent event) {
     try {
@@ -225,11 +243,6 @@ public class LoginController {
     }
   }
 
-  /**
-   * Xử lý sự kiện khi người dùng click chọn vai trò Seller.
-   *
-   * @param event Sự kiện MouseEvent do JavaFX kích hoạt.
-   */
   @FXML
   private void selectSellerRole(MouseEvent event) {
     try {
@@ -240,14 +253,6 @@ public class LoginController {
     }
   }
 
-  /**
-   * Chuyển đổi Scene nhưng vẫn giữ nguyên kích thước của Stage hiện tại.
-   *
-   * @param event    Sự kiện MouseEvent.
-   * @param fxmlPath Đường dẫn tới file FXML.
-   * @param title    Tiêu đề mới cho cửa sổ.
-   * @throws IOException Nếu không đọc được file FXML.
-   */
   private void switchScene(MouseEvent event, String fxmlPath, String title) throws IOException {
     Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
     Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();

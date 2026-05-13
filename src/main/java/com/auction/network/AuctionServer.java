@@ -1,148 +1,138 @@
 package com.auction.network;
 
-import com.auction.models.Item;
+import com.auction.models.Message;
+import com.google.gson.Gson;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Máy chủ đấu giá đa luồng, hỗ trợ nhiều Client kết nối cùng lúc và Real-time
- * update.
+ * Máy chủ đấu giá đóng vai trò làm Backend xử lý logic và cơ sở dữ liệu SQLite.
+ * Giao tiếp với Client hoàn toàn bằng giao thức JSON.
  */
 public class AuctionServer {
 
   private static final int PORT = 8080;
-
-  // Danh sách an toàn cho đa luồng, lưu trữ các Client đang kết nối (Observer
-  // Pattern)
   private static final List<ClientHandler> clients = new CopyOnWriteArrayList<>();
-
-  // Thread pool để quản lý các luồng Client
   private static final ExecutorService pool = Executors.newFixedThreadPool(100);
-
-  // Danh sách sản phẩm "Gốc" của toàn hệ thống
-  private static final List<Item> masterInventory = new CopyOnWriteArrayList<>();
+  private static final Gson gson = new Gson();
 
   /**
-   * Khởi chạy Server.
+   * Khởi chạy Server và chuẩn bị cơ sở dữ liệu.
    *
-   * @param args Tham số dòng lệnh
+   * @param args Tham số dòng lệnh.
    */
   public static void main(String[] args) {
-    System.out.println("Máy chủ đang chạy trên cổng " + PORT + "...");
+    System.out.println("Máy chủ AUCTION X đang khởi động...");
+    DatabaseManager.initialize();
 
     try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+      System.out.println("Server đang lắng nghe tại cổng: " + PORT);
+
       while (true) {
         Socket clientSocket = serverSocket.accept();
-        System.out.println("Client mới kết nối: " + clientSocket.getInetAddress());
-
-        ClientHandler clientThread = new ClientHandler(clientSocket);
-        clients.add(clientThread);
-        pool.execute(clientThread);
+        ClientHandler handler = new ClientHandler(clientSocket);
+        clients.add(handler);
+        pool.execute(handler);
       }
     } catch (IOException e) {
-      System.err.println("Lỗi Server: " + e.getMessage());
+      System.err.println("Lỗi Server nghiêm trọng: " + e.getMessage());
     }
   }
 
   /**
-   * Gửi dữ liệu tới tất cả các Client đang kết nối (Broadcast / Observer Update).
-   *
-   * @param message Dữ liệu cần gửi
-   */
-  public static void broadcast(Object message) {
-    for (ClientHandler client : clients) {
-      client.sendMessage(message);
-    }
-  }
-
-  /**
-   * Lớp con xử lý giao tiếp riêng biệt với từng Client.
+   * Lớp xử lý giao tiếp đa luồng với từng Client riêng biệt.
    */
   private static class ClientHandler implements Runnable {
     private final Socket socket;
-    private ObjectOutputStream out;
-    private ObjectInputStream in;
+    private PrintWriter out;
+    private BufferedReader in;
 
     public ClientHandler(Socket socket) {
       this.socket = socket;
-      try {
-        this.out = new ObjectOutputStream(socket.getOutputStream());
-        this.in = new ObjectInputStream(socket.getInputStream());
-      } catch (IOException e) {
-        System.err.println("Lỗi khởi tạo luồng Client: " + e.getMessage());
-      }
     }
 
     @Override
     public void run() {
       try {
-        // Gửi danh sách gốc cho Client ngay khi vừa kết nối
-        sendMessage(masterInventory);
+        out = new PrintWriter(socket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        Object request;
-        while ((request = in.readObject()) != null) {
-          if (request instanceof Item) {
-            Item incomingItem = (Item) request;
-            boolean isNewItem = true;
-
-            // Kiểm tra xem Item này đã tồn tại trong masterInventory chưa
-            for (Item item : masterInventory) {
-              if (item.getId().equals(incomingItem.getId())) {
-                item.setStartingPrice(incomingItem.getStartingPrice());
-                isNewItem = false;
-                break;
-              }
-            }
-
-            // Nếu ID chưa từng xuất hiện -> Đây là SẢN PHẨM MỚI từ Seller
-            if (isNewItem) {
-              masterInventory.add(incomingItem);
-              System.out.println("Đã thêm sản phẩm mới từ Seller: " + incomingItem.getName());
-              AuctionServer.broadcast(masterInventory);
-            } else {
-              // Chỉ cập nhật giá, broadcast lại đúng item đó
-              AuctionServer.broadcast(incomingItem);
-            }
+        String requestJson;
+        while ((requestJson = in.readLine()) != null) {
+          Message request = gson.fromJson(requestJson, Message.class);
+          Message response = processRequest(request);
+          if (out != null) {
+            out.println(gson.toJson(response));
           }
         }
-      } catch (IOException | ClassNotFoundException e) {
-        // Chủ động bắt lỗi EOFException khi Client ngắt kết nối (Đăng xuất)
+      } catch (Exception e) {
         System.out.println("Một Client đã ngắt kết nối an toàn.");
       } finally {
-        // Luôn luôn đảm bảo xóa Client khỏi danh sách và đóng Socket
         clients.remove(this);
-        System.out.println("Đã xóa Client khỏi danh sách quản lý. Số Client hiện tại: "
-            + clients.size());
         try {
           if (socket != null && !socket.isClosed()) {
             socket.close();
           }
         } catch (IOException e) {
-          System.err.println("Lỗi khi đóng Socket của Client: " + e.getMessage());
+          System.err.println("Lỗi khi đóng socket: " + e.getMessage());
         }
       }
     }
 
     /**
-     * Gửi dữ liệu cụ thể cho Client này.
+     * Bộ định tuyến xử lý logic Backend dựa trên Action trong JSON Payload.
      *
-     * @param message Dữ liệu cần gửi
+     * @param req Gói tin yêu cầu từ Client.
+     * @return Gói tin phản hồi đã xử lý chuẩn format.
      */
-    public void sendMessage(Object message) {
-      try {
-        out.reset(); // Xóa cache để ép gửi object mới
-        out.writeObject(message);
-        out.flush();
-      } catch (IOException e) {
-        System.err.println("Lỗi gửi tin tới Client: " + e.getMessage());
+    private Message processRequest(Message req) {
+      String action = req.getAction();
+      Message res = new Message();
+
+      if (action == null) {
+        res.setAction("UNKNOWN_RESPONSE");
+        res.setStatus("ERROR");
+        return res;
       }
+
+      switch (action) {
+        case "LOGIN_REQUEST":
+          res.setAction("LOGIN_RESPONSE");
+          // Lấy trực tiếp username và password từ trường dữ liệu ngoài cùng!
+          boolean auth = DatabaseManager.authenticateUser(req.getUsername(), req.getPassword());
+          if (auth) {
+            res.setStatus("SUCCESS");
+            Map<String, String> data = new HashMap<>();
+            data.put("userId", req.getUsername());
+            data.put("role", req.getRole());
+            res.setData(data);
+          } else {
+            res.setStatus("ERROR");
+          }
+          break;
+
+        case "REGISTER":
+          res.setAction("REGISTER_RESPONSE");
+          boolean reg = DatabaseManager.registerUser(req.getUsername(), req.getPassword());
+          res.setStatus(reg ? "SUCCESS" : "ERROR");
+          break;
+
+        default:
+          res.setAction("UNKNOWN_RESPONSE");
+          res.setStatus("ERROR");
+          break;
+      }
+      return res;
     }
   }
 }
