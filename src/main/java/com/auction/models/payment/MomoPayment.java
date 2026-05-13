@@ -1,6 +1,7 @@
 package com.auction.models.payment;
 
 import com.auction.exceptions.PaymentException;
+import java.util.logging.Logger;
 
 /**
  * Payment strategy thanh toán qua ví điện tử Momo.
@@ -9,6 +10,10 @@ import com.auction.exceptions.PaymentException;
  * {@code pay()} và {@code refund()} hiện tại ghi log ra console.
  */
 public class MomoPayment implements PaymentStrategy {
+
+  private static final Logger logger =
+      Logger.getLogger(
+          MomoPayment.class.getName());
 
   private final String phoneNumber;
 
@@ -42,7 +47,7 @@ public class MomoPayment implements PaymentStrategy {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Thanh toán "
             + amount
             + " bằng ví Momo.");
@@ -61,7 +66,7 @@ public class MomoPayment implements PaymentStrategy {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Hoàn tiền "
             + amount
             + " về ví Momo.");

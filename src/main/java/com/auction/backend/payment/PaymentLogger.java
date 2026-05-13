@@ -1,14 +1,18 @@
 package com.auction.backend.payment;
 
-import java.time.LocalDateTime;
+import java.util.logging.Logger;
 
 /**
- * Ghi log kết quả payment ra console với timestamp.
+ * Ghi log kết quả payment qua java.util.logging với timestamp.
  *
  * <p>Ba loại log: thành công ({@link #logPaymentSuccess}),
  * hoàn tiền ({@link #logRefundSuccess}), thất bại ({@link #logPaymentFailure}).
  */
 public class PaymentLogger {
+
+  private static final Logger logger =
+      Logger.getLogger(
+          PaymentLogger.class.getName());
 
   /**
    * Ghi log payment thành công.
@@ -20,14 +24,12 @@ public class PaymentLogger {
       String paymentMethod,
       double amount) {
 
-    System.out.println(
+    logger.info(
         "[PAYMENT SUCCESS] "
             + "Method="
             + paymentMethod
             + ", Amount="
-            + amount
-            + ", Time="
-            + LocalDateTime.now());
+            + amount);
   }
 
   /**
@@ -40,14 +42,12 @@ public class PaymentLogger {
       String paymentMethod,
       double amount) {
 
-    System.out.println(
+    logger.info(
         "[REFUND SUCCESS] "
             + "Method="
             + paymentMethod
             + ", Amount="
-            + amount
-            + ", Time="
-            + LocalDateTime.now());
+            + amount);
   }
 
   /**
@@ -60,13 +60,11 @@ public class PaymentLogger {
       String paymentMethod,
       String reason) {
 
-    System.out.println(
+    logger.warning(
         "[PAYMENT FAILED] "
             + "Method="
             + paymentMethod
             + ", Reason="
-            + reason
-            + ", Time="
-            + LocalDateTime.now());
+            + reason);
   }
 }

@@ -1,6 +1,7 @@
 package com.auction.models.payment;
 
 import com.auction.exceptions.PaymentException;
+import java.util.logging.Logger;
 
 /**
  * Payment strategy thanh toán qua cổng VNPay.
@@ -9,6 +10,10 @@ import com.auction.exceptions.PaymentException;
  * {@code pay()} và {@code refund()} hiện tại ghi log ra console.
  */
 public class VnPayPayment implements PaymentStrategy {
+
+  private static final Logger logger =
+      Logger.getLogger(
+          VnPayPayment.class.getName());
 
   private final String accountEmail;
 
@@ -35,7 +40,7 @@ public class VnPayPayment implements PaymentStrategy {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Thanh toán "
             + amount
             + " bằng VNPay.");
@@ -54,7 +59,7 @@ public class VnPayPayment implements PaymentStrategy {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Hoàn tiền "
             + amount
             + " qua VNPay.");

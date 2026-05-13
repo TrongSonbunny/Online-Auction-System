@@ -1,6 +1,7 @@
 package com.auction.models.payment;
 
 import com.auction.exceptions.PaymentException;
+import java.util.logging.Logger;
 
 /**
  * Payment strategy thanh toán qua tài khoản ngân hàng.
@@ -10,6 +11,10 @@ import com.auction.exceptions.PaymentException;
  * bằng cách ghi log ra console (integration thực tế do team khác implement).
  */
 public class BankPayment implements PaymentStrategy {
+
+  private static final Logger logger =
+      Logger.getLogger(
+          BankPayment.class.getName());
 
   private final String bankName;
 
@@ -49,7 +54,7 @@ public class BankPayment implements PaymentStrategy {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Thanh toán "
             + amount
             + " bằng ngân hàng "
@@ -69,7 +74,7 @@ public class BankPayment implements PaymentStrategy {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Hoàn tiền "
             + amount
             + " về tài khoản ngân hàng.");

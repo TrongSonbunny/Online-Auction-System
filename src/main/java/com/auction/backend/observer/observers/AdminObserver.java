@@ -3,12 +3,17 @@ package com.auction.backend.observer.observers;
 import com.auction.backend.observer.AuctionEvent;
 import com.auction.backend.observer.AuctionObserver;
 import com.auction.exceptions.AuctionException;
+import java.util.logging.Logger;
 
 /**
  * Observer dành cho admin.
  */
 public class AdminObserver
     implements AuctionObserver {
+
+  private static final Logger logger =
+      Logger.getLogger(
+          AdminObserver.class.getName());
 
   private final String adminName;
 
@@ -31,7 +36,7 @@ public class AdminObserver
   }
 
   /**
-   * Nhận event và ghi log toàn bộ thông tin event ra console.
+   * Nhận event và ghi log toàn bộ thông tin event ra hệ thống logging.
    *
    * @param event event được publish
    */
@@ -39,7 +44,7 @@ public class AdminObserver
   public void update(
       AuctionEvent event) {
 
-    System.out.println(
+    logger.info(
         "[ADMIN LOG] "
             + adminName
             + " ghi nhận event: "
