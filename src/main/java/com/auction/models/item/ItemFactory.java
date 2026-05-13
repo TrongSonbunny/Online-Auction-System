@@ -3,7 +3,10 @@ package com.auction.models.item;
 import java.util.UUID;
 
 /**
- * Factory tạo AuctionItem.
+ * Factory tạo {@link AuctionItem} với ID sinh tự động.
+ *
+ * <p>Dùng thay vì gọi constructor trực tiếp để đảm bảo itemId luôn có định dạng
+ * {@code ITEM-XXXXXXXX} (UUID 8 ký tự viết hoa).
  */
 public final class ItemFactory {
 

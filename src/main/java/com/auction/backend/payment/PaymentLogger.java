@@ -3,7 +3,10 @@ package com.auction.backend.payment;
 import java.time.LocalDateTime;
 
 /**
- * Logger cho payment.
+ * Ghi log kết quả payment ra console với timestamp.
+ *
+ * <p>Ba loại log: thành công ({@link #logPaymentSuccess}),
+ * hoàn tiền ({@link #logRefundSuccess}), thất bại ({@link #logPaymentFailure}).
  */
 public class PaymentLogger {
 

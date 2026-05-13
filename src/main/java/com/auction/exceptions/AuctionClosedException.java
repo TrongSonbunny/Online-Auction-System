@@ -1,7 +1,8 @@
 package com.auction.exceptions;
 
 /**
- * Exception khi auction đã đóng.
+ * Exception ném khi thao tác yêu cầu auction đang ACTIVE nhưng auction đã đóng
+ * (FINISHED hoặc CANCELLED) hoặc không tồn tại.
  */
 public class AuctionClosedException
     extends AuctionException {

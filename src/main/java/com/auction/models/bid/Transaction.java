@@ -4,7 +4,10 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Lớp transaction cơ sở trong hệ thống.
+ * Lớp cơ sở bất biến cho mọi transaction trong hệ thống.
+ *
+ * <p>Đảm bảo mỗi transaction có ID duy nhất và timestamp tạo không thay đổi.
+ * Subclass mở rộng với thông tin nghiệp vụ cụ thể (ví dụ: {@link BidTransaction}).
  */
 public abstract class Transaction {
 

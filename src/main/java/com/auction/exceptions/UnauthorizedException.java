@@ -1,7 +1,9 @@
 package com.auction.exceptions;
 
 /**
- * Exception khi user không có quyền.
+ * Exception ném khi user cố thực hiện hành động vượt quyền được phép.
+ *
+ * <p>Ví dụ: Seller cố đặt giá, Bidder cố tạo auction.
  */
 public class UnauthorizedException
     extends AuctionException {

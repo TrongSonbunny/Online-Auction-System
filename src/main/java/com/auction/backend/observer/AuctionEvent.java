@@ -5,7 +5,11 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 /**
- * Đại diện cho event trong hệ thống đấu giá.
+ * Bất biến đại diện cho một sự kiện trong hệ thống đấu giá.
+ *
+ * <p>Mang thông tin: loại event, auctionId, message mô tả và payload tùy chọn.
+ * Payload theo quy ước: auction events → {@code Auction}, bid events → {@code BidTransaction}.
+ * Dùng bởi {@link AuctionEventPublisher} để phân phối tới các {@link AuctionObserver}.
  */
 public class AuctionEvent {
 
@@ -18,7 +22,20 @@ public class AuctionEvent {
   private final LocalDateTime createdAt;
 
   /**
-   * Constructor auction event.
+   * Payload đính kèm event — dùng cho JSON serialization và persistence.
+   *
+   * <p>Quy ước theo eventType:
+   * <ul>
+   *   <li>{@code AUCTION_CREATED}, {@code AUCTION_STARTED},
+   *       {@code AUCTION_FINISHED}, {@code AUCTION_CANCELLED},
+   *       {@code AUCTION_EXTENDED} → payload là {@code Auction}.
+   *   <li>{@code NEW_BID}, {@code AUTO_BID_PLACED} → payload là {@code BidEventPayload}.
+   * </ul>
+   */
+  private final Object payload;
+
+  /**
+   * Constructor auction event (không có payload — tương thích ngược).
    *
    * @param eventType loại event
    * @param auctionId mã auction
@@ -29,6 +46,23 @@ public class AuctionEvent {
       String auctionId,
       String message) {
 
+    this(eventType, auctionId, message, null);
+  }
+
+  /**
+   * Constructor auction event với payload.
+   *
+   * @param eventType loại event
+   * @param auctionId mã auction
+   * @param message nội dung event
+   * @param payload đối tượng dữ liệu đính kèm (Auction hoặc BidEventPayload)
+   */
+  public AuctionEvent(
+      AuctionEventType eventType,
+      String auctionId,
+      String message,
+      Object payload) {
+
     this.eventType = Objects.requireNonNull(
         eventType,
         "Event type không được null.");
@@ -38,6 +72,7 @@ public class AuctionEvent {
 
     this.auctionId = auctionId;
     this.message = message;
+    this.payload = payload;
     this.createdAt = LocalDateTime.now();
   }
 
@@ -86,6 +121,10 @@ public class AuctionEvent {
 
   public LocalDateTime getCreatedAt() {
     return createdAt;
+  }
+
+  public Object getPayload() {
+    return payload;
   }
 
   @Override

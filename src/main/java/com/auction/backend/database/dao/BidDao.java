@@ -9,7 +9,10 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 
 /**
- * DAO xử lý bid transaction database.
+ * DAO thực hiện INSERT/DELETE bid transaction trong bảng {@code bid_transactions}.
+ *
+ * <p>Cùng cơ chế kết nối với {@link AuctionDao}: mỗi thao tác dùng
+ * try-with-resources, lỗi SQL in ra stderr.
  */
 public class BidDao {
 

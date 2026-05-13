@@ -3,7 +3,11 @@ package com.auction.models.payment;
 import com.auction.exceptions.PaymentException;
 
 /**
- * Payment strategy cho ngân hàng.
+ * Payment strategy thanh toán qua tài khoản ngân hàng.
+ *
+ * <p>Implement {@link PaymentStrategy} với thông tin: tên ngân hàng,
+ * số tài khoản và tên chủ tài khoản. Thực hiện {@code pay()} và {@code refund()}
+ * bằng cách ghi log ra console (integration thực tế do team khác implement).
  */
 public class BankPayment implements PaymentStrategy {
 
@@ -34,6 +38,12 @@ public class BankPayment implements PaymentStrategy {
     this.accountHolderName = accountHolderName;
   }
 
+  /**
+   * Thực hiện thanh toán qua tài khoản ngân hàng.
+   *
+   * @param amount số tiền thanh toán (phải > 0)
+   * @return true nếu thành công
+   */
   @Override
   public boolean pay(double amount) {
 
@@ -48,6 +58,12 @@ public class BankPayment implements PaymentStrategy {
     return true;
   }
 
+  /**
+   * Hoàn tiền về tài khoản ngân hàng.
+   *
+   * @param amount số tiền hoàn (phải > 0)
+   * @return true nếu thành công
+   */
   @Override
   public boolean refund(double amount) {
 
@@ -66,6 +82,11 @@ public class BankPayment implements PaymentStrategy {
     return "Bank Payment";
   }
 
+  /**
+   * Validate số tiền phải lớn hơn 0.
+   *
+   * @param amount số tiền
+   */
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
@@ -74,6 +95,11 @@ public class BankPayment implements PaymentStrategy {
     }
   }
 
+  /**
+   * Validate tên ngân hàng không được null hoặc blank.
+   *
+   * @param name tên ngân hàng
+   */
   private void validateBankName(String name) {
 
     if (name == null || name.isBlank()) {
@@ -82,6 +108,11 @@ public class BankPayment implements PaymentStrategy {
     }
   }
 
+  /**
+   * Validate số tài khoản không được null hoặc blank.
+   *
+   * @param accountNumber số tài khoản
+   */
   private void validateAccountNumber(String accountNumber) {
 
     if (accountNumber == null
@@ -92,6 +123,11 @@ public class BankPayment implements PaymentStrategy {
     }
   }
 
+  /**
+   * Validate tên chủ tài khoản không được null hoặc blank.
+   *
+   * @param holderName tên chủ tài khoản
+   */
   private void validateHolderName(String holderName) {
 
     if (holderName == null

@@ -7,7 +7,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Quản lý lịch sử bid trong RAM.
+ * Quản lý lịch sử bid transaction trong RAM.
+ *
+ * <p>Mọi thao tác đều {@code synchronized} để đảm bảo thread-safety khi nhiều
+ * thread ghi bid cùng lúc (ví dụ: auto-bid cascade song song với bid thủ công).
+ * {@link #getBidHistory()} trả về unmodifiable list để tránh sửa ngoài.
  */
 public class BidHistoryManager {
 

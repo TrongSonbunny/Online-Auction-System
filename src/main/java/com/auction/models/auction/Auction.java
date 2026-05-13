@@ -12,6 +12,11 @@ import java.util.Objects;
 
 /**
  * Đại diện cho một phiên đấu giá trong hệ thống.
+ *
+ * <p>Lifecycle: {@code PENDING → ACTIVE → FINISHED} hoặc {@code PENDING/ACTIVE → CANCELLED}.
+ * Mọi getter/setter trên trạng thái mutable ({@code status}, {@code currentHighestBid},
+ * {@code currentHighestBidder}, {@code scheduledEndTime}) đều {@code synchronized}
+ * để đảm bảo visibility trong môi trường đa luồng.
  */
 public class Auction {
 
@@ -34,6 +39,8 @@ public class Auction {
   private LocalDateTime startTime;
 
   private LocalDateTime endTime;
+
+  private LocalDateTime scheduledEndTime;
 
   /**
    * Constructor auction.
@@ -149,7 +156,7 @@ public class Auction {
    *
    * @return true nếu active
    */
-  public boolean isActive() {
+  public synchronized boolean isActive() {
     return status == AuctionStatus.ACTIVE;
   }
 
@@ -228,15 +235,15 @@ public class Auction {
     return startingPrice;
   }
 
-  public double getCurrentHighestBid() {
+  public synchronized double getCurrentHighestBid() {
     return currentHighestBid;
   }
 
-  public Bidder getCurrentHighestBidder() {
+  public synchronized Bidder getCurrentHighestBidder() {
     return currentHighestBidder;
   }
 
-  public AuctionStatus getStatus() {
+  public synchronized AuctionStatus getStatus() {
     return status;
   }
 
@@ -250,6 +257,32 @@ public class Auction {
 
   public LocalDateTime getEndTime() {
     return endTime;
+  }
+
+  public synchronized LocalDateTime getScheduledEndTime() {
+    return scheduledEndTime;
+  }
+
+  public synchronized void setScheduledEndTime(
+      LocalDateTime time) {
+
+    this.scheduledEndTime = time;
+  }
+
+  /**
+   * Gia hạn thời gian kết thúc dự kiến thêm số giây chỉ định.
+   *
+   * @param seconds số giây gia hạn
+   */
+  public synchronized void extendScheduledEndTime(
+      long seconds) {
+
+    if (scheduledEndTime == null) {
+      scheduledEndTime = LocalDateTime.now();
+    }
+
+    scheduledEndTime =
+        scheduledEndTime.plusSeconds(seconds);
   }
 
   @Override

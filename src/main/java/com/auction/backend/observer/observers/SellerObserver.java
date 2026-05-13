@@ -30,6 +30,11 @@ public class SellerObserver
     this.sellerName = sellerName;
   }
 
+  /**
+   * Nhận event và hiển thị thông báo tóm tắt cho seller.
+   *
+   * @param event event được publish
+   */
   @Override
   public void update(
       AuctionEvent event) {

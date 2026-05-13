@@ -30,6 +30,11 @@ public class BidderObserver
     this.bidderName = bidderName;
   }
 
+  /**
+   * Nhận event và hiển thị thông báo tóm tắt cho bidder.
+   *
+   * @param event event được publish
+   */
   @Override
   public void update(
       AuctionEvent event) {

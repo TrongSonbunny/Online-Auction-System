@@ -8,7 +8,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * DAO xử lý item database.
+ * DAO thực hiện INSERT/DELETE item trong bảng {@code items}.
+ *
+ * <p>Cùng cơ chế kết nối với {@link AuctionDao}: mỗi thao tác dùng
+ * try-with-resources, lỗi SQL in ra stderr.
  */
 public class ItemDao {
 

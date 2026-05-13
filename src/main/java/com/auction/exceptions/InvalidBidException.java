@@ -1,7 +1,11 @@
 package com.auction.exceptions;
 
 /**
- * Exception khi bid không hợp lệ.
+ * Exception ném khi bid amount không vượt qua giá cao nhất hiện tại
+ * (bằng hoặc thấp hơn {@code currentHighestBid}).
+ *
+ * <p>Phân biệt với {@link BidException}: InvalidBidException chỉ dùng
+ * cho trường hợp bid thua về giá, còn BidException dùng cho lỗi validation chung.
  */
 public class InvalidBidException
     extends BidException {

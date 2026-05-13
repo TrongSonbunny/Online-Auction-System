@@ -9,7 +9,10 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 
 /**
- * DAO xử lý auction database.
+ * DAO thực hiện INSERT/DELETE auction trong bảng {@code auctions}.
+ *
+ * <p>Mỗi phương thức mở connection riêng qua {@link com.auction.backend.database.MySqlConnection}
+ * và đóng tự động bằng try-with-resources. Lỗi SQL được in ra stderr (không re-throw).
  */
 public class AuctionDao {
 

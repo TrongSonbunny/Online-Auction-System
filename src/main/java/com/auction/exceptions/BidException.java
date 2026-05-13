@@ -1,7 +1,8 @@
 package com.auction.exceptions;
 
 /**
- * Exception liên quan tới bid.
+ * Exception ném khi dữ liệu bid không hợp lệ (bidder null, amount âm/bằng 0,
+ * amount không cao hơn giá hiện tại, hoặc bidder thiếu quyền đặt giá).
  */
 public class BidException
     extends AuctionException {

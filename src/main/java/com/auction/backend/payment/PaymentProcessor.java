@@ -5,7 +5,10 @@ import com.auction.models.payment.PaymentStrategy;
 import java.util.Objects;
 
 /**
- * Xử lý payment trong hệ thống.
+ * Thực hiện thanh toán và hoàn tiền qua {@link com.auction.models.payment.PaymentStrategy}.
+ *
+ * <p>Đóng vai trò facade: validate đầu vào rồi delegate sang strategy tương ứng
+ * (BankPayment, MomoPayment, VnPayPayment). Không biết chi tiết cổng thanh toán.
  */
 public class PaymentProcessor {
 
@@ -43,6 +46,11 @@ public class PaymentProcessor {
     return paymentStrategy.refund(amount);
   }
 
+  /**
+   * Validate payment strategy không được null.
+   *
+   * @param paymentStrategy payment strategy cần kiểm tra
+   */
   private void validatePaymentStrategy(
       PaymentStrategy paymentStrategy) {
 
@@ -51,6 +59,11 @@ public class PaymentProcessor {
         "Payment strategy không được null.");
   }
 
+  /**
+   * Validate số tiền phải lớn hơn 0.
+   *
+   * @param amount số tiền
+   */
   private void validateAmount(double amount) {
 
     if (amount <= 0) {

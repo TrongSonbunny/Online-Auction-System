@@ -3,7 +3,10 @@ package com.auction.backend.payment;
 import com.auction.exceptions.PaymentException;
 
 /**
- * Validate payment business rules.
+ * Kiểm tra business rule liên quan đến payment.
+ *
+ * <p>{@link #validatePaymentAmount} kiểm tra amount > 0.
+ * {@link #validateBalance} gọi validatePaymentAmount rồi kiểm tra số dư đủ để thanh toán.
  */
 public class PaymentValidator {
 

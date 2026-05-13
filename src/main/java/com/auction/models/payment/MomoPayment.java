@@ -3,7 +3,10 @@ package com.auction.models.payment;
 import com.auction.exceptions.PaymentException;
 
 /**
- * Payment strategy cho ví Momo.
+ * Payment strategy thanh toán qua ví điện tử Momo.
+ *
+ * <p>Yêu cầu số điện thoại tối thiểu 10 ký tự và tên chủ ví.
+ * {@code pay()} và {@code refund()} hiện tại ghi log ra console.
  */
 public class MomoPayment implements PaymentStrategy {
 
@@ -28,6 +31,12 @@ public class MomoPayment implements PaymentStrategy {
     this.walletOwnerName = walletOwnerName;
   }
 
+  /**
+   * Thực hiện thanh toán qua ví Momo.
+   *
+   * @param amount số tiền thanh toán (phải > 0)
+   * @return true nếu thành công
+   */
   @Override
   public boolean pay(double amount) {
 
@@ -41,6 +50,12 @@ public class MomoPayment implements PaymentStrategy {
     return true;
   }
 
+  /**
+   * Hoàn tiền về ví Momo.
+   *
+   * @param amount số tiền hoàn (phải > 0)
+   * @return true nếu thành công
+   */
   @Override
   public boolean refund(double amount) {
 
@@ -59,6 +74,11 @@ public class MomoPayment implements PaymentStrategy {
     return "Momo Payment";
   }
 
+  /**
+   * Validate số tiền phải lớn hơn 0.
+   *
+   * @param amount số tiền
+   */
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
@@ -67,6 +87,11 @@ public class MomoPayment implements PaymentStrategy {
     }
   }
 
+  /**
+   * Validate số điện thoại không null, không blank và tối thiểu 10 ký tự.
+   *
+   * @param number số điện thoại
+   */
   private void validatePhoneNumber(String number) {
 
     if (number == null
@@ -78,6 +103,11 @@ public class MomoPayment implements PaymentStrategy {
     }
   }
 
+  /**
+   * Validate tên chủ ví không được null hoặc blank.
+   *
+   * @param name tên chủ ví
+   */
   private void validateWalletOwnerName(String name) {
 
     if (name == null || name.isBlank()) {

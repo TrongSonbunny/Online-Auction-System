@@ -9,7 +9,11 @@ import com.auction.models.item.AuctionItem;
 import com.auction.models.user.Seller;
 
 /**
- * Service xử lý logic auction.
+ * Service điều phối luồng tạo/hủy/kết thúc auction.
+ *
+ * <p>Khi tạo auction: validate seller → sinh ID → start() → lưu vào
+ * {@link AuctionManager} → lên lịch kết thúc tự động qua {@link AuctionScheduler}.
+ * Khi hủy/kết thúc: tìm auction trong manager rồi gọi cancel()/finish() tương ứng.
  */
 public class AuctionService {
 

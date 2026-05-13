@@ -41,4 +41,18 @@ public final class IdGenerator {
             .substring(0, 8)
             .toUpperCase();
   }
+
+  /**
+   * Sinh auto-bid ID.
+   *
+   * @return auto-bid ID
+   */
+  public static String generateAutoBidId() {
+
+    return "ABID-"
+        + UUID.randomUUID()
+            .toString()
+            .substring(0, 8)
+            .toUpperCase();
+  }
 }

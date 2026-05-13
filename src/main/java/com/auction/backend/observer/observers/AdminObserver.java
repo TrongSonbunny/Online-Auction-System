@@ -30,6 +30,11 @@ public class AdminObserver
     this.adminName = adminName;
   }
 
+  /**
+   * Nhận event và ghi log toàn bộ thông tin event ra console.
+   *
+   * @param event event được publish
+   */
   @Override
   public void update(
       AuctionEvent event) {

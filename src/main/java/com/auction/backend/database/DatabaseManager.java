@@ -5,7 +5,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Quản lý khởi tạo database.
+ * Khởi tạo schema database khi ứng dụng start.
+ *
+ * <p>{@link #initializeDatabase()} tạo lần lượt các bảng {@code users}, {@code items},
+ * {@code auctions}, {@code bid_transactions} với {@code CREATE TABLE IF NOT EXISTS}
+ * nên an toàn để gọi nhiều lần.
  */
 public class DatabaseManager {
 

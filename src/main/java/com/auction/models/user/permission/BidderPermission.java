@@ -1,7 +1,9 @@
 package com.auction.models.user.permission;
 
 /**
- * Permission dành cho bidder.
+ * Permission strategy cho bidder: chỉ có quyền đặt giá ({@code canPlaceBid = true}).
+ *
+ * <p>Bidder không thể tạo/xóa auction, khóa user hay quản lý hệ thống.
  */
 public class BidderPermission implements PermissionStrategy {
 

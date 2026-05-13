@@ -8,7 +8,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * DAO xử lý user database.
+ * DAO thực hiện INSERT/DELETE user trong bảng {@code users}.
+ *
+ * <p>Cùng cơ chế kết nối với {@link AuctionDao}: mỗi thao tác dùng
+ * try-with-resources, lỗi SQL in ra stderr.
  */
 public class UserDao {
 

@@ -8,7 +8,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Quản lý auction trong RAM.
+ * Singleton quản lý toàn bộ auction đang hoạt động trong RAM.
+ *
+ * <p>Dùng {@link java.util.concurrent.ConcurrentHashMap} để đảm bảo thread-safety
+ * khi nhiều thread cùng đọc/ghi. Singleton được tạo lần đầu theo lazy initialization
+ * với {@code synchronized} để tránh race condition.
  */
 public class AuctionManager {
 

@@ -11,6 +11,10 @@ public enum AuctionEventType {
 
   NEW_BID,
 
+  AUTO_BID_PLACED,
+
+  AUCTION_EXTENDED,
+
   AUCTION_FINISHED,
 
   AUCTION_CANCELLED

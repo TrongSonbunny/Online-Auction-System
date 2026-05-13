@@ -1,7 +1,9 @@
 package com.auction.models.user.permission;
 
 /**
- * Permission dành cho seller.
+ * Permission strategy cho seller: chỉ có quyền tạo auction ({@code canCreateAuction = true}).
+ *
+ * <p>Seller không thể đặt giá, xóa auction, khóa user hay quản lý hệ thống.
  */
 public class SellerPermission implements PermissionStrategy {
 
