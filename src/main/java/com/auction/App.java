@@ -1,11 +1,14 @@
 package com.auction;
 
+import com.auction.utils.WindowResizeUtils;
 import java.io.IOException;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 
 /**
  * Lớp khởi chạy ứng dụng JavaFX cho hệ thống đấu giá.
@@ -22,9 +25,23 @@ public class App extends Application {
    */
   @Override
   public void start(Stage stage) throws IOException {
-    // Đã sửa loadFXML thành loadFxml
+    // 1. Xóa khung viền mặc định của hệ điều hành
+    stage.initStyle(StageStyle.UNDECORATED);
+
+    // 2. Thiết lập logo mới cho ứng dụng
+    try {
+      Image appIcon = new Image(App.class.getResourceAsStream("/com/auction/assets/logo.png"));
+      stage.getIcons().add(appIcon);
+    } catch (Exception e) {
+      System.out.println("Chưa tìm thấy logo.png trong thư mục assets, sử dụng mặc định.");
+    }
+
     scene = new Scene(loadFxml("login"), 640, 480);
     stage.setScene(scene);
+
+    // 3. Khôi phục tính năng kéo giãn cửa sổ (Resize)
+    WindowResizeUtils.addResizeListener(stage);
+
     stage.show();
   }
 
@@ -47,7 +64,6 @@ public class App extends Application {
    * @return Đối tượng Parent chứa cấu trúc giao diện đã tải
    * @throws IOException Nếu không thể đọc được file
    */
-  // Đã sửa tên hàm loadFXML thành loadFxml để tuân thủ Google Checkstyle
   private static Parent loadFxml(String fxml) throws IOException {
     FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
     return fxmlLoader.load();

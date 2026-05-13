@@ -1,22 +1,52 @@
 package com.auction.controllers;
 
-import com.auction.exceptions.AuthenticationException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
- * Controller xử lý logic cho màn hình đăng nhập.
+ * Controller xử lý logic cho màn hình đăng nhập, đăng ký và chọn vai trò.
  */
 public class LoginController {
+
+  @FXML
+  private HBox titleBar;
+
+  @FXML
+  private VBox mainCard;
+
+  @FXML
+  private VBox headerSection;
+
+  @FXML
+  private VBox loginForm;
+
+  @FXML
+  private VBox registerForm;
+
+  @FXML
+  private VBox roleSelection;
+
+  @FXML
+  private Button btnToggleLogin;
+
+  @FXML
+  private Button btnToggleRegister;
 
   @FXML
   private TextField txtUsername;
@@ -25,93 +55,212 @@ public class LoginController {
   private PasswordField txtPassword;
 
   @FXML
+  private TextField txtRegUser;
+
+  @FXML
+  private PasswordField txtRegPass;
+
+  @FXML
+  private PasswordField txtRegConfirm;
+
+  @FXML
   private Label lblError;
 
+  // Biến lưu tọa độ khi kéo cửa sổ
+  private double xOffset = 0;
+  private double yOffset = 0;
+
+  // Giả lập cơ sở dữ liệu người dùng tại local
+  private static final Map<String, String> USER_DATABASE = new HashMap<>();
+
+  static {
+    USER_DATABASE.put("seller", "123456");
+    USER_DATABASE.put("bidder", "123456");
+  }
+
   /**
-   * Xử lý sự kiện khi người dùng nhấn nút "Đăng nhập".
-   *
-   * @param event Sự kiện từ hệ thống JavaFX.
+   * Phương thức chạy ngay khi FXML được load.
+   * Dùng để thiết lập tính năng kéo thả cho thanh tiêu đề.
    */
   @FXML
-  private void handleLogin(ActionEvent event) {
-    String username = txtUsername.getText();
-    String password = txtPassword.getText();
+  public void initialize() {
+    // Lưu lại tọa độ chuột khi nhấn vào thanh tiêu đề
+    titleBar.setOnMousePressed(event -> {
+      xOffset = event.getSceneX();
+      yOffset = event.getSceneY();
+    });
 
-    try {
-      // 1. Xác thực tài khoản
-      String role = authenticate(username, password);
-      lblError.setText("");
-      System.out.println("Đăng nhập thành công: " + username + " (Vai trò: " + role + ")");
-
-      // 2. Xác định đường dẫn FXML và Tiêu đề
-      String fxmlPath = "/com/auction/primary.fxml";
-      String title = "Sàn đấu giá - Bidder";
-
-      if ("SELLER".equals(role)) {
-        fxmlPath = "/com/auction/seller.fxml";
-        title = "Quản lý sản phẩm - Seller";
+    // Tính toán và di chuyển cửa sổ khi kéo chuột
+    titleBar.setOnMouseDragged(event -> {
+      Stage stage = (Stage) titleBar.getScene().getWindow();
+      // Chỉ cho kéo khi không ở chế độ toàn màn hình
+      if (!stage.isMaximized()) {
+        stage.setX(event.getScreenX() - xOffset);
+        stage.setY(event.getScreenY() - yOffset);
       }
+    });
+  }
 
-      // 3. Chuyển màn hình và giữ nguyên kích thước cửa sổ hiện tại
-      switchScene(event, fxmlPath, title);
+  /**
+   * Thu nhỏ ứng dụng xuống taskbar.
+   *
+   * @param event Sự kiện click.
+   */
+  @FXML
+  private void handleMinimize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setIconified(true);
+  }
 
-    } catch (AuthenticationException e) {
-      lblError.setText(e.getMessage());
-      lblError.setStyle("-fx-text-fill: red;");
-    } catch (IOException e) {
-      System.err.println("Lỗi chuyển trang: " + e.getMessage());
-      lblError.setText("Lỗi hệ thống: Không thể tải giao diện.");
+  /**
+   * Phóng to hoặc thu nhỏ cửa sổ ứng dụng.
+   *
+   * @param event Sự kiện click.
+   */
+  @FXML
+  private void handleMaximize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setMaximized(!stage.isMaximized());
+  }
+
+  /**
+   * Tắt hoàn toàn ứng dụng.
+   */
+  @FXML
+  private void handleClose() {
+    Platform.exit();
+    System.exit(0);
+  }
+
+  /**
+   * Hiển thị giao diện form đăng nhập.
+   */
+  @FXML
+  private void showLoginView() {
+    loginForm.setVisible(true);
+    registerForm.setVisible(false);
+    btnToggleLogin.getStyleClass().add("btn-toggle-active");
+    btnToggleRegister.getStyleClass().remove("btn-toggle-active");
+    lblError.setText("");
+  }
+
+  /**
+   * Hiển thị giao diện form đăng ký.
+   */
+  @FXML
+  private void showRegisterView() {
+    loginForm.setVisible(false);
+    registerForm.setVisible(true);
+    btnToggleRegister.getStyleClass().add("btn-toggle-active");
+    btnToggleLogin.getStyleClass().remove("btn-toggle-active");
+    lblError.setText("");
+  }
+
+  /**
+   * Xử lý luồng đăng nhập của người dùng.
+   */
+  @FXML
+  private void handleLogin() {
+    String user = txtUsername.getText();
+    String pass = txtPassword.getText();
+
+    if (USER_DATABASE.containsKey(user) && USER_DATABASE.get(user).equals(pass)) {
+      headerSection.setVisible(false);
+      loginForm.setVisible(false);
+      registerForm.setVisible(false);
+      roleSelection.setVisible(true);
+      lblError.setText("");
+    } else {
+      lblError.setStyle("-fx-text-fill: #ff4c4c;");
+      lblError.setText("Sai tài khoản hoặc mật khẩu!");
     }
   }
 
   /**
-   * Thực hiện chuyển đổi Scene trong khi bảo toàn kích thước Stage.
-   *
-   * @param event    Sự kiện kích hoạt.
-   * @param fxmlPath Đường dẫn tới file FXML mới.
-   * @param title    Tiêu đề mới của cửa sổ.
-   * @throws IOException Nếu không tìm thấy file FXML.
+   * Xử lý luồng đăng ký tài khoản mới.
    */
-  private void switchScene(ActionEvent event, String fxmlPath, String title) throws IOException {
-    Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
+  @FXML
+  private void handleRegister() {
+    String user = txtRegUser.getText().trim();
+    String pass = txtRegPass.getText();
+    String confirm = txtRegConfirm.getText();
 
-    // Lấy Stage hiện tại
+    if (user.isEmpty() || pass.isEmpty()) {
+      lblError.setStyle("-fx-text-fill: #ff4c4c;");
+      lblError.setText("Không được để trống thông tin!");
+      return;
+    }
+
+    if (!pass.equals(confirm)) {
+      lblError.setStyle("-fx-text-fill: #ff4c4c;");
+      lblError.setText("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+
+    if (USER_DATABASE.containsKey(user)) {
+      lblError.setStyle("-fx-text-fill: #ff4c4c;");
+      lblError.setText("Tài khoản đã tồn tại!");
+      return;
+    }
+
+    USER_DATABASE.put(user, pass);
+    lblError.setStyle("-fx-text-fill: #27ae60;");
+    lblError.setText("Đăng ký thành công! Hãy đăng nhập.");
+
+    txtRegUser.clear();
+    txtRegPass.clear();
+    txtRegConfirm.clear();
+    showLoginView();
+  }
+
+  /**
+   * Xử lý sự kiện khi người dùng click chọn vai trò Bidder.
+   *
+   * @param event Sự kiện MouseEvent do JavaFX kích hoạt.
+   */
+  @FXML
+  private void selectBidderRole(MouseEvent event) {
+    try {
+      switchScene(event, "/com/auction/primary.fxml", "Sàn đấu giá - Bidder");
+    } catch (IOException e) {
+      lblError.setStyle("-fx-text-fill: #ff4c4c;");
+      lblError.setText("Lỗi tải giao diện Bidder!");
+    }
+  }
+
+  /**
+   * Xử lý sự kiện khi người dùng click chọn vai trò Seller.
+   *
+   * @param event Sự kiện MouseEvent do JavaFX kích hoạt.
+   */
+  @FXML
+  private void selectSellerRole(MouseEvent event) {
+    try {
+      switchScene(event, "/com/auction/seller.fxml", "Quản lý sản phẩm - Seller");
+    } catch (IOException e) {
+      lblError.setStyle("-fx-text-fill: #ff4c4c;");
+      lblError.setText("Lỗi tải giao diện Seller!");
+    }
+  }
+
+  /**
+   * Chuyển đổi Scene nhưng vẫn giữ nguyên kích thước của Stage hiện tại.
+   *
+   * @param event    Sự kiện MouseEvent.
+   * @param fxmlPath Đường dẫn tới file FXML.
+   * @param title    Tiêu đề mới cho cửa sổ.
+   * @throws IOException Nếu không đọc được file FXML.
+   */
+  private void switchScene(MouseEvent event, String fxmlPath, String title) throws IOException {
+    Parent root = FXMLLoader.load(getClass().getResource(fxmlPath));
     Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
 
-    // 1. Lưu lại kích thước TOÀN BỘ CỬA SỔ
     double currentWidth = stage.getWidth();
     double currentHeight = stage.getHeight();
 
-    // 2. Tạo Scene mới KHÔNG kèm kích thước để tránh lỗi cộng dồn viền
     stage.setScene(new Scene(root));
-
-    // 3. Ép lại kích thước cũ trực tiếp cho Stage
     stage.setWidth(currentWidth);
     stage.setHeight(currentHeight);
-
     stage.setTitle(title);
-  }
-
-  /**
-   * Kiểm tra thông tin đăng nhập và trả về vai trò của người dùng.
-   *
-   * @param username Tên đăng nhập.
-   * @param password Mật khẩu.
-   * @return Vai trò người dùng ("SELLER" hoặc "BIDDER").
-   * @throws AuthenticationException Nếu thông tin sai hoặc để trống.
-   */
-  private String authenticate(String username, String password) throws AuthenticationException {
-    if (username == null || username.trim().isEmpty()
-        || password == null || password.trim().isEmpty()) {
-      throw new AuthenticationException("Vui lòng nhập đầy đủ tài khoản và mật khẩu!");
-    }
-
-    if ("seller".equals(username) && "123456".equals(password)) {
-      return "SELLER";
-    } else if ("bidder".equals(username) && "123456".equals(password)) {
-      return "BIDDER";
-    }
-
-    throw new AuthenticationException("Sai thông tin! Thử lại với seller/123456.");
   }
 }
