@@ -1,6 +1,6 @@
 package com.auction.backend.database.dao;
 
-import com.auction.backend.database.MySqlConnection;
+import com.auction.backend.database.DatabaseConnection;
 import com.auction.exceptions.AuctionException;
 import com.auction.models.item.AuctionItem;
 import java.sql.Connection;
@@ -8,7 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * DAO xử lý item database.
+ * DAO xử lý item database SQLite.
  */
 public class ItemDao {
 
@@ -17,7 +17,8 @@ public class ItemDao {
    *
    * @param item item cần lưu
    */
-  public void saveItem(AuctionItem item) {
+  public void saveItem(
+      AuctionItem item) {
 
     validateItem(item);
 
@@ -30,7 +31,7 @@ public class ItemDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
@@ -63,7 +64,9 @@ public class ItemDao {
 
     } catch (SQLException exception) {
 
-      exception.printStackTrace();
+      throw new AuctionException(
+          "Không thể lưu item.",
+          exception);
     }
   }
 
@@ -72,25 +75,31 @@ public class ItemDao {
    *
    * @param itemId mã item
    */
-  public void deleteItem(String itemId) {
+  public void deleteItem(
+      String itemId) {
 
     String sql =
-        "DELETE FROM items WHERE item_id = ?";
+        "DELETE FROM items "
+            + "WHERE item_id = ?";
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
 
-      statement.setString(1, itemId);
+      statement.setString(
+          1,
+          itemId);
 
       statement.executeUpdate();
 
     } catch (SQLException exception) {
 
-      exception.printStackTrace();
+      throw new AuctionException(
+          "Không thể xóa item.",
+          exception);
     }
   }
 
@@ -103,7 +112,6 @@ public class ItemDao {
       AuctionItem item) {
 
     if (item == null) {
-
       throw new AuctionException(
           "Item không được null.");
     }

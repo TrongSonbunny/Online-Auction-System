@@ -1,15 +1,14 @@
 package com.auction.backend.database.dao;
 
-import com.auction.backend.database.MySqlConnection;
+import com.auction.backend.database.DatabaseConnection;
 import com.auction.exceptions.AuctionException;
 import com.auction.models.auction.Auction;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 
 /**
- * DAO xử lý auction database.
+ * DAO xử lý auction database SQLite.
  */
 public class AuctionDao {
 
@@ -18,7 +17,8 @@ public class AuctionDao {
    *
    * @param auction auction cần lưu
    */
-  public void saveAuction(Auction auction) {
+  public void saveAuction(
+      Auction auction) {
 
     validateAuction(auction);
 
@@ -34,89 +34,93 @@ public class AuctionDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
 
-      statement.setString(
-          1,
-          auction.getAuctionId());
-
-      statement.setString(
-          2,
-          auction.getSeller().getUserId());
-
-      statement.setString(
-          3,
-          auction.getItem().getItemId());
-
-      statement.setDouble(
-          4,
-          auction.getStartingPrice());
-
-      statement.setDouble(
-          5,
-          auction.getCurrentHighestBid());
-
-      if (auction.getCurrentHighestBidder()
-          != null) {
-
-        statement.setString(
-            6,
-            auction
-                .getCurrentHighestBidder()
-                .getUserId());
-
-      } else {
-
-        statement.setNull(
-            6,
-            java.sql.Types.VARCHAR);
-      }
-
-      statement.setString(
-          7,
-          auction.getStatus().name());
-
-      statement.setTimestamp(
-          8,
-          Timestamp.valueOf(
-              auction.getCreatedAt()));
-
-      if (auction.getStartTime() != null) {
-
-        statement.setTimestamp(
-            9,
-            Timestamp.valueOf(
-                auction.getStartTime()));
-
-      } else {
-
-        statement.setNull(
-            9,
-            java.sql.Types.TIMESTAMP);
-      }
-
-      if (auction.getEndTime() != null) {
-
-        statement.setTimestamp(
-            10,
-            Timestamp.valueOf(
-                auction.getEndTime()));
-
-      } else {
-
-        statement.setNull(
-            10,
-            java.sql.Types.TIMESTAMP);
-      }
+      fillInsertStatement(
+          statement,
+          auction);
 
       statement.executeUpdate();
 
     } catch (SQLException exception) {
 
-      exception.printStackTrace();
+      throw new AuctionException(
+          "Không thể lưu auction.",
+          exception);
+    }
+  }
+
+  /**
+   * Cập nhật auction sau khi bid/cancel/finish.
+   *
+   * @param auction auction cần cập nhật
+   */
+  public void updateAuction(
+      Auction auction) {
+
+    validateAuction(auction);
+
+    String sql =
+        "UPDATE auctions SET "
+            + "current_highest_bid = ?, "
+            + "current_highest_bidder_id = ?, "
+            + "status = ?, "
+            + "start_time = ?, "
+            + "end_time = ? "
+            + "WHERE auction_id = ?";
+
+    try (
+        Connection connection =
+            DatabaseConnection.getConnection();
+
+        PreparedStatement statement =
+            connection.prepareStatement(sql)) {
+
+      statement.setDouble(
+          1,
+          auction.getCurrentHighestBid());
+
+      if (auction.getCurrentHighestBidder() != null) {
+        statement.setString(
+            2,
+            auction.getCurrentHighestBidder()
+                .getUserId());
+      } else {
+        statement.setString(
+            2,
+            null);
+      }
+
+      statement.setString(
+          3,
+          auction.getStatus().name());
+
+      statement.setString(
+          4,
+          auction.getStartTime() == null
+              ? null
+              : auction.getStartTime().toString());
+
+      statement.setString(
+          5,
+          auction.getEndTime() == null
+              ? null
+              : auction.getEndTime().toString());
+
+      statement.setString(
+          6,
+          auction.getAuctionId());
+
+      statement.executeUpdate();
+
+    } catch (SQLException exception) {
+
+      throw new AuctionException(
+          "Không thể cập nhật auction.",
+          exception);
     }
   }
 
@@ -134,7 +138,7 @@ public class AuctionDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
@@ -147,8 +151,74 @@ public class AuctionDao {
 
     } catch (SQLException exception) {
 
-      exception.printStackTrace();
+      throw new AuctionException(
+          "Không thể xóa auction.",
+          exception);
     }
+  }
+
+  /**
+   * Fill statement khi insert auction.
+   *
+   * @param statement prepared statement
+   * @param auction auction
+   * @throws SQLException nếu set dữ liệu lỗi
+   */
+  private void fillInsertStatement(
+      PreparedStatement statement,
+      Auction auction)
+      throws SQLException {
+
+    statement.setString(
+        1,
+        auction.getAuctionId());
+
+    statement.setString(
+        2,
+        auction.getSeller().getUserId());
+
+    statement.setString(
+        3,
+        auction.getItem().getItemId());
+
+    statement.setDouble(
+        4,
+        auction.getStartingPrice());
+
+    statement.setDouble(
+        5,
+        auction.getCurrentHighestBid());
+
+    if (auction.getCurrentHighestBidder() != null) {
+      statement.setString(
+          6,
+          auction.getCurrentHighestBidder()
+              .getUserId());
+    } else {
+      statement.setString(
+          6,
+          null);
+    }
+
+    statement.setString(
+        7,
+        auction.getStatus().name());
+
+    statement.setString(
+        8,
+        auction.getCreatedAt().toString());
+
+    statement.setString(
+        9,
+        auction.getStartTime() == null
+            ? null
+            : auction.getStartTime().toString());
+
+    statement.setString(
+        10,
+        auction.getEndTime() == null
+            ? null
+            : auction.getEndTime().toString());
   }
 
   /**
@@ -160,7 +230,6 @@ public class AuctionDao {
       Auction auction) {
 
     if (auction == null) {
-
       throw new AuctionException(
           "Auction không được null.");
     }
