@@ -1,10 +1,8 @@
 package com.auction.network;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -18,10 +16,6 @@ public class ServerMain {
 
   private static final Logger logger = LoggerFactory.getLogger(ServerMain.class);
   private static final int PORT = 8080;
-
-  // THE ROSTER: Thread-safe list of all active client "speaking pipes"
-  public static final CopyOnWriteArrayList<PrintWriter> activeClients =
-      new CopyOnWriteArrayList<>();
 
   /**
    * Phương thức main để khởi chạy máy chủ.

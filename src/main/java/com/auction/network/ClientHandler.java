@@ -76,11 +76,11 @@ public class ClientHandler implements Runnable {
 
     } finally {
       // 3. UNSUBSCRIBE: Safely remove them from the roster so we don't broadcast to a dead pipe
-      if (writer != null) {
-        ServerMain.activeClients.remove(writer);
-        logger.info("Client left. Total active clients remaining: {}",
-            ServerMain.activeClients.size());
-      }
+      // if (writer != null) {
+      //   ServerMain.activeClients.remove(writer);
+      //   logger.info("Client left. Total active clients remaining: {}",
+      //       ServerMain.activeClients.size());
+      // }
 
       // DỌN DẸP: Đóng socket một cách an toàn khi máy khách rời đi hoặc xảy ra lỗi
       try {
