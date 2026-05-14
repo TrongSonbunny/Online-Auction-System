@@ -8,7 +8,6 @@ import com.auction.backend.observer.AuctionEventType;
 import com.auction.backend.observer.AuctionObserver;
 import com.auction.exceptions.AuctionException;
 import com.auction.models.auction.Auction;
-import com.auction.models.bid.BidTransaction;
 import java.util.Objects;
 
 /**
