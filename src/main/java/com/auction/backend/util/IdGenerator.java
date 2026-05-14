@@ -62,10 +62,10 @@ public final class IdGenerator {
    */
   public static String generateUserId() {
     return "USER-" 
-      + UUID.randomUUID()
-        .toString()
-        .substring(0, 8)
-        .toUpperCase();
+        + UUID.randomUUID()
+          .toString()
+          .substring(0, 8)
+          .toUpperCase();
   }
 
   /**
@@ -74,10 +74,10 @@ public final class IdGenerator {
   * @return item id
   */
   public static String generateItemId() {
-    return "ITEM-" + 
-      UUID.randomUUID()
-        .toString()
-        .substring(0, 8)
-        .toUpperCase();
+    return "ITEM-" 
+        + UUID.randomUUID()
+          .toString()
+          .substring(0, 8)
+          .toUpperCase();
   }
 }
