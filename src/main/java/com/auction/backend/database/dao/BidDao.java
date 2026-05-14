@@ -1,18 +1,14 @@
 package com.auction.backend.database.dao;
 
-import com.auction.backend.database.MySqlConnection;
+import com.auction.backend.database.DatabaseConnection;
 import com.auction.exceptions.BidException;
 import com.auction.models.bid.BidTransaction;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 
 /**
- * DAO thực hiện INSERT/DELETE bid transaction trong bảng {@code bid_transactions}.
- *
- * <p>Cùng cơ chế kết nối với {@link AuctionDao}: mỗi thao tác dùng
- * try-with-resources, lỗi SQL in ra stderr.
+ * DAO xử lý bid transaction database SQLite.
  */
 public class BidDao {
 
@@ -37,7 +33,7 @@ public class BidDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
@@ -59,16 +55,17 @@ public class BidDao {
           4,
           transaction.getBidAmount());
 
-      statement.setTimestamp(
+      statement.setString(
           5,
-          Timestamp.valueOf(
-              transaction.getCreatedAt()));
+          transaction.getCreatedAt().toString());
 
       statement.executeUpdate();
 
     } catch (SQLException exception) {
 
-      exception.printStackTrace();
+      throw new BidException(
+          "Không thể lưu bid transaction.",
+          exception);
     }
   }
 
@@ -86,7 +83,7 @@ public class BidDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
@@ -99,7 +96,9 @@ public class BidDao {
 
     } catch (SQLException exception) {
 
-      exception.printStackTrace();
+      throw new BidException(
+          "Không thể xóa bid transaction.",
+          exception);
     }
   }
 
@@ -112,7 +111,6 @@ public class BidDao {
       BidTransaction transaction) {
 
     if (transaction == null) {
-
       throw new BidException(
           "Transaction không được null.");
     }
