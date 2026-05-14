@@ -30,12 +30,11 @@ public class App extends Application {
 
     // 2. Thiết lập logo mới cho ứng dụng
     try {
-      Image appIcon = new Image(App.class.getResourceAsStream("/com/auction/assets/logo.png"));
+      Image appIcon = new Image(App.class.getResourceAsStream("/com/auction/assets/logo4.png"));
       stage.getIcons().add(appIcon);
     } catch (Exception e) {
-      System.out.println("Chưa tìm thấy logo.png trong thư mục assets, sử dụng mặc định.");
+      System.out.println("Chưa tìm thấy logo4.png trong thư mục assets, sử dụng mặc định.");
     }
-
     scene = new Scene(loadFxml("login"), 640, 480);
     stage.setScene(scene);
 
