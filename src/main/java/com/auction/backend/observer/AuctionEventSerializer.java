@@ -88,7 +88,8 @@ public final class AuctionEventSerializer {
 
       case NEW_BID:
       case AUTO_BID_PLACED:
-        if (raw instanceof BidTransaction tx) {
+        if (raw instanceof BidTransaction) {
+          BidTransaction tx = (BidTransaction) raw;
           return buildBidPayload(tx);
         }
         break;
@@ -98,7 +99,8 @@ public final class AuctionEventSerializer {
       case AUCTION_FINISHED:
       case AUCTION_CANCELLED:
       case AUCTION_EXTENDED:
-        if (raw instanceof Auction auction) {
+        if (raw instanceof Auction) {
+          Auction auction = (Auction) raw;
           return buildAuctionPayload(auction);
         }
         break;
