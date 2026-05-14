@@ -42,9 +42,6 @@ public class ClientHandler implements Runnable {
       // Khởi tạo Gson để chuyển dữ liệu Json thành một object chứa dữ liệu dùng từ AuctionMessage.
       Gson gson = new Gson();
 
-      // 1. SUBSCRIBE: Add this client's pipe to the global roster
-      
-
       String clientInput;
       while ((clientInput = reader.readLine()) != null) {
         logger.info("Nhận được dữ liệu Json từ client: {}", clientInput);
@@ -56,7 +53,7 @@ public class ClientHandler implements Runnable {
           // Lợi khi dùng Gson: Ví dụ như khi Client nhập thiếu một trường dữ liệu ({"action":
           // "BID"} nhưng không có username,...) thì những biến bị bỏ trống đó sẽ được cho vào thành
           // null/0/false/... mà không làm crash chương trình.:w
-
+          // ClientActionHandler.doAction(message)
           
 
         } catch (com.google.gson.JsonSyntaxException jsonError) {
@@ -64,8 +61,6 @@ public class ClientHandler implements Runnable {
           logger.warn("Máy khách thiết lập Dữ liệu Json sai định dạng: {}", clientInput);
           writer.println("ERROR: Không đúng định dạng Json");
         }
-
-        // AuctionManager.doAction(message); Đây là phần đưa 
       }
 
       logger.info("Client đã ngắt kết nối chủ động.");

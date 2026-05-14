@@ -1,0 +1,154 @@
+package com.auction.backend.auction;
+
+import com.auction.backend.util.IdGenerator;
+import com.auction.exceptions.AuctionClosedException;
+import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.UnauthorizedException;
+import com.auction.models.auction.Auction;
+import com.auction.models.item.AuctionItem;
+import com.auction.models.user.Seller;
+
+/**
+ * Service điều phối luồng tạo/hủy/kết thúc auction.
+ *
+ * <p>Khi tạo auction: validate seller → sinh ID → start() → lưu vào
+ * {@link AuctionManager} → lên lịch kết thúc tự động qua {@link AuctionScheduler}.
+ * Khi hủy/kết thúc: tìm auction trong manager rồi gọi cancel()/finish() tương ứng.
+ */
+public class AuctionService {
+
+  private final AuctionManager auctionManager;
+
+  private final AuctionValidator
+      auctionValidator;
+
+  private final AuctionScheduler
+      auctionScheduler;
+
+  /**
+   * Constructor auction service.
+   */
+  public AuctionService() {
+
+    this.auctionManager =
+        AuctionManager.getInstance();
+
+    this.auctionValidator =
+        new AuctionValidator();
+
+    this.auctionScheduler =
+        new AuctionScheduler();
+  }
+
+  /**
+   * Tạo auction mới.
+   *
+   * @param seller seller tạo auction
+   * @param item item đấu giá
+   * @param startingPrice giá khởi điểm
+   * @param durationSeconds thời gian đấu giá
+   * @return Auction mới
+   */
+  public Auction createAuction(
+      Seller seller,
+      AuctionItem item,
+      double startingPrice,
+      long durationSeconds) {
+
+    validateSeller(seller);
+
+    Auction auction =
+        new Auction(
+            IdGenerator.generateAuctionId(),
+            seller,
+            item,
+            startingPrice);
+
+    auctionValidator.validateAuctionCreation(
+        auction);
+
+    seller.incrementAuctionCreated();
+
+    auction.start();
+
+    auctionManager.addAuction(auction);
+
+    auctionScheduler.scheduleAuctionFinish(
+        auction,
+        durationSeconds);
+
+    return auction;
+  }
+
+  /**
+   * Hủy auction.
+   *
+   * @param auctionId mã auction
+   */
+  public void cancelAuction(
+      String auctionId) {
+
+    Auction auction =
+        auctionManager.findAuction(
+            auctionId);
+
+    if (auction == null) {
+
+      throw new AuctionClosedException(
+          "Không tìm thấy auction.");
+    }
+
+    auction.cancel();
+  }
+
+  /**
+   * Finish auction thủ công.
+   *
+   * @param auctionId mã auction
+   */
+  public void finishAuction(
+      String auctionId) {
+
+    Auction auction =
+        auctionManager.findAuction(
+            auctionId);
+
+    if (auction == null) {
+
+      throw new AuctionClosedException(
+          "Không tìm thấy auction.");
+    }
+
+    auction.finish();
+  }
+
+  /**
+   * Validate seller.
+   *
+   * @param seller seller
+   */
+  private void validateSeller(
+      Seller seller) {
+
+    if (seller == null) {
+
+      throw new AuctionException(
+          "Seller không được null.");
+    }
+
+    if (!seller.canCreateAuction()) {
+
+      throw new UnauthorizedException(
+          "Seller không có quyền tạo auction.");
+    }
+  }
+
+  /**
+   * Lấy auction manager.
+   *
+   * @return AuctionManager
+   */
+  public AuctionManager getAuctionManager() {
+    return auctionManager;
+  }
+}

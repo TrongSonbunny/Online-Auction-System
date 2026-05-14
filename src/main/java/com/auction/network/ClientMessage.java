@@ -1,106 +1,573 @@
 package com.auction.network;
 
-import java.util.Map;
+import com.auction.models.user.UserRole;
 
 /**
- * Data Transfer Object representing messages sent from the client to the server.
- * This class is designed to be parsed from JSON using GSON.
+ * Dữ liệu nhận từ frontend sau khi Network parse JSON.
  */
 public class ClientMessage {
 
-  /**
-   * The type of operation requested (e.g., "PLACE_BID", "CREATE_AUCTION").
-   */
-  private String action;
+  private ActionType action;
 
-  /**
-   * The unique identifier of the user sending the request.
-   */
   private String userId;
 
-  /**
-   * The unique identifier for the auction auctionId.
-   */
-  private String auctionId;
+  private UserRole role;
 
-  /**
-   * The display name of the auction item.
-   */
   private String name;
 
-  /**
-   * A detailed description of the auction item.
-   */
-  private String description;
+  private String email;
 
-  /**
-   * The category the item belongs to (e.g., ELECTRONICS, ART).
-   */
-  private String category;
+  private String password;
 
-  /**
-   * The physical condition of the item.
-   */
-  private String itemCondition;
+  private String auctionId;
 
-  /**
-   * The estimated starting or appraisal price of the item.
-   */
-  private double estimatedPrice;
-
-  /**
-   * The amount of the bid being placed.
-   */
   private double bidAmount;
 
-  /**
-   * Flexible map for specific item attributes (Path B implementation).
-   */
-  private Map<String, String> extraAttributes;
+  private String itemName;
+
+  private String itemDescription;
+
+  private String itemCategory;
+
+  private String itemCondition;
+
+  private double estimatedPrice;
+
+  private double startingPrice;
+
+  private long durationSeconds;
 
   /**
-   * Default constructor required for GSON deserialization.
+   * Constructor mặc định cho JSON parser.
    */
   public ClientMessage() {
   }
 
-  public String getAction() {
+  /**
+   * Tạo builder cho ClientMessage.
+   *
+   * @return builder
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  /**
+   * Lấy action client yêu cầu.
+   *
+   * @return action
+   */
+  public ActionType getAction() {
     return action;
   }
 
+  /**
+   * Cập nhật action client yêu cầu.
+   *
+   * @param action action
+   */
+  public void setAction(
+      ActionType action) {
+
+    this.action = action;
+  }
+
+  /**
+   * Lấy mã user.
+   *
+   * @return user id
+   */
   public String getUserId() {
     return userId;
   }
 
-  public String getAuctionId() {
-    return auctionId;
+  /**
+   * Cập nhật mã user.
+   *
+   * @param userId mã user
+   */
+  public void setUserId(
+      String userId) {
+
+    this.userId = userId;
   }
 
+  /**
+   * Lấy role user.
+   *
+   * @return role
+   */
+  public UserRole getRole() {
+    return role;
+  }
+
+  /**
+   * Cập nhật role user.
+   *
+   * @param role role user
+   */
+  public void setRole(
+      UserRole role) {
+
+    this.role = role;
+  }
+
+  /**
+   * Lấy tên user.
+   *
+   * @return tên user
+   */
   public String getName() {
     return name;
   }
 
-  public String getDescription() {
-    return description;
+  /**
+   * Cập nhật tên user.
+   *
+   * @param name tên user
+   */
+  public void setName(
+      String name) {
+
+    this.name = name;
   }
 
-  public String getCategory() {
-    return category;
+  /**
+   * Lấy email user.
+   *
+   * @return email user
+   */
+  public String getEmail() {
+    return email;
   }
 
-  public String getItemCondition() {
-    return itemCondition;
+  /**
+   * Cập nhật email user.
+   *
+   * @param email email user
+   */
+  public void setEmail(
+      String email) {
+
+    this.email = email;
   }
 
-  public double getEstimatedPrice() {
-    return estimatedPrice;
+  /**
+   * Lấy password.
+   *
+   * @return password
+   */
+  public String getPassword() {
+    return password;
   }
 
+  /**
+   * Cập nhật password.
+   *
+   * @param password password
+   */
+  public void setPassword(
+      String password) {
+
+    this.password = password;
+  }
+
+  /**
+   * Lấy mã auction.
+   *
+   * @return auction id
+   */
+  public String getAuctionId() {
+    return auctionId;
+  }
+
+  /**
+   * Cập nhật mã auction.
+   *
+   * @param auctionId mã auction
+   */
+  public void setAuctionId(
+      String auctionId) {
+
+    this.auctionId = auctionId;
+  }
+
+  /**
+   * Lấy số tiền bid.
+   *
+   * @return số tiền bid
+   */
   public double getBidAmount() {
     return bidAmount;
   }
 
-  public Map<String, String> getExtraAttributes() {
-    return extraAttributes;
+  /**
+   * Cập nhật số tiền bid.
+   *
+   * @param bidAmount số tiền bid
+   */
+  public void setBidAmount(
+      double bidAmount) {
+
+    this.bidAmount = bidAmount;
+  }
+
+  /**
+   * Lấy tên item.
+   *
+   * @return tên item
+   */
+  public String getItemName() {
+    return itemName;
+  }
+
+  /**
+   * Cập nhật tên item.
+   *
+   * @param itemName tên item
+   */
+  public void setItemName(
+      String itemName) {
+
+    this.itemName = itemName;
+  }
+
+  /**
+   * Lấy mô tả item.
+   *
+   * @return mô tả item
+   */
+  public String getItemDescription() {
+    return itemDescription;
+  }
+
+  /**
+   * Cập nhật mô tả item.
+   *
+   * @param itemDescription mô tả item
+   */
+  public void setItemDescription(
+      String itemDescription) {
+
+    this.itemDescription = itemDescription;
+  }
+
+  /**
+   * Lấy category item.
+   *
+   * @return category item
+   */
+  public String getItemCategory() {
+    return itemCategory;
+  }
+
+  /**
+   * Cập nhật category item.
+   *
+   * @param itemCategory category item
+   */
+  public void setItemCategory(
+      String itemCategory) {
+
+    this.itemCategory = itemCategory;
+  }
+
+  /**
+   * Lấy tình trạng item.
+   *
+   * @return tình trạng item
+   */
+  public String getItemCondition() {
+    return itemCondition;
+  }
+
+  /**
+   * Cập nhật tình trạng item.
+   *
+   * @param itemCondition tình trạng item
+   */
+  public void setItemCondition(
+      String itemCondition) {
+
+    this.itemCondition = itemCondition;
+  }
+
+  /**
+   * Lấy giá ước tính.
+   *
+   * @return giá ước tính
+   */
+  public double getEstimatedPrice() {
+    return estimatedPrice;
+  }
+
+  /**
+   * Cập nhật giá ước tính.
+   *
+   * @param estimatedPrice giá ước tính
+   */
+  public void setEstimatedPrice(
+      double estimatedPrice) {
+
+    this.estimatedPrice = estimatedPrice;
+  }
+
+  /**
+   * Lấy giá khởi điểm.
+   *
+   * @return giá khởi điểm
+   */
+  public double getStartingPrice() {
+    return startingPrice;
+  }
+
+  /**
+   * Cập nhật giá khởi điểm.
+   *
+   * @param startingPrice giá khởi điểm
+   */
+  public void setStartingPrice(
+      double startingPrice) {
+
+    this.startingPrice = startingPrice;
+  }
+
+  /**
+   * Lấy thời lượng auction theo giây.
+   *
+   * @return thời lượng auction theo giây
+   */
+  public long getDurationSeconds() {
+    return durationSeconds;
+  }
+
+  /**
+   * Cập nhật thời lượng auction theo giây.
+   *
+   * @param durationSeconds thời lượng auction theo giây
+   */
+  public void setDurationSeconds(
+      long durationSeconds) {
+
+    this.durationSeconds = durationSeconds;
+  }
+
+  /**
+   * Builder tạo ClientMessage.
+   */
+  public static final class Builder {
+
+    private final ClientMessage message;
+
+    /**
+     * Constructor builder.
+     */
+    private Builder() {
+      this.message = new ClientMessage();
+    }
+
+    /**
+     * Gán action cho message.
+     *
+     * @param action action
+     * @return builder hiện tại
+     */
+    public Builder action(
+        ActionType action) {
+
+      message.setAction(action);
+      return this;
+    }
+
+    /**
+     * Gán user id cho message.
+     *
+     * @param userId mã user
+     * @return builder hiện tại
+     */
+    public Builder userId(
+        String userId) {
+
+      message.setUserId(userId);
+      return this;
+    }
+
+    /**
+     * Gán role cho message.
+     *
+     * @param role role user
+     * @return builder hiện tại
+     */
+    public Builder role(
+        UserRole role) {
+
+      message.setRole(role);
+      return this;
+    }
+
+    /**
+     * Gán tên user cho message.
+     *
+     * @param name tên user
+     * @return builder hiện tại
+     */
+    public Builder name(
+        String name) {
+
+      message.setName(name);
+      return this;
+    }
+
+    /**
+     * Gán email cho message.
+     *
+     * @param email email user
+     * @return builder hiện tại
+     */
+    public Builder email(
+        String email) {
+
+      message.setEmail(email);
+      return this;
+    }
+
+    /**
+     * Gán password cho message.
+     *
+     * @param password password
+     * @return builder hiện tại
+     */
+    public Builder password(
+        String password) {
+
+      message.setPassword(password);
+      return this;
+    }
+
+    /**
+     * Gán auction id cho message.
+     *
+     * @param auctionId mã auction
+     * @return builder hiện tại
+     */
+    public Builder auctionId(
+        String auctionId) {
+
+      message.setAuctionId(auctionId);
+      return this;
+    }
+
+    /**
+     * Gán số tiền bid cho message.
+     *
+     * @param bidAmount số tiền bid
+     * @return builder hiện tại
+     */
+    public Builder bidAmount(
+        double bidAmount) {
+
+      message.setBidAmount(bidAmount);
+      return this;
+    }
+
+    /**
+     * Gán tên item cho message.
+     *
+     * @param itemName tên item
+     * @return builder hiện tại
+     */
+    public Builder itemName(
+        String itemName) {
+
+      message.setItemName(itemName);
+      return this;
+    }
+
+    /**
+     * Gán mô tả item cho message.
+     *
+     * @param itemDescription mô tả item
+     * @return builder hiện tại
+     */
+    public Builder itemDescription(
+        String itemDescription) {
+
+      message.setItemDescription(itemDescription);
+      return this;
+    }
+
+    /**
+     * Gán category item cho message.
+     *
+     * @param itemCategory category item
+     * @return builder hiện tại
+     */
+    public Builder itemCategory(
+        String itemCategory) {
+
+      message.setItemCategory(itemCategory);
+      return this;
+    }
+
+    /**
+     * Gán tình trạng item cho message.
+     *
+     * @param itemCondition tình trạng item
+     * @return builder hiện tại
+     */
+    public Builder itemCondition(
+        String itemCondition) {
+
+      message.setItemCondition(itemCondition);
+      return this;
+    }
+
+    /**
+     * Gán giá ước tính cho message.
+     *
+     * @param estimatedPrice giá ước tính
+     * @return builder hiện tại
+     */
+    public Builder estimatedPrice(
+        double estimatedPrice) {
+
+      message.setEstimatedPrice(estimatedPrice);
+      return this;
+    }
+
+    /**
+     * Gán giá khởi điểm cho message.
+     *
+     * @param startingPrice giá khởi điểm
+     * @return builder hiện tại
+     */
+    public Builder startingPrice(
+        double startingPrice) {
+
+      message.setStartingPrice(startingPrice);
+      return this;
+    }
+
+    /**
+     * Gán thời lượng auction theo giây cho message.
+     *
+     * @param durationSeconds thời lượng auction theo giây
+     * @return builder hiện tại
+     */
+    public Builder durationSeconds(
+        long durationSeconds) {
+
+      message.setDurationSeconds(durationSeconds);
+      return this;
+    }
+
+    /**
+     * Tạo ClientMessage hoàn chỉnh.
+     *
+     * @return client message
+     */
+    public ClientMessage build() {
+      return message;
+    }
   }
 }
