@@ -1,5 +1,8 @@
 package com.auction.backend.auction;
 
+import com.auction.backend.observer.AuctionEvent;
+import com.auction.backend.observer.AuctionEventPublisher;
+import com.auction.backend.observer.AuctionEventType;
 import com.auction.exceptions.AuctionException;
 import com.auction.models.auction.Auction;
 import java.time.Duration;
@@ -15,22 +18,39 @@ import java.util.concurrent.TimeUnit;
  */
 public class AuctionScheduler {
 
-  private final ScheduledExecutorService
-      scheduler;
+  private final ScheduledExecutorService scheduler;
 
   private final ConcurrentHashMap<String, ScheduledFuture<?>>
       scheduledTasks;
+
+  private final AuctionEventPublisher eventPublisher;
 
   /**
    * Constructor scheduler.
    */
   public AuctionScheduler() {
 
+    this(new AuctionEventPublisher());
+  }
+
+  /**
+   * Constructor scheduler dùng chung event publisher.
+   *
+   * @param eventPublisher publisher phát event
+   */
+  public AuctionScheduler(
+      AuctionEventPublisher eventPublisher) {
+
     this.scheduler =
         Executors.newScheduledThreadPool(2);
 
     this.scheduledTasks =
         new ConcurrentHashMap<>();
+
+    this.eventPublisher =
+        eventPublisher == null
+            ? new AuctionEventPublisher()
+            : eventPublisher;
   }
 
   /**
@@ -44,13 +64,11 @@ public class AuctionScheduler {
       long durationSeconds) {
 
     if (auction == null) {
-
       throw new AuctionException(
           "Auction không được null.");
     }
 
     if (durationSeconds <= 0) {
-
       throw new AuctionException(
           "Duration phải lớn hơn 0.");
     }
@@ -66,12 +84,12 @@ public class AuctionScheduler {
             TimeUnit.SECONDS);
 
     scheduledTasks.put(
-        auction.getAuctionId(), future);
+        auction.getAuctionId(),
+        future);
   }
 
   /**
    * Reschedule auction finish khi anti-snipe kích hoạt.
-   * Hủy task cũ, tính thời gian còn lại rồi gia hạn thêm.
    *
    * @param auction auction cần gia hạn
    * @param extensionSeconds số giây gia hạn thêm
@@ -84,7 +102,8 @@ public class AuctionScheduler {
       return;
     }
 
-    String auctionId = auction.getAuctionId();
+    String auctionId =
+        auction.getAuctionId();
 
     ScheduledFuture<?> existing =
         scheduledTasks.get(auctionId);
@@ -96,19 +115,29 @@ public class AuctionScheduler {
     LocalDateTime scheduledEnd =
         auction.getScheduledEndTime();
 
-    long remaining = scheduledEnd == null
-        ? 0
-        : Duration
-            .between(LocalDateTime.now(), scheduledEnd)
-            .getSeconds();
+    long remaining =
+        scheduledEnd == null
+            ? 0
+            : Duration
+                .between(
+                    LocalDateTime.now(),
+                    scheduledEnd)
+                .getSeconds();
 
     if (remaining < 0) {
       remaining = 0;
     }
 
-    long newDuration = remaining + extensionSeconds;
+    long newDuration =
+        remaining + extensionSeconds;
 
-    auction.extendScheduledEndTime(extensionSeconds);
+    auction.extendScheduledEndTime(
+        extensionSeconds);
+
+    publishAuctionEvent(
+        AuctionEventType.AUCTION_EXTENDED,
+        auction,
+        "Auction được gia hạn.");
 
     ScheduledFuture<?> newFuture =
         scheduler.schedule(
@@ -116,7 +145,9 @@ public class AuctionScheduler {
             newDuration,
             TimeUnit.SECONDS);
 
-    scheduledTasks.put(auctionId, newFuture);
+    scheduledTasks.put(
+        auctionId,
+        newFuture);
   }
 
   /**
@@ -124,13 +155,39 @@ public class AuctionScheduler {
    *
    * @param auction auction cần kết thúc
    */
-  private void finishSafely(Auction auction) {
+  private void finishSafely(
+      Auction auction) {
 
     try {
       auction.finish();
+
+      publishAuctionEvent(
+          AuctionEventType.AUCTION_FINISHED,
+          auction,
+          "Auction đã tự động kết thúc.");
     } catch (IllegalStateException ignored) {
-      // Auction đã kết thúc hoặc bị hủy trước đó
+      // Auction đã kết thúc hoặc bị hủy trước đó.
     }
+  }
+
+  /**
+   * Publish auction event.
+   *
+   * @param eventType loại event
+   * @param auction auction liên quan
+   * @param message nội dung event
+   */
+  private void publishAuctionEvent(
+      AuctionEventType eventType,
+      Auction auction,
+      String message) {
+
+    eventPublisher.publishEvent(
+        new AuctionEvent(
+            eventType,
+            auction.getAuctionId(),
+            message,
+            auction));
   }
 
   /**

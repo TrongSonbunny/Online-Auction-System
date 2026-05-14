@@ -59,7 +59,8 @@ class BidServiceTest {
     @Test
     @DisplayName("EP-Valid: placeBid hợp lệ trả BidTransaction")
     void placeBid_valid_returnsBidTransaction() {
-      BidTransaction tx = bidService.placeBid(activeAuction, bidder, 1500.0);
+      BidResult result = bidService.placeBid(activeAuction, bidder, 1500.0);
+      BidTransaction tx = result.getManualTransaction();
       assertNotNull(tx);
       assertEquals(bidder, tx.getBidder());
       assertEquals("AUC-001", tx.getAuctionId());
@@ -69,7 +70,8 @@ class BidServiceTest {
     @Test
     @DisplayName("EP-Valid: transactionId có prefix TRANS-")
     void placeBid_valid_transactionIdHasPrefix() {
-      BidTransaction tx = bidService.placeBid(activeAuction, bidder, 1500.0);
+      BidResult result = bidService.placeBid(activeAuction, bidder, 1500.0);
+      BidTransaction tx = result.getManualTransaction();
       assertTrue(tx.getTransactionId().startsWith("TRANS-"));
     }
 
@@ -97,7 +99,8 @@ class BidServiceTest {
     @Test
     @DisplayName("BVA-Boundary: amount = currentHighestBid + 0.01 hợp lệ")
     void placeBid_justAboveCurrent_valid() {
-      BidTransaction tx = bidService.placeBid(activeAuction, bidder, 1000.01);
+      BidResult result = bidService.placeBid(activeAuction, bidder, 1000.01);
+      BidTransaction tx = result.getManualTransaction();
       assertEquals(1000.01, tx.getBidAmount(), 0.001);
     }
   }

@@ -1,6 +1,6 @@
 package com.auction.backend.database.dao;
 
-import com.auction.backend.database.MySqlConnection;
+import com.auction.backend.database.DatabaseConnection;
 import com.auction.exceptions.BidException;
 import com.auction.models.bid.BidTransaction;
 import java.sql.Connection;
@@ -37,7 +37,7 @@ public class BidDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {
@@ -86,7 +86,7 @@ public class BidDao {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         PreparedStatement statement =
             connection.prepareStatement(sql)) {

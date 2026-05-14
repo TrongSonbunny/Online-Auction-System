@@ -34,6 +34,7 @@ public class DatabaseManager {
             + "user_id VARCHAR(50) PRIMARY KEY,"
             + "name VARCHAR(255) NOT NULL,"
             + "email VARCHAR(255) NOT NULL UNIQUE,"
+            + "password VARCHAR(255) NOT NULL,"
             + "role VARCHAR(50) NOT NULL"
             + ");";
 
@@ -115,7 +116,7 @@ public class DatabaseManager {
 
     try (
         Connection connection =
-            MySqlConnection.getConnection();
+            DatabaseConnection.getConnection();
 
         Statement statement =
             connection.createStatement()) {
