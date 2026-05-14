@@ -1,7 +1,9 @@
 package com.auction.models.user.permission;
 
 /**
- * Permission dành cho admin.
+ * Permission strategy cho admin: toàn bộ quyền đều trả {@code true}.
+ *
+ * <p>Admin có thể tạo/xóa auction, đặt giá, khóa user và quản lý hệ thống.
  */
 public class AdminPermission implements PermissionStrategy {
 

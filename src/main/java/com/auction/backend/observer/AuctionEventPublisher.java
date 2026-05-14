@@ -5,7 +5,11 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Publisher quản lý observer và publish event.
+ * Publisher trong Observer pattern — quản lý danh sách observer và phân phối event.
+ *
+ * <p>Dùng {@link java.util.concurrent.CopyOnWriteArrayList} để đảm bảo thread-safety:
+ * có thể publish event khi một thread khác đang thêm/xóa observer mà không cần lock.
+ * {@link #publishEvent} duyệt toàn bộ observer và gọi {@code update()} lần lượt.
  */
 public class AuctionEventPublisher {
 

@@ -1,8 +1,12 @@
 package com.auction.network.command;
 
 import com.auction.backend.auction.AuctionManager;
+import com.auction.backend.auction.AuctionScheduler;
 import com.auction.backend.auction.AuctionService;
 import com.auction.backend.auth.AuthService;
+import com.auction.backend.bid.AutoBidManager;
+import com.auction.backend.bid.AutoBidService;
+import com.auction.backend.bid.BidHistoryManager;
 import com.auction.backend.bid.BidService;
 import com.auction.backend.database.dao.AuctionDao;
 import com.auction.backend.database.dao.BidDao;
@@ -10,13 +14,25 @@ import com.auction.backend.database.dao.ItemDao;
 import com.auction.backend.database.dao.UserDao;
 
 /**
- * Gom các service và DAO dùng chung cho command.
+ * Gom các service, manager và DAO dùng chung cho command.
+ *
+ * <p>Context này đảm bảo {@link AuctionService} và {@link BidService}
+ * dùng chung {@link AuctionScheduler}, nhờ đó anti-snipe có thể reschedule
+ * đúng task kết thúc auction ban đầu.
  */
 public class CommandContext {
 
   private final AuctionManager auctionManager;
 
+  private final AuctionScheduler auctionScheduler;
+
   private final AuctionService auctionService;
+
+  private final BidHistoryManager bidHistoryManager;
+
+  private final AutoBidManager autoBidManager;
+
+  private final AutoBidService autoBidService;
 
   private final BidService bidService;
 
@@ -38,11 +54,29 @@ public class CommandContext {
     this.auctionManager =
         AuctionManager.getInstance();
 
+    this.auctionScheduler =
+        new AuctionScheduler();
+
     this.auctionService =
-        new AuctionService();
+        new AuctionService(
+            auctionScheduler);
+
+    this.bidHistoryManager =
+        new BidHistoryManager();
+
+    this.autoBidManager =
+        new AutoBidManager();
+
+    this.autoBidService =
+        new AutoBidService(
+            autoBidManager,
+            bidHistoryManager);
 
     this.bidService =
-        new BidService();
+        new BidService(
+            bidHistoryManager,
+            auctionScheduler,
+            autoBidService);
 
     this.authService =
         new AuthService();
@@ -60,34 +94,110 @@ public class CommandContext {
         new BidDao();
   }
 
+  /**
+   * Lấy auction manager.
+   *
+   * @return auction manager
+   */
   public AuctionManager getAuctionManager() {
     return auctionManager;
   }
 
+  /**
+   * Lấy auction scheduler.
+   *
+   * @return auction scheduler
+   */
+  public AuctionScheduler getAuctionScheduler() {
+    return auctionScheduler;
+  }
+
+  /**
+   * Lấy auction service.
+   *
+   * @return auction service
+   */
   public AuctionService getAuctionService() {
     return auctionService;
   }
 
+  /**
+   * Lấy bid history manager.
+   *
+   * @return bid history manager
+   */
+  public BidHistoryManager getBidHistoryManager() {
+    return bidHistoryManager;
+  }
+
+  /**
+   * Lấy auto bid manager.
+   *
+   * @return auto bid manager
+   */
+  public AutoBidManager getAutoBidManager() {
+    return autoBidManager;
+  }
+
+  /**
+   * Lấy auto bid service.
+   *
+   * @return auto bid service
+   */
+  public AutoBidService getAutoBidService() {
+    return autoBidService;
+  }
+
+  /**
+   * Lấy bid service.
+   *
+   * @return bid service
+   */
   public BidService getBidService() {
     return bidService;
   }
 
+  /**
+   * Lấy auth service.
+   *
+   * @return auth service
+   */
   public AuthService getAuthService() {
     return authService;
   }
 
+  /**
+   * Lấy user DAO.
+   *
+   * @return user DAO
+   */
   public UserDao getUserDao() {
     return userDao;
   }
 
+  /**
+   * Lấy item DAO.
+   *
+   * @return item DAO
+   */
   public ItemDao getItemDao() {
     return itemDao;
   }
 
+  /**
+   * Lấy auction DAO.
+   *
+   * @return auction DAO
+   */
   public AuctionDao getAuctionDao() {
     return auctionDao;
   }
 
+  /**
+   * Lấy bid DAO.
+   *
+   * @return bid DAO
+   */
   public BidDao getBidDao() {
     return bidDao;
   }

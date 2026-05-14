@@ -4,7 +4,10 @@ import com.auction.models.user.permission.SellerPermission;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * User seller.
+ * User đăng bán hàng (seller) trong hệ thống đấu giá.
+ *
+ * <p>Có bộ đếm {@link java.util.concurrent.atomic.AtomicInteger} theo dõi
+ * tổng số auction đã tạo. Chỉ Seller (và Admin) mới có quyền tạo auction.
  */
 public class Seller extends User {
 

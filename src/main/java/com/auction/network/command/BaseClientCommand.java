@@ -3,6 +3,7 @@ package com.auction.network.command;
 import com.auction.backend.auction.AuctionManager;
 import com.auction.backend.auction.AuctionService;
 import com.auction.backend.auth.AuthService;
+import com.auction.backend.bid.AutoBidService;
 import com.auction.backend.bid.BidService;
 import com.auction.backend.database.dao.AuctionDao;
 import com.auction.backend.database.dao.BidDao;
@@ -16,15 +17,21 @@ import com.auction.models.user.Seller;
 import com.auction.models.user.User;
 
 /**
- * Class cơ sở cho các command xử lý request từ client.
+ * Base class cho các command xử lý ClientMessage.
+ *
+ * <p>Class này gom các dependency dùng chung và cung cấp helper để lấy user,
+ * lấy auction, kiểm tra quyền quản lý auction.
  */
-public abstract class BaseClientCommand implements ClientCommand {
+public abstract class BaseClientCommand
+    implements ClientCommand {
 
   protected final AuctionManager auctionManager;
 
   protected final AuctionService auctionService;
 
   protected final BidService bidService;
+
+  protected final AutoBidService autoBidService;
 
   protected final AuthService authService;
 
@@ -44,14 +51,32 @@ public abstract class BaseClientCommand implements ClientCommand {
   protected BaseClientCommand(
       CommandContext context) {
 
-    this.auctionManager = context.getAuctionManager();
-    this.auctionService = context.getAuctionService();
-    this.bidService = context.getBidService();
-    this.authService = context.getAuthService();
-    this.userDao = context.getUserDao();
-    this.itemDao = context.getItemDao();
-    this.auctionDao = context.getAuctionDao();
-    this.bidDao = context.getBidDao();
+    this.auctionManager =
+        context.getAuctionManager();
+
+    this.auctionService =
+        context.getAuctionService();
+
+    this.bidService =
+        context.getBidService();
+
+    this.autoBidService =
+        context.getAutoBidService();
+
+    this.authService =
+        context.getAuthService();
+
+    this.userDao =
+        context.getUserDao();
+
+    this.itemDao =
+        context.getItemDao();
+
+    this.auctionDao =
+        context.getAuctionDao();
+
+    this.bidDao =
+        context.getBidDao();
   }
 
   /**
@@ -69,7 +94,8 @@ public abstract class BaseClientCommand implements ClientCommand {
     }
 
     User user =
-        userDao.findById(userId);
+        userDao.findById(
+            userId);
 
     if (user == null) {
       throw new AuctionException(

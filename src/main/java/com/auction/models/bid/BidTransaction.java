@@ -6,7 +6,11 @@ import com.auction.models.user.Bidder;
 import java.util.Objects;
 
 /**
- * Transaction cho hành động đặt giá.
+ * Bản ghi bất biến cho một lần đặt giá thành công.
+ *
+ * <p>Lưu trữ: bidder thực hiện, auction mục tiêu, số tiền bid và thời điểm tạo
+ * (kế thừa từ {@link Transaction}). Được lưu vào {@link com.auction.backend.bid.BidHistoryManager}
+ * và dùng làm payload cho event {@code NEW_BID}/{@code AUTO_BID_PLACED}.
  */
 public class BidTransaction extends Transaction {
 

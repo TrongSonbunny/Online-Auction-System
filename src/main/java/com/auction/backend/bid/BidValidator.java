@@ -8,7 +8,11 @@ import com.auction.models.auction.Auction;
 import com.auction.models.user.Bidder;
 
 /**
- * Validate logic cho bid.
+ * Kiểm tra tính hợp lệ của một bid request trước khi thực hiện.
+ *
+ * <p>Thứ tự validate trong {@link #validateBid}:
+ * auction không null → bidder không null → amount > 0 → auction ACTIVE
+ * → amount > currentHighestBid → bidder có quyền đặt giá.
  */
 public class BidValidator {
 

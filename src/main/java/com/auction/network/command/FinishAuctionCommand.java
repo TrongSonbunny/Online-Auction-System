@@ -20,6 +20,12 @@ public class FinishAuctionCommand extends BaseClientCommand {
     super(context);
   }
 
+  /**
+   * Kết thúc auction và cập nhật SQLite.
+   *
+   * @param message dữ liệu client gửi lên
+   * @return auction sau khi kết thúc
+   */
   @Override
   public Object execute(
       ClientMessage message) {

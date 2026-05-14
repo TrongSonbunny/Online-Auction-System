@@ -20,6 +20,12 @@ public class CancelAuctionCommand extends BaseClientCommand {
     super(context);
   }
 
+  /**
+   * Hủy auction và cập nhật SQLite.
+   *
+   * @param message dữ liệu client gửi lên
+   * @return auction sau khi hủy
+   */
   @Override
   public Object execute(
       ClientMessage message) {

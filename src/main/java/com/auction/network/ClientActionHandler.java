@@ -16,6 +16,7 @@ public class ClientActionHandler {
    * Constructor action handler.
    */
   public ClientActionHandler() {
+
     this.commandMap =
         ClientCommandFactory.createDefaultCommands();
   }
@@ -29,7 +30,8 @@ public class ClientActionHandler {
   public Object doAction(
       ClientMessage clientMessage) {
 
-    validateClientMessage(clientMessage);
+    validateClientMessage(
+        clientMessage);
 
     ClientCommand command =
         commandMap.get(

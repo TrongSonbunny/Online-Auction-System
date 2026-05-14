@@ -3,7 +3,11 @@ package com.auction.models.user;
 import com.auction.models.user.permission.AdminPermission;
 
 /**
- * User admin.
+ * User quản trị hệ thống (admin).
+ *
+ * <p>Admin có toàn bộ quyền: tạo/xóa auction, đặt giá, khóa user, quản lý hệ thống.
+ * Không có trường thêm — quyền xác định bởi
+ * {@link com.auction.models.user.permission.AdminPermission}.
  */
 public class Admin extends User {
 

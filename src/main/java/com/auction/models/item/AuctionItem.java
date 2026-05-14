@@ -4,7 +4,11 @@ import com.auction.exceptions.AuctionException;
 import java.util.Objects;
 
 /**
- * Đại diện cho item được đưa lên đấu giá.
+ * Đại diện cho sản phẩm được đưa lên đấu giá.
+ *
+ * <p>itemId bất biến sau khi tạo. Các trường còn lại (name, description, category,
+ * itemCondition, estimatedPrice) có thể cập nhật qua các setter với validation.
+ * Thường được tạo qua {@link ItemFactory#createItem} để sinh ID tự động.
  */
 public class AuctionItem {
 

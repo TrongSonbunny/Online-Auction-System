@@ -32,10 +32,23 @@ public final class IdGenerator {
    *
    * @return transaction ID
    */
-  public static String
-      generateTransactionId() {
+  public static String generateTransactionId() {
 
     return "TRANS-"
+        + UUID.randomUUID()
+            .toString()
+            .substring(0, 8)
+            .toUpperCase();
+  }
+
+  /**
+   * Sinh auto-bid ID.
+   *
+   * @return auto-bid ID
+   */
+  public static String generateAutoBidId() {
+
+    return "ABID-"
         + UUID.randomUUID()
             .toString()
             .substring(0, 8)

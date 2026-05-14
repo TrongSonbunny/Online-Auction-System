@@ -1,7 +1,11 @@
 package com.auction.exceptions;
 
 /**
- * Exception cơ sở cho toàn bộ hệ thống auction.
+ * Exception cơ sở (unchecked) cho toàn bộ hệ thống auction.
+ *
+ * <p>Hierarchy: {@code AuctionException} → {@code AuctionClosedException},
+ * {@code BidException} (→ {@code InvalidBidException}),
+ * {@code PaymentException}, {@code UnauthorizedException}.
  */
 public class AuctionException
     extends RuntimeException {

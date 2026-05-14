@@ -1,11 +1,19 @@
 package com.auction.models.payment;
 
 import com.auction.exceptions.PaymentException;
+import java.util.logging.Logger;
 
 /**
- * Payment strategy cho VNPay.
+ * Payment strategy thanh toán qua cổng VNPay.
+ *
+ * <p>Yêu cầu email tài khoản hợp lệ (chứa '@').
+ * {@code pay()} và {@code refund()} hiện tại ghi log ra console.
  */
 public class VnPayPayment implements PaymentStrategy {
+
+  private static final Logger logger =
+      Logger.getLogger(
+          VnPayPayment.class.getName());
 
   private final String accountEmail;
 
@@ -21,12 +29,18 @@ public class VnPayPayment implements PaymentStrategy {
     this.accountEmail = accountEmail;
   }
 
+  /**
+   * Thực hiện thanh toán qua VNPay.
+   *
+   * @param amount số tiền thanh toán (phải > 0)
+   * @return true nếu thành công
+   */
   @Override
   public boolean pay(double amount) {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Thanh toán "
             + amount
             + " bằng VNPay.");
@@ -34,12 +48,18 @@ public class VnPayPayment implements PaymentStrategy {
     return true;
   }
 
+  /**
+   * Hoàn tiền qua VNPay.
+   *
+   * @param amount số tiền hoàn (phải > 0)
+   * @return true nếu thành công
+   */
   @Override
   public boolean refund(double amount) {
 
     validateAmount(amount);
 
-    System.out.println(
+    logger.info(
         "Hoàn tiền "
             + amount
             + " qua VNPay.");
@@ -52,6 +72,11 @@ public class VnPayPayment implements PaymentStrategy {
     return "VNPay Payment";
   }
 
+  /**
+   * Validate số tiền phải lớn hơn 0.
+   *
+   * @param amount số tiền
+   */
   private void validateAmount(double amount) {
 
     if (amount <= 0) {
@@ -60,6 +85,11 @@ public class VnPayPayment implements PaymentStrategy {
     }
   }
 
+  /**
+   * Validate email không null, không blank và phải chứa ký tự '@'.
+   *
+   * @param email email tài khoản VNPay
+   */
   private void validateEmail(String email) {
 
     if (email == null

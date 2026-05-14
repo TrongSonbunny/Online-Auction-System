@@ -23,6 +23,12 @@ public class BidCommand extends BaseClientCommand {
     super(context);
   }
 
+  /**
+   * Thực hiện đặt giá, lưu bid transaction và cập nhật auction trong SQLite.
+   *
+   * @param message dữ liệu client gửi lên
+   * @return bid transaction được tạo
+   */
   @Override
   public Object execute(
       ClientMessage message) {

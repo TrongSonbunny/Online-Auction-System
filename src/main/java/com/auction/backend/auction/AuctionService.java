@@ -9,22 +9,43 @@ import com.auction.models.item.AuctionItem;
 import com.auction.models.user.Seller;
 
 /**
- * Service xử lý logic auction.
+ * Service điều phối luồng tạo, hủy và kết thúc auction.
+ *
+ * <p>Khi tạo auction, service sẽ validate seller, tạo auction mới, start auction,
+ * lưu auction vào {@link AuctionManager} và lên lịch kết thúc tự động bằng
+ * {@link AuctionScheduler}.
  */
 public class AuctionService {
 
   private final AuctionManager auctionManager;
 
-  private final AuctionValidator
-      auctionValidator;
+  private final AuctionValidator auctionValidator;
 
-  private final AuctionScheduler
-      auctionScheduler;
+  private final AuctionScheduler auctionScheduler;
 
   /**
-   * Constructor auction service.
+   * Constructor mặc định.
    */
   public AuctionService() {
+    this(new AuctionScheduler());
+  }
+
+  /**
+   * Constructor dùng chung scheduler từ bên ngoài.
+   *
+   * <p>Dùng constructor này khi cần để {@link AuctionService} và
+   * {@link com.auction.backend.bid.BidService} dùng chung một scheduler,
+   * đặc biệt khi có anti-snipe.
+   *
+   * @param auctionScheduler scheduler dùng để kết thúc/gia hạn auction
+   */
+  public AuctionService(
+      AuctionScheduler auctionScheduler) {
+
+    if (auctionScheduler == null) {
+      throw new AuctionException(
+          "AuctionScheduler không được null.");
+    }
 
     this.auctionManager =
         AuctionManager.getInstance();
@@ -33,7 +54,7 @@ public class AuctionService {
         new AuctionValidator();
 
     this.auctionScheduler =
-        new AuctionScheduler();
+        auctionScheduler;
   }
 
   /**
@@ -43,7 +64,7 @@ public class AuctionService {
    * @param item item đấu giá
    * @param startingPrice giá khởi điểm
    * @param durationSeconds thời gian đấu giá
-   * @return Auction mới
+   * @return auction mới
    */
   public Auction createAuction(
       Seller seller,
@@ -67,7 +88,8 @@ public class AuctionService {
 
     auction.start();
 
-    auctionManager.addAuction(auction);
+    auctionManager.addAuction(
+        auction);
 
     auctionScheduler.scheduleAuctionFinish(
         auction,
@@ -89,7 +111,6 @@ public class AuctionService {
             auctionId);
 
     if (auction == null) {
-
       throw new AuctionClosedException(
           "Không tìm thấy auction.");
     }
@@ -98,7 +119,7 @@ public class AuctionService {
   }
 
   /**
-   * Finish auction thủ công.
+   * Kết thúc auction thủ công.
    *
    * @param auctionId mã auction
    */
@@ -110,7 +131,6 @@ public class AuctionService {
             auctionId);
 
     if (auction == null) {
-
       throw new AuctionClosedException(
           "Không tìm thấy auction.");
     }
@@ -119,32 +139,30 @@ public class AuctionService {
   }
 
   /**
-   * Validate seller.
+   * Lấy auction manager.
    *
-   * @param seller seller
+   * @return auction manager
+   */
+  public AuctionManager getAuctionManager() {
+    return auctionManager;
+  }
+
+  /**
+   * Validate seller trước khi tạo auction.
+   *
+   * @param seller seller cần kiểm tra
    */
   private void validateSeller(
       Seller seller) {
 
     if (seller == null) {
-
       throw new AuctionException(
           "Seller không được null.");
     }
 
     if (!seller.canCreateAuction()) {
-
       throw new UnauthorizedException(
           "Seller không có quyền tạo auction.");
     }
-  }
-
-  /**
-   * Lấy auction manager.
-   *
-   * @return AuctionManager
-   */
-  public AuctionManager getAuctionManager() {
-    return auctionManager;
   }
 }
