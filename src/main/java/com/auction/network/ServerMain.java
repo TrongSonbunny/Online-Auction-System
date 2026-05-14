@@ -1,5 +1,6 @@
 package com.auction.network;
 
+import com.auction.backend.database.DatabaseManager;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -15,7 +16,8 @@ import org.slf4j.LoggerFactory;
 public class ServerMain {
 
   private static final Logger logger = LoggerFactory.getLogger(ServerMain.class);
-    
+  private static final DatabaseManager databaseManager = new DatabaseManager();
+  
   private static final int PORT = 8080;
 
   /**
@@ -25,6 +27,7 @@ public class ServerMain {
    */
   public static void main(String[] args) {
     logger.info("Đang khởi động Máy chủ Đấu giá trên cổng {}...", PORT);
+    databaseManager.initializeDatabase();
 
     // Khởi tạo ServerSocket và Trình quản lý Luồng ảo
     try (ServerSocket server = new ServerSocket(PORT);
