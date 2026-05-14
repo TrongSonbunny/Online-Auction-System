@@ -5,11 +5,8 @@ import com.auction.backend.auction.AuctionService;
 import com.auction.backend.auth.AuthService;
 import com.auction.backend.bid.AutoBidService;
 import com.auction.backend.bid.BidService;
-import com.auction.backend.database.dao.AuctionDao;
-import com.auction.backend.database.dao.BidDao;
-import com.auction.backend.database.dao.ItemDao;
 import com.auction.backend.database.dao.UserDao;
-import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.AuctionClosedException;
 import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.user.Admin;
@@ -17,13 +14,12 @@ import com.auction.models.user.Seller;
 import com.auction.models.user.User;
 
 /**
- * Base class cho các command xử lý ClientMessage.
- *
- * <p>Class này gom các dependency dùng chung và cung cấp helper để lấy user,
- * lấy auction, kiểm tra quyền quản lý auction.
+ * Base class cho các command xử lý request từ client.
  */
 public abstract class BaseClientCommand
     implements ClientCommand {
+
+  protected final CommandContext context;
 
   protected final AuctionManager auctionManager;
 
@@ -37,12 +33,6 @@ public abstract class BaseClientCommand
 
   protected final UserDao userDao;
 
-  protected final ItemDao itemDao;
-
-  protected final AuctionDao auctionDao;
-
-  protected final BidDao bidDao;
-
   /**
    * Constructor base command.
    *
@@ -51,54 +41,30 @@ public abstract class BaseClientCommand
   protected BaseClientCommand(
       CommandContext context) {
 
-    this.auctionManager =
-        context.getAuctionManager();
-
-    this.auctionService =
-        context.getAuctionService();
-
-    this.bidService =
-        context.getBidService();
-
-    this.autoBidService =
-        context.getAutoBidService();
-
-    this.authService =
-        context.getAuthService();
-
-    this.userDao =
-        context.getUserDao();
-
-    this.itemDao =
-        context.getItemDao();
-
-    this.auctionDao =
-        context.getAuctionDao();
-
-    this.bidDao =
-        context.getBidDao();
+    this.context = context;
+    this.auctionManager = context.getAuctionManager();
+    this.auctionService = context.getAuctionService();
+    this.bidService = context.getBidService();
+    this.autoBidService = context.getAutoBidService();
+    this.authService = context.getAuthService();
+    this.userDao = context.getUserDao();
   }
 
   /**
-   * Lấy user bắt buộc phải tồn tại.
+   * Lấy user bắt buộc tồn tại.
    *
    * @param userId mã user
-   * @return user tìm được
+   * @return user
    */
   protected User getRequiredUser(
       String userId) {
-
-    if (userId == null || userId.isBlank()) {
-      throw new AuctionException(
-          "UserId không hợp lệ.");
-    }
 
     User user =
         userDao.findById(
             userId);
 
     if (user == null) {
-      throw new AuctionException(
+      throw new UnauthorizedException(
           "Không tìm thấy user.");
     }
 
@@ -106,25 +72,20 @@ public abstract class BaseClientCommand
   }
 
   /**
-   * Lấy auction bắt buộc phải tồn tại.
+   * Lấy auction bắt buộc tồn tại trong RAM.
    *
    * @param auctionId mã auction
-   * @return auction tìm được
+   * @return auction
    */
   protected Auction getRequiredAuction(
       String auctionId) {
-
-    if (auctionId == null || auctionId.isBlank()) {
-      throw new AuctionException(
-          "AuctionId không hợp lệ.");
-    }
 
     Auction auction =
         auctionManager.findAuction(
             auctionId);
 
     if (auction == null) {
-      throw new AuctionException(
+      throw new AuctionClosedException(
           "Không tìm thấy auction.");
     }
 
@@ -132,7 +93,7 @@ public abstract class BaseClientCommand
   }
 
   /**
-   * Kiểm tra user có quyền quản lý auction không.
+   * Kiểm tra user có quyền quản lý auction hay không.
    *
    * @param user user cần kiểm tra
    * @param auction auction cần quản lý
@@ -146,8 +107,7 @@ public abstract class BaseClientCommand
     }
 
     if (user instanceof Seller
-        && auction.getSeller()
-            .getUserId()
+        && auction.getSeller().getUserId()
             .equals(user.getUserId())) {
       return;
     }

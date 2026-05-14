@@ -1,11 +1,11 @@
 package com.auction.network.command;
 
+import com.auction.backend.util.IdGenerator;
 import com.auction.exceptions.AuctionException;
 import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.item.AuctionItem;
 import com.auction.models.item.ItemCategory;
-import com.auction.models.item.ItemFactory;
 import com.auction.models.user.Seller;
 import com.auction.models.user.User;
 import com.auction.network.ClientMessage;
@@ -13,7 +13,8 @@ import com.auction.network.ClientMessage;
 /**
  * Command xử lý tạo auction.
  */
-public class CreateAuctionCommand extends BaseClientCommand {
+public class CreateAuctionCommand
+    extends BaseClientCommand {
 
   /**
    * Constructor create auction command.
@@ -27,7 +28,7 @@ public class CreateAuctionCommand extends BaseClientCommand {
   }
 
   /**
-   * Tạo item, lưu item vào SQLite, tạo auction và lưu auction vào SQLite.
+   * Tạo auction mới.
    *
    * @param message dữ liệu client gửi lên
    * @return auction vừa tạo
@@ -49,7 +50,8 @@ public class CreateAuctionCommand extends BaseClientCommand {
         message);
 
     AuctionItem item =
-        ItemFactory.createItem(
+        new AuctionItem(
+            IdGenerator.generateItemId(),
             message.getItemName(),
             message.getItemDescription(),
             ItemCategory.valueOf(
@@ -57,18 +59,12 @@ public class CreateAuctionCommand extends BaseClientCommand {
             message.getItemCondition(),
             message.getEstimatedPrice());
 
-    itemDao.saveItem(
-        item);
-
     Auction auction =
         auctionService.createAuction(
             (Seller) user,
             item,
             message.getStartingPrice(),
             message.getDurationSeconds());
-
-    auctionDao.saveAuction(
-        auction);
 
     return auction;
   }

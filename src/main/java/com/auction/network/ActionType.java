@@ -17,5 +17,9 @@ public enum ActionType {
 
   FINISH_AUCTION,
 
-  GET_ALL_AUCTIONS
+  GET_ALL_AUCTIONS,
+
+  REGISTER_AUTO_BID,
+
+  CANCEL_AUTO_BID
 }

@@ -12,13 +12,14 @@ import com.auction.backend.database.dao.AuctionDao;
 import com.auction.backend.database.dao.BidDao;
 import com.auction.backend.database.dao.ItemDao;
 import com.auction.backend.database.dao.UserDao;
+import com.auction.backend.observer.AuctionEventPublisher;
+import com.auction.backend.observer.observers.DataPersistenceObserver;
 
 /**
- * Gom các service, manager và DAO dùng chung cho command.
+ * Gom các service, manager, DAO và observer dùng chung cho command.
  *
- * <p>Context này đảm bảo {@link AuctionService} và {@link BidService}
- * dùng chung {@link AuctionScheduler}, nhờ đó anti-snipe có thể reschedule
- * đúng task kết thúc auction ban đầu.
+ * <p>Context này đảm bảo toàn bộ service dùng chung dependency, đặc biệt là
+ * {@link AuctionScheduler} và {@link AuctionEventPublisher}.
  */
 public class CommandContext {
 
@@ -46,20 +47,45 @@ public class CommandContext {
 
   private final BidDao bidDao;
 
+  private final AuctionEventPublisher eventPublisher;
+
   /**
    * Constructor context mặc định.
    */
   public CommandContext() {
 
+    this.userDao =
+        new UserDao();
+
+    this.itemDao =
+        new ItemDao();
+
+    this.auctionDao =
+        new AuctionDao();
+
+    this.bidDao =
+        new BidDao();
+
+    this.eventPublisher =
+        new AuctionEventPublisher();
+
+    this.eventPublisher.addObserver(
+        new DataPersistenceObserver(
+            itemDao,
+            auctionDao,
+            bidDao));
+
     this.auctionManager =
         AuctionManager.getInstance();
 
     this.auctionScheduler =
-        new AuctionScheduler();
+        new AuctionScheduler(
+            eventPublisher);
 
     this.auctionService =
         new AuctionService(
-            auctionScheduler);
+            auctionScheduler,
+            eventPublisher);
 
     this.bidHistoryManager =
         new BidHistoryManager();
@@ -76,22 +102,12 @@ public class CommandContext {
         new BidService(
             bidHistoryManager,
             auctionScheduler,
-            autoBidService);
+            autoBidService,
+            eventPublisher);
 
     this.authService =
-        new AuthService();
-
-    this.userDao =
-        new UserDao();
-
-    this.itemDao =
-        new ItemDao();
-
-    this.auctionDao =
-        new AuctionDao();
-
-    this.bidDao =
-        new BidDao();
+        new AuthService(
+            userDao);
   }
 
   /**
@@ -131,18 +147,18 @@ public class CommandContext {
   }
 
   /**
-   * Lấy auto bid manager.
+   * Lấy auto-bid manager.
    *
-   * @return auto bid manager
+   * @return auto-bid manager
    */
   public AutoBidManager getAutoBidManager() {
     return autoBidManager;
   }
 
   /**
-   * Lấy auto bid service.
+   * Lấy auto-bid service.
    *
-   * @return auto bid service
+   * @return auto-bid service
    */
   public AutoBidService getAutoBidService() {
     return autoBidService;
@@ -200,5 +216,14 @@ public class CommandContext {
    */
   public BidDao getBidDao() {
     return bidDao;
+  }
+
+  /**
+   * Lấy event publisher.
+   *
+   * @return event publisher
+   */
+  public AuctionEventPublisher getEventPublisher() {
+    return eventPublisher;
   }
 }

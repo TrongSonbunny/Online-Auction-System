@@ -14,11 +14,11 @@ public class AuthService {
 
   private final UserDao userDao;
 
-  /**
-   * Constructor auth service.
-   */
-  public AuthService() {
-    this.userDao = new UserDao();
+  public AuthService(UserDao userDao) {
+    if (userDao == null) {
+      throw new AuctionException("UserDao không được null.");
+    }
+    this.userDao = userDao;
   }
 
   /**

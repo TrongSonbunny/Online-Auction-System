@@ -1,14 +1,14 @@
 package com.auction.network.command;
 
+import com.auction.backend.bid.BidResult;
 import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
-import com.auction.models.bid.BidTransaction;
 import com.auction.models.user.Bidder;
 import com.auction.models.user.User;
 import com.auction.network.ClientMessage;
 
 /**
- * Command xử lý đặt giá.
+ * Command xử lý đặt giá thủ công.
  */
 public class BidCommand extends BaseClientCommand {
 
@@ -24,10 +24,10 @@ public class BidCommand extends BaseClientCommand {
   }
 
   /**
-   * Thực hiện đặt giá, lưu bid transaction và cập nhật auction trong SQLite.
+   * Đặt bid thủ công.
    *
    * @param message dữ liệu client gửi lên
-   * @return bid transaction được tạo
+   * @return kết quả bid gồm manual bid và auto-bid phát sinh
    */
   @Override
   public Object execute(
@@ -46,18 +46,12 @@ public class BidCommand extends BaseClientCommand {
         getRequiredAuction(
             message.getAuctionId());
 
-    BidTransaction transaction =
+    BidResult result =
         bidService.placeBid(
             auction,
             (Bidder) user,
             message.getBidAmount());
 
-    bidDao.saveBidTransaction(
-        transaction);
-
-    auctionDao.updateAuction(
-        auction);
-
-    return transaction;
+    return result;
   }
 }

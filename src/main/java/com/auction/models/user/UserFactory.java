@@ -1,8 +1,8 @@
 package com.auction.models.user;
 
+import com.auction.backend.util.IdGenerator;
 import com.auction.exceptions.AuctionException;
 import com.auction.models.payment.MomoPayment;
-import java.util.UUID;
 
 /**
  * Factory tạo user theo role.
@@ -29,7 +29,7 @@ public final class UserFactory {
       String email) {
 
     return createUserWithId(
-        generateUserId(),
+        IdGenerator.generateUserId(),
         role,
         name,
         email);
@@ -81,19 +81,5 @@ public final class UserFactory {
         throw new AuctionException(
             "Role không hợp lệ.");
     }
-  }
-
-  /**
-   * Sinh user id.
-   *
-   * @return user id
-   */
-  private static String generateUserId() {
-
-    return "USER-"
-        + UUID.randomUUID()
-            .toString()
-            .substring(0, 8)
-            .toUpperCase();
   }
 }

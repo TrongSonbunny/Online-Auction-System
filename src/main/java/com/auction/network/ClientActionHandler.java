@@ -7,18 +7,19 @@ import java.util.Map;
 
 /**
  * Xử lý action nhận từ client.
+ *
+ * <p>Class này dùng static method để có thể gọi trực tiếp mà không cần tạo
+ * object ClientActionHandler.
  */
-public class ClientActionHandler {
+public final class ClientActionHandler {
 
-  private final Map<ActionType, ClientCommand> commandMap;
+  private static final Map<ActionType, ClientCommand> COMMAND_MAP =
+      ClientCommandFactory.createDefaultCommands();
 
   /**
-   * Constructor action handler.
+   * Private constructor.
    */
-  public ClientActionHandler() {
-
-    this.commandMap =
-        ClientCommandFactory.createDefaultCommands();
+  private ClientActionHandler() {
   }
 
   /**
@@ -27,14 +28,14 @@ public class ClientActionHandler {
    * @param clientMessage dữ liệu client gửi lên
    * @return kết quả xử lý
    */
-  public Object doAction(
+  public static Object doAction(
       ClientMessage clientMessage) {
 
     validateClientMessage(
         clientMessage);
 
     ClientCommand command =
-        commandMap.get(
+        COMMAND_MAP.get(
             clientMessage.getAction());
 
     if (command == null) {
@@ -51,7 +52,7 @@ public class ClientActionHandler {
    *
    * @param clientMessage dữ liệu client gửi lên
    */
-  private void validateClientMessage(
+  private static void validateClientMessage(
       ClientMessage clientMessage) {
 
     if (clientMessage == null) {

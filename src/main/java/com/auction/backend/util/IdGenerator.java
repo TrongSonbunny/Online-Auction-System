@@ -54,4 +54,30 @@ public final class IdGenerator {
             .substring(0, 8)
             .toUpperCase();
   }
+
+  /**
+   * Sinh user ID.
+   *
+   * @return user ID
+   */
+  public static String generateUserId() {
+    return "USER-" 
+      + UUID.randomUUID()
+        .toString()
+        .substring(0, 8)
+        .toUpperCase();
+  }
+
+  /**
+  * Sinh mã item.
+  *
+  * @return item id
+  */
+  public static String generateItemId() {
+    return "ITEM-" + 
+      UUID.randomUUID()
+        .toString()
+        .substring(0, 8)
+        .toUpperCase();
+  }
 }
