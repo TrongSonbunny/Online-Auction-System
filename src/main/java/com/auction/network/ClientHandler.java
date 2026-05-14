@@ -52,8 +52,8 @@ public class ClientHandler implements Runnable {
           ClientMessage message = gson.fromJson(clientInput, ClientMessage.class);
           // Lợi khi dùng Gson: Ví dụ như khi Client nhập thiếu một trường dữ liệu ({"action":
           // "BID"} nhưng không có username,...) thì những biến bị bỏ trống đó sẽ được cho vào thành
-          // null/0/false/... mà không làm crash chương trình.:w
-          // ClientActionHandler.doAction(message)
+          // null/0/false/... mà không làm crash chương trình.
+          // ClientActionHandler.doAction(message, this)
           
 
         } catch (com.google.gson.JsonSyntaxException jsonError) {
