@@ -56,6 +56,14 @@ public final class ClientCommandFactory {
         ActionType.GET_ALL_AUCTIONS,
         new GetAllAuctionsCommand(context));
 
+    commands.put(
+        ActionType.REGISTER_AUTO_BID,
+        new RegisterAutoBidCommand(context));
+
+    commands.put(
+        ActionType.CANCEL_AUTO_BID,
+        new CancelAutoBidCommand(context));
+
     return commands;
   }
 }

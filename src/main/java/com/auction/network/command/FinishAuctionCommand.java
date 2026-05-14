@@ -7,7 +7,8 @@ import com.auction.network.ClientMessage;
 /**
  * Command xử lý kết thúc auction.
  */
-public class FinishAuctionCommand extends BaseClientCommand {
+public class FinishAuctionCommand
+    extends BaseClientCommand {
 
   /**
    * Constructor finish auction command.
@@ -20,6 +21,12 @@ public class FinishAuctionCommand extends BaseClientCommand {
     super(context);
   }
 
+  /**
+   * Kết thúc auction thủ công.
+   *
+   * @param message dữ liệu client gửi lên
+   * @return auction sau khi kết thúc
+   */
   @Override
   public Object execute(
       ClientMessage message) {
@@ -36,12 +43,7 @@ public class FinishAuctionCommand extends BaseClientCommand {
         user,
         auction);
 
-    auctionService.finishAuction(
+    return auctionService.finishAuction(
         message.getAuctionId());
-
-    auctionDao.updateAuction(
-        auction);
-
-    return auction;
   }
 }

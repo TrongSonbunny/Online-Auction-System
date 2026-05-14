@@ -1,7 +1,7 @@
 package com.auction.backend.observer;
 
 /**
- * Enum loại event trong hệ thống auction.
+ * Các loại event trong hệ thống đấu giá.
  */
 public enum AuctionEventType {
 
@@ -9,13 +9,17 @@ public enum AuctionEventType {
 
   AUCTION_STARTED,
 
+  AUCTION_FINISHED,
+
+  AUCTION_CANCELLED,
+
+  AUCTION_EXTENDED,
+
   NEW_BID,
 
   AUTO_BID_PLACED,
 
-  AUCTION_EXTENDED,
+  AUTO_BID_REGISTERED,
 
-  AUCTION_FINISHED,
-
-  AUCTION_CANCELLED
+  AUTO_BID_CANCELLED
 }

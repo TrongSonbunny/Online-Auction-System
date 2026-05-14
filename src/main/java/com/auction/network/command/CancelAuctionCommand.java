@@ -7,7 +7,8 @@ import com.auction.network.ClientMessage;
 /**
  * Command xử lý hủy auction.
  */
-public class CancelAuctionCommand extends BaseClientCommand {
+public class CancelAuctionCommand
+    extends BaseClientCommand {
 
   /**
    * Constructor cancel auction command.
@@ -20,6 +21,12 @@ public class CancelAuctionCommand extends BaseClientCommand {
     super(context);
   }
 
+  /**
+   * Hủy auction.
+   *
+   * @param message dữ liệu client gửi lên
+   * @return auction sau khi hủy
+   */
   @Override
   public Object execute(
       ClientMessage message) {
@@ -36,12 +43,7 @@ public class CancelAuctionCommand extends BaseClientCommand {
         user,
         auction);
 
-    auctionService.cancelAuction(
+    return auctionService.cancelAuction(
         message.getAuctionId());
-
-    auctionDao.updateAuction(
-        auction);
-
-    return auction;
   }
 }

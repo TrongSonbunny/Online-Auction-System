@@ -10,8 +10,8 @@ import java.util.List;
  * Quản lý lịch sử bid transaction trong RAM.
  *
  * <p>Mọi thao tác đều {@code synchronized} để đảm bảo thread-safety khi nhiều
- * thread ghi bid cùng lúc (ví dụ: auto-bid cascade song song với bid thủ công).
- * {@link #getBidHistory()} trả về unmodifiable list để tránh sửa ngoài.
+ * thread ghi bid cùng lúc. {@link #getBidHistory()} trả về snapshot immutable
+ * để bên ngoài không nhìn trực tiếp vào list gốc.
  */
 public class BidHistoryManager {
 
@@ -43,13 +43,13 @@ public class BidHistoryManager {
   /**
    * Lấy toàn bộ lịch sử bid.
    *
-   * @return danh sách immutable
+   * @return snapshot immutable của lịch sử bid
    */
   public synchronized List<BidTransaction>
       getBidHistory() {
 
     return Collections.unmodifiableList(
-        bidHistory);
+        new ArrayList<>(bidHistory));
   }
 
   /**

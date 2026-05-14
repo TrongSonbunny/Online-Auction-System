@@ -23,6 +23,12 @@ public class ClientMessage {
 
   private double bidAmount;
 
+  private String autoBidId;
+
+  private double maxBid;
+
+  private double increment;
+
   private String itemName;
 
   private String itemDescription;
@@ -95,7 +101,7 @@ public class ClientMessage {
   /**
    * Lấy role user.
    *
-   * @return role
+   * @return role user
    */
   public UserRole getRole() {
     return role;
@@ -193,7 +199,7 @@ public class ClientMessage {
   }
 
   /**
-   * Lấy số tiền bid.
+   * Lấy số tiền bid thủ công.
    *
    * @return số tiền bid
    */
@@ -202,7 +208,7 @@ public class ClientMessage {
   }
 
   /**
-   * Cập nhật số tiền bid.
+   * Cập nhật số tiền bid thủ công.
    *
    * @param bidAmount số tiền bid
    */
@@ -210,6 +216,66 @@ public class ClientMessage {
       double bidAmount) {
 
     this.bidAmount = bidAmount;
+  }
+
+  /**
+   * Lấy mã auto-bid.
+   *
+   * @return auto-bid id
+   */
+  public String getAutoBidId() {
+    return autoBidId;
+  }
+
+  /**
+   * Cập nhật mã auto-bid.
+   *
+   * @param autoBidId mã auto-bid
+   */
+  public void setAutoBidId(
+      String autoBidId) {
+
+    this.autoBidId = autoBidId;
+  }
+
+  /**
+   * Lấy giá tối đa của auto-bid.
+   *
+   * @return giá tối đa
+   */
+  public double getMaxBid() {
+    return maxBid;
+  }
+
+  /**
+   * Cập nhật giá tối đa của auto-bid.
+   *
+   * @param maxBid giá tối đa
+   */
+  public void setMaxBid(
+      double maxBid) {
+
+    this.maxBid = maxBid;
+  }
+
+  /**
+   * Lấy bước giá của auto-bid.
+   *
+   * @return bước giá
+   */
+  public double getIncrement() {
+    return increment;
+  }
+
+  /**
+   * Cập nhật bước giá của auto-bid.
+   *
+   * @param increment bước giá
+   */
+  public void setIncrement(
+      double increment) {
+
+    this.increment = increment;
   }
 
   /**
@@ -467,6 +533,45 @@ public class ClientMessage {
         double bidAmount) {
 
       message.setBidAmount(bidAmount);
+      return this;
+    }
+
+    /**
+     * Gán auto-bid id cho message.
+     *
+     * @param autoBidId mã auto-bid
+     * @return builder hiện tại
+     */
+    public Builder autoBidId(
+        String autoBidId) {
+
+      message.setAutoBidId(autoBidId);
+      return this;
+    }
+
+    /**
+     * Gán giá tối đa cho auto-bid.
+     *
+     * @param maxBid giá tối đa
+     * @return builder hiện tại
+     */
+    public Builder maxBid(
+        double maxBid) {
+
+      message.setMaxBid(maxBid);
+      return this;
+    }
+
+    /**
+     * Gán bước giá cho auto-bid.
+     *
+     * @param increment bước giá
+     * @return builder hiện tại
+     */
+    public Builder increment(
+        double increment) {
+
+      message.setIncrement(increment);
       return this;
     }
 

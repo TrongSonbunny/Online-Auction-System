@@ -1,30 +1,163 @@
 package com.auction.network;
 
 import com.auction.models.user.UserRole;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * Dữ liệu gửi từ backend về frontend (Response).
+ *
+ * <p>Class này được dùng cho cả response thông thường và event real-time
+ * từ server gửi về client.
  */
 public class ServerMessage {
 
+  /** Trạng thái thành công. */
+  public static final String STATUS_SUCCESS = "SUCCESS";
+
+  /** Trạng thái lỗi. */
+  public static final String STATUS_ERROR = "ERROR";
+
+  /** Action dùng cho event real-time. */
+  public static final String ACTION_EVENT = "EVENT";
+
   private String action;
+
   private String status;
+
   private String message;
+
+  private String eventType;
+
   private String userId;
+
   private UserRole role;
+
   private String auctionId;
+
   private double currentPrice;
+
   private String currentLeaderId;
+
   private String endTime;
+
   private Object item;
+
   private List<Object> auctions;
+
+  private Object data;
+
+  private String createdAt;
 
   /**
    * Constructor mặc định cho JSON parser.
    */
   public ServerMessage() {
-    // Constructor rỗng dành cho các thư viện parse JSON như Gson/Jackson
+    this.createdAt = LocalDateTime.now().toString();
+  }
+
+  /**
+   * Tạo response thành công.
+   *
+   * @param action action đã xử lý
+   * @param message thông báo trả về
+   * @return server message
+   */
+  public static ServerMessage success(
+      String action,
+      String message) {
+
+    return ServerMessage.builder()
+        .action(action)
+        .status(STATUS_SUCCESS)
+        .message(message)
+        .build();
+  }
+
+  /**
+   * Tạo response thành công có data.
+   *
+   * @param action action đã xử lý
+   * @param message thông báo trả về
+   * @param data dữ liệu trả về
+   * @return server message
+   */
+  public static ServerMessage success(
+      String action,
+      String message,
+      Object data) {
+
+    return ServerMessage.builder()
+        .action(action)
+        .status(STATUS_SUCCESS)
+        .message(message)
+        .data(data)
+        .build();
+  }
+
+  /**
+   * Tạo response lỗi.
+   *
+   * @param action action gây lỗi
+   * @param message thông báo lỗi
+   * @return server message
+   */
+  public static ServerMessage error(
+      String action,
+      String message) {
+
+    return ServerMessage.builder()
+        .action(action)
+        .status(STATUS_ERROR)
+        .message(message)
+        .build();
+  }
+
+  /**
+   * Tạo message event real-time.
+   *
+   * @param eventType loại event
+   * @param auctionId mã auction liên quan
+   * @param message thông báo event
+   * @return server message
+   */
+  public static ServerMessage event(
+      String eventType,
+      String auctionId,
+      String message) {
+
+    return ServerMessage.builder()
+        .action(ACTION_EVENT)
+        .status(STATUS_SUCCESS)
+        .eventType(eventType)
+        .auctionId(auctionId)
+        .message(message)
+        .build();
+  }
+
+  /**
+   * Tạo message event real-time có data.
+   *
+   * @param eventType loại event
+   * @param auctionId mã auction liên quan
+   * @param message thông báo event
+   * @param data dữ liệu event
+   * @return server message
+   */
+  public static ServerMessage event(
+      String eventType,
+      String auctionId,
+      String message,
+      Object data) {
+
+    return ServerMessage.builder()
+        .action(ACTION_EVENT)
+        .status(STATUS_SUCCESS)
+        .eventType(eventType)
+        .auctionId(auctionId)
+        .message(message)
+        .data(data)
+        .build();
   }
 
   /**
@@ -50,14 +183,16 @@ public class ServerMessage {
    *
    * @param action action cần gán
    */
-  public void setAction(String action) {
+  public void setAction(
+      String action) {
+
     this.action = action;
   }
 
   /**
    * Lấy trạng thái của message.
    *
-   * @return status (SUCCESS hoặc ERROR)
+   * @return status
    */
   public String getStatus() {
     return status;
@@ -68,12 +203,14 @@ public class ServerMessage {
    *
    * @param status trạng thái cần gán
    */
-  public void setStatus(String status) {
+  public void setStatus(
+      String status) {
+
     this.status = status;
   }
 
   /**
-   * Lấy thông báo (thường dùng cho lỗi).
+   * Lấy thông báo.
    *
    * @return thông báo
    */
@@ -86,8 +223,30 @@ public class ServerMessage {
    *
    * @param message thông báo cần gán
    */
-  public void setMessage(String message) {
+  public void setMessage(
+      String message) {
+
     this.message = message;
+  }
+
+  /**
+   * Lấy loại event.
+   *
+   * @return loại event
+   */
+  public String getEventType() {
+    return eventType;
+  }
+
+  /**
+   * Cập nhật loại event.
+   *
+   * @param eventType loại event cần gán
+   */
+  public void setEventType(
+      String eventType) {
+
+    this.eventType = eventType;
   }
 
   /**
@@ -104,7 +263,9 @@ public class ServerMessage {
    *
    * @param userId mã người dùng cần gán
    */
-  public void setUserId(String userId) {
+  public void setUserId(
+      String userId) {
+
     this.userId = userId;
   }
 
@@ -122,7 +283,9 @@ public class ServerMessage {
    *
    * @param role vai trò cần gán
    */
-  public void setRole(UserRole role) {
+  public void setRole(
+      UserRole role) {
+
     this.role = role;
   }
 
@@ -140,12 +303,14 @@ public class ServerMessage {
    *
    * @param auctionId mã phiên đấu giá cần gán
    */
-  public void setAuctionId(String auctionId) {
+  public void setAuctionId(
+      String auctionId) {
+
     this.auctionId = auctionId;
   }
 
   /**
-   * Lấy giá hiện tại (hoặc giá bid mới).
+   * Lấy giá hiện tại hoặc giá bid mới.
    *
    * @return giá hiện tại
    */
@@ -154,11 +319,13 @@ public class ServerMessage {
   }
 
   /**
-   * Cập nhật giá hiện tại (hoặc giá bid mới).
+   * Cập nhật giá hiện tại hoặc giá bid mới.
    *
    * @param currentPrice giá hiện tại cần gán
    */
-  public void setCurrentPrice(double currentPrice) {
+  public void setCurrentPrice(
+      double currentPrice) {
+
     this.currentPrice = currentPrice;
   }
 
@@ -176,14 +343,16 @@ public class ServerMessage {
    *
    * @param currentLeaderId mã leader cần gán
    */
-  public void setCurrentLeaderId(String currentLeaderId) {
+  public void setCurrentLeaderId(
+      String currentLeaderId) {
+
     this.currentLeaderId = currentLeaderId;
   }
 
   /**
    * Lấy thời gian kết thúc phiên đấu giá.
    *
-   * @return thời gian kết thúc (chuỗi)
+   * @return thời gian kết thúc
    */
   public String getEndTime() {
     return endTime;
@@ -194,7 +363,9 @@ public class ServerMessage {
    *
    * @param endTime thời gian kết thúc cần gán
    */
-  public void setEndTime(String endTime) {
+  public void setEndTime(
+      String endTime) {
+
     this.endTime = endTime;
   }
 
@@ -212,7 +383,9 @@ public class ServerMessage {
    *
    * @param item đối tượng item cần gán
    */
-  public void setItem(Object item) {
+  public void setItem(
+      Object item) {
+
     this.item = item;
   }
 
@@ -230,17 +403,68 @@ public class ServerMessage {
    *
    * @param auctions danh sách auctions cần gán
    */
-  public void setAuctions(List<Object> auctions) {
+  public void setAuctions(
+      List<Object> auctions) {
+
     this.auctions = auctions;
+  }
+
+  /**
+   * Lấy dữ liệu mở rộng.
+   *
+   * @return data
+   */
+  public Object getData() {
+    return data;
+  }
+
+  /**
+   * Cập nhật dữ liệu mở rộng.
+   *
+   * @param data dữ liệu cần gán
+   */
+  public void setData(
+      Object data) {
+
+    this.data = data;
+  }
+
+  /**
+   * Lấy thời điểm tạo message.
+   *
+   * @return thời điểm tạo message
+   */
+  public String getCreatedAt() {
+    return createdAt;
+  }
+
+  /**
+   * Cập nhật thời điểm tạo message.
+   *
+   * @param createdAt thời điểm tạo message
+   */
+  public void setCreatedAt(
+      String createdAt) {
+
+    this.createdAt = createdAt;
   }
 
   /**
    * Kiểm tra xem phản hồi từ server có thành công hay không.
    *
-   * @return true nếu trạng thái là SUCCESS, ngược lại là false
+   * @return true nếu trạng thái là SUCCESS
    */
   public boolean isSuccess() {
-    return "SUCCESS".equalsIgnoreCase(this.status);
+    return STATUS_SUCCESS.equalsIgnoreCase(this.status);
+  }
+
+  /**
+   * Kiểm tra message có phải lỗi hay không.
+   *
+   * @return true nếu trạng thái là ERROR
+   */
+  public boolean isError() {
+    return STATUS_ERROR.equalsIgnoreCase(this.status);
   }
 
   /**
@@ -263,7 +487,9 @@ public class ServerMessage {
      * @param action action
      * @return builder hiện tại
      */
-    public Builder action(String action) {
+    public Builder action(
+        String action) {
+
       message.setAction(action);
       return this;
     }
@@ -274,7 +500,9 @@ public class ServerMessage {
      * @param status trạng thái
      * @return builder hiện tại
      */
-    public Builder status(String status) {
+    public Builder status(
+        String status) {
+
       message.setStatus(status);
       return this;
     }
@@ -282,11 +510,26 @@ public class ServerMessage {
     /**
      * Gán thông báo cho message.
      *
-     * @param errorMsg thông báo
+     * @param text thông báo
      * @return builder hiện tại
      */
-    public Builder message(String errorMsg) {
-      message.setMessage(errorMsg);
+    public Builder message(
+        String text) {
+
+      message.setMessage(text);
+      return this;
+    }
+
+    /**
+     * Gán loại event cho message.
+     *
+     * @param eventType loại event
+     * @return builder hiện tại
+     */
+    public Builder eventType(
+        String eventType) {
+
+      message.setEventType(eventType);
       return this;
     }
 
@@ -296,7 +539,9 @@ public class ServerMessage {
      * @param userId mã người dùng
      * @return builder hiện tại
      */
-    public Builder userId(String userId) {
+    public Builder userId(
+        String userId) {
+
       message.setUserId(userId);
       return this;
     }
@@ -307,7 +552,9 @@ public class ServerMessage {
      * @param role vai trò
      * @return builder hiện tại
      */
-    public Builder role(UserRole role) {
+    public Builder role(
+        UserRole role) {
+
       message.setRole(role);
       return this;
     }
@@ -318,18 +565,22 @@ public class ServerMessage {
      * @param auctionId mã phiên đấu giá
      * @return builder hiện tại
      */
-    public Builder auctionId(String auctionId) {
+    public Builder auctionId(
+        String auctionId) {
+
       message.setAuctionId(auctionId);
       return this;
     }
 
     /**
-     * Gán giá hiện tại (hoặc giá bid mới) cho message.
+     * Gán giá hiện tại hoặc giá bid mới cho message.
      *
      * @param currentPrice giá hiện tại
      * @return builder hiện tại
      */
-    public Builder currentPrice(double currentPrice) {
+    public Builder currentPrice(
+        double currentPrice) {
+
       message.setCurrentPrice(currentPrice);
       return this;
     }
@@ -340,7 +591,9 @@ public class ServerMessage {
      * @param currentLeaderId mã leader
      * @return builder hiện tại
      */
-    public Builder currentLeaderId(String currentLeaderId) {
+    public Builder currentLeaderId(
+        String currentLeaderId) {
+
       message.setCurrentLeaderId(currentLeaderId);
       return this;
     }
@@ -351,7 +604,9 @@ public class ServerMessage {
      * @param endTime thời gian kết thúc
      * @return builder hiện tại
      */
-    public Builder endTime(String endTime) {
+    public Builder endTime(
+        String endTime) {
+
       message.setEndTime(endTime);
       return this;
     }
@@ -362,7 +617,9 @@ public class ServerMessage {
      * @param item vật phẩm đấu giá
      * @return builder hiện tại
      */
-    public Builder item(Object item) {
+    public Builder item(
+        Object item) {
+
       message.setItem(item);
       return this;
     }
@@ -373,8 +630,36 @@ public class ServerMessage {
      * @param auctions danh sách auctions
      * @return builder hiện tại
      */
-    public Builder auctions(List<Object> auctions) {
+    public Builder auctions(
+        List<Object> auctions) {
+
       message.setAuctions(auctions);
+      return this;
+    }
+
+    /**
+     * Gán dữ liệu mở rộng cho message.
+     *
+     * @param data dữ liệu
+     * @return builder hiện tại
+     */
+    public Builder data(
+        Object data) {
+
+      message.setData(data);
+      return this;
+    }
+
+    /**
+     * Gán thời điểm tạo message.
+     *
+     * @param createdAt thời điểm tạo
+     * @return builder hiện tại
+     */
+    public Builder createdAt(
+        String createdAt) {
+
+      message.setCreatedAt(createdAt);
       return this;
     }
 

@@ -25,15 +25,18 @@ public class AuctionManager {
    * Private constructor singleton.
    */
   private AuctionManager() {
-    this.auctionMap = new ConcurrentHashMap<>();
+
+    this.auctionMap =
+        new ConcurrentHashMap<>();
   }
 
   /**
-   * Lấy instance singleton của AuctionManager.
+   * Lấy instance singleton.
    *
-   * @return AuctionManager instance
+   * @return AuctionManager
    */
-  public static synchronized AuctionManager getInstance() {
+  public static synchronized AuctionManager
+      getInstance() {
 
     if (instance == null) {
       instance = new AuctionManager();
@@ -43,7 +46,7 @@ public class AuctionManager {
   }
 
   /**
-   * Thêm auction vào RAM.
+   * Thêm auction.
    *
    * @param auction auction cần thêm
    */
@@ -51,6 +54,7 @@ public class AuctionManager {
       Auction auction) {
 
     if (auction == null) {
+
       throw new AuctionException(
           "Auction không được null.");
     }
@@ -61,7 +65,7 @@ public class AuctionManager {
   }
 
   /**
-   * Xóa auction khỏi RAM theo id.
+   * Xóa auction.
    *
    * @param auctionId mã auction
    */
@@ -75,7 +79,7 @@ public class AuctionManager {
    * Tìm auction theo id.
    *
    * @param auctionId mã auction
-   * @return auction tìm được hoặc null nếu không tồn tại
+   * @return Auction tìm được
    */
   public Auction findAuction(
       String auctionId) {
@@ -84,11 +88,12 @@ public class AuctionManager {
   }
 
   /**
-   * Lấy toàn bộ auction trong RAM.
+   * Lấy toàn bộ auction.
    *
-   * @return danh sách auction immutable
+   * @return collection immutable
    */
-  public Collection<Auction> getAllAuctions() {
+  public Collection<Auction>
+      getAllAuctions() {
 
     return Collections.unmodifiableCollection(
         auctionMap.values());
