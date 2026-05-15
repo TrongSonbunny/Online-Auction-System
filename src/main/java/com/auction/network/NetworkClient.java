@@ -80,7 +80,6 @@ public class NetworkClient {
    * Establishes a connection to the server using system properties for IP and Port.
    */
   public void connect() {
-    // Thay "trongson-laptop.local" bằng tên máy tính TẬT của bạn
     String serverIp = System.getProperty("server.ip", "trongson-ThinkPad-T450.local"); 
     int port = Integer.getInteger("server.port", 8080);
     
