@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,29 +18,56 @@ import org.slf4j.LoggerFactory;
 public class NetworkClient {
 
   private static final Logger logger = LoggerFactory.getLogger(NetworkClient.class);
+  
   private final Gson gson;
+  private final List<MessageListener> listeners;
+  
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
   private volatile boolean isRunning = true;
 
   /**
-   * Constructor to allow converting the Json.
+   * Constructor initializes JSON converter and thread-safe listener list.
    */
   public NetworkClient() {
     this.gson = new Gson();
+    this.listeners = new CopyOnWriteArrayList<>();
+  }
+
+  /**
+   * Interface để giao diện người dùng (UI) đăng ký nhận dữ liệu từ server.
+   */
+  public interface MessageListener {
+    /**
+     * Called when a message is received from the server.
+     *
+     * @param message The ServerMessage received from the server.
+     */
+    void onMessageReceived(ServerMessage message);
+  }
+
+  /**
+   * Đăng ký một listener (thường là một Controller của UI).
+   *
+   * @param listener controller muốn nhận dữ liệu
+   */
+  public void addListener(MessageListener listener) {
+    listeners.add(listener);
   }
 
   /**
    * Establishes a connection to the server using system properties for IP and Port.
    */
   public void connect() {
-    String serverIp = System.getProperty("server.ip", "localhost");
+    // Thay "trongson-laptop.local" bằng tên máy tính TẬT của bạn
+    String serverIp = System.getProperty("server.ip", "trongson-ThinkPad-T450.local"); 
     int port = Integer.getInteger("server.port", 8080);
-
+    
     try {
       logger.info("Connecting to server at {}:{}...", serverIp, port);
       socket = new Socket(serverIp, port);
+      // ... phần còn lại giữ nguyên 
       out = new PrintWriter(socket.getOutputStream(), true);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
@@ -65,15 +94,15 @@ public class NetworkClient {
   }
 
   /**
-   * Listens for incoming JSON strings from the server on a separate thread.
+   * Listens for incoming JSON strings from the server on a separate Virtual Thread.
    */
   private void startListeningThread() {
-    Thread listener = Thread.ofVirtual().start(() -> {
+    Thread listenerThread = Thread.ofVirtual().start(() -> {
       try {
         String jsonLine;
         while (isRunning && (jsonLine = in.readLine()) != null) {
           ServerMessage response = gson.fromJson(jsonLine, ServerMessage.class);
-          handleServerResponse(response);
+          notifyListeners(response);
         }
       } catch (IOException e) {
         if (isRunning) {
@@ -86,11 +115,13 @@ public class NetworkClient {
   }
 
   /**
-   * Logic to route the server response to the UI or controller.
+   * Chuyển tiếp ServerMessage cho tất cả các màn hình UI đang lắng nghe.
    */
-  private void handleServerResponse(ServerMessage response) {
-    logger.info("Received action: {} with status: {}", response.getAction(), response.getStatus());
-    // TODO: Connect this to your UI or Observer pattern
+  private void notifyListeners(ServerMessage response) {
+    logger.debug("Received action: {} with status: {}", response.getAction(), response.getStatus());
+    for (MessageListener listener : listeners) {
+      listener.onMessageReceived(response);
+    }
   }
 
   /**
@@ -99,7 +130,7 @@ public class NetworkClient {
   public void close() {
     isRunning = false;
     try {
-      if (socket != null) {
+      if (socket != null && !socket.isClosed()) {
         socket.close();
       }
       logger.info("Network client closed.");
