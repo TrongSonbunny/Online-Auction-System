@@ -12,103 +12,66 @@ import java.sql.SQLException;
  */
 public class ItemDao {
 
-    /**
-     * Lưu item vào database.
-     *
-     * @param item item cần lưu
-     */
-    public void saveItem(
-            AuctionItem item) {
+	/**
+	 * Lưu item vào database.
+	 *
+	 * @param item item cần lưu
+	 */
+	public void saveItem(AuctionItem item) {
 
-        validateItem(item);
+		validateItem(item);
 
-        String sql = "INSERT INTO items "
-                + "(item_id, name, description,"
-                + " category, item_condition,"
-                + " estimated_price)"
-                + " VALUES (?, ?, ?, ?, ?, ?)";
+		String sql = "INSERT INTO items "
+				+ "(item_id, name, description, category, item_condition, estimated_price) "
+				+ "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (
-                Connection connection = DatabaseConnection.getConnection();
+		try (Connection connection = DatabaseConnection.getConnection();
+				PreparedStatement statement = connection.prepareStatement(sql)) {
 
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setString(1, item.getItemId());
+			statement.setString(2, item.getName());
+			statement.setString(3, item.getDescription());
+			statement.setString(4, item.getCategory().name());
+			statement.setString(5, item.getItemCondition());
+			statement.setDouble(6, item.getEstimatedPrice());
 
-            statement.setString(
-                    1,
-                    item.getItemId());
+			statement.executeUpdate();
 
-            statement.setString(
-                    2,
-                    item.getName());
+		} catch (SQLException exception) {
+			exception.printStackTrace();
+			throw new AuctionException("Không thể lưu item vào cơ sở dữ liệu.");
+		}
+	}
 
-            statement.setString(
-                    3,
-                    item.getDescription());
+	/**
+	 * Xóa item.
+	 *
+	 * @param itemId mã item
+	 */
+	public void deleteItem(String itemId) {
 
-            statement.setString(
-                    4,
-                    item.getCategory().name());
+		String sql = "DELETE FROM items WHERE item_id = ?";
 
-            statement.setString(
-                    5,
-                    item.getItemCondition());
+		try (Connection connection = DatabaseConnection.getConnection();
+				PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.setDouble(
-                    6,
-                    item.getEstimatedPrice());
+			statement.setString(1, itemId);
+			statement.executeUpdate();
 
-            statement.executeUpdate();
+		} catch (SQLException exception) {
+			exception.printStackTrace();
+			throw new AuctionException("Không thể xóa item khỏi cơ sở dữ liệu.");
+		}
+	}
 
-        } catch (SQLException exception) {
-
-            // FIX LỖI
-            exception.printStackTrace();
-            throw new AuctionException(
-                    "Không thể lưu item vào cơ sở dữ liệu.");
-        }
-    }
-
-    /**
-     * Xóa item.
-     *
-     * @param itemId mã item
-     */
-    public void deleteItem(
-            String itemId) {
-
-        String sql = "DELETE FROM items "
-                + "WHERE item_id = ?";
-
-        try (
-                Connection connection = DatabaseConnection.getConnection();
-
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(
-                    1,
-                    itemId);
-
-            statement.executeUpdate();
-
-        } catch (SQLException exception) {
-
-            exception.printStackTrace();
-            throw new AuctionException(
-                    "Không thể xóa item khỏi cơ sở dữ liệu.");
-        }
-    }
-
-    /**
-     * Validate item.
-     *
-     * @param item item
-     */
-    private void validateItem(
-            AuctionItem item) {
-
-        if (item == null) {
-            throw new AuctionException(
-                    "Item không được null.");
-        }
-    }
+	/**
+	 * Validate item.
+	 *
+	 * @param item item
+	 */
+	private void validateItem(AuctionItem item) {
+		if (item == null) {
+			throw new AuctionException("Item không được null.");
+		}
+	}
 }

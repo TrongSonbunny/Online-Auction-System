@@ -17,8 +17,7 @@ public class ClientActionHandler {
    */
   public ClientActionHandler() {
 
-    this.commandMap =
-        ClientCommandFactory.createDefaultCommands();
+    this.commandMap = ClientCommandFactory.createDefaultCommands();
   }
 
   /**
@@ -33,9 +32,8 @@ public class ClientActionHandler {
     validateClientMessage(
         clientMessage);
 
-    ClientCommand command =
-        commandMap.get(
-            clientMessage.getAction());
+    ClientCommand command = commandMap.get(
+        clientMessage.getAction());
 
     if (command == null) {
       throw new AuctionException(

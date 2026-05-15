@@ -2,8 +2,8 @@ package com.auction.models.user;
 
 import com.auction.exceptions.BidException;
 import com.auction.models.user.permission.PermissionStrategy;
-import java.util.Objects;
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Lớp cơ sở trừu tượng cho mọi loại user trong hệ thống.
@@ -108,8 +108,7 @@ public abstract class User implements Serializable {
    */
   private void validateUserId(String id) {
     if (id == null || id.isBlank()) {
-      throw new BidException(
-          "UserId không hợp lệ.");
+      throw new BidException("UserId không hợp lệ.");
     }
   }
 
@@ -120,8 +119,7 @@ public abstract class User implements Serializable {
    */
   private void validateName(String userName) {
     if (userName == null || userName.isBlank()) {
-      throw new BidException(
-          "Tên user không hợp lệ.");
+      throw new BidException("Tên user không hợp lệ.");
     }
   }
 
@@ -131,27 +129,43 @@ public abstract class User implements Serializable {
    * @param userEmail email
    */
   private void validateEmail(String userEmail) {
-    if (userEmail == null
-        || userEmail.isBlank()
-        || !userEmail.contains("@")) {
-
-      throw new BidException(
-          "Email không hợp lệ.");
+    if (userEmail == null || userEmail.isBlank() || !userEmail.contains("@")) {
+      throw new BidException("Email không hợp lệ.");
     }
   }
 
+  /**
+   * Lấy mã userId.
+   *
+   * @return String chứa userId
+   */
   public String getUserId() {
     return userId;
   }
 
+  /**
+   * Lấy tên user.
+   *
+   * @return String chứa tên
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * Lấy email user.
+   *
+   * @return String chứa email
+   */
   public String getEmail() {
     return email;
   }
 
+  /**
+   * Lấy quyền (Role) của user.
+   *
+   * @return UserRole của user
+   */
   public UserRole getRole() {
     return role;
   }
@@ -178,19 +192,11 @@ public abstract class User implements Serializable {
 
   @Override
   public String toString() {
-
     return "User{"
-        + "userId='"
-        + userId
-        + '\''
-        + ", name='"
-        + name
-        + '\''
-        + ", email='"
-        + email
-        + '\''
-        + ", role="
-        + role
+        + "userId='" + userId + '\''
+        + ", name='" + name + '\''
+        + ", email='" + email + '\''
+        + ", role=" + role
         + '}';
   }
 }

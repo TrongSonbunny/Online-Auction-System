@@ -12,102 +12,65 @@ import java.sql.SQLException;
  */
 public class BidDao {
 
-    /**
-     * Lưu bid transaction.
-     *
-     * @param transaction transaction cần lưu
-     */
-    public void saveBidTransaction(
-            BidTransaction transaction) {
+	/**
+	 * Lưu bid transaction.
+	 *
+	 * @param transaction transaction cần lưu
+	 */
+	public void saveBidTransaction(BidTransaction transaction) {
 
-        validateTransaction(transaction);
+		validateTransaction(transaction);
 
-        String sql = "INSERT INTO bid_transactions "
-                + "(transaction_id,"
-                + " bidder_id,"
-                + " auction_id,"
-                + " bid_amount,"
-                + " created_at)"
-                + " VALUES (?, ?, ?, ?, ?)";
+		String sql = "INSERT INTO bid_transactions "
+				+ "(transaction_id, bidder_id, auction_id, bid_amount, created_at) "
+				+ "VALUES (?, ?, ?, ?, ?)";
 
-        try (
-                Connection connection = DatabaseConnection.getConnection();
+		try (Connection connection = DatabaseConnection.getConnection();
+				PreparedStatement statement = connection.prepareStatement(sql)) {
 
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setString(1, transaction.getTransactionId());
+			statement.setString(2, transaction.getBidder().getUserId());
+			statement.setString(3, transaction.getAuctionId());
+			statement.setDouble(4, transaction.getBidAmount());
+			statement.setString(5, transaction.getCreatedAt().toString());
 
-            statement.setString(
-                    1,
-                    transaction.getTransactionId());
+			statement.executeUpdate();
 
-            statement.setString(
-                    2,
-                    transaction.getBidder()
-                            .getUserId());
+		} catch (SQLException exception) {
+			exception.printStackTrace();
+			throw new BidException("Không thể lưu thông tin đặt giá (bid transaction).");
+		}
+	}
 
-            statement.setString(
-                    3,
-                    transaction.getAuctionId());
+	/**
+	 * Xóa transaction.
+	 *
+	 * @param transactionId mã transaction
+	 */
+	public void deleteTransaction(String transactionId) {
 
-            statement.setDouble(
-                    4,
-                    transaction.getBidAmount());
+		String sql = "DELETE FROM bid_transactions WHERE transaction_id = ?";
 
-            statement.setString(
-                    5,
-                    transaction.getCreatedAt().toString());
+		try (Connection connection = DatabaseConnection.getConnection();
+				PreparedStatement statement = connection.prepareStatement(sql)) {
 
-            statement.executeUpdate();
+			statement.setString(1, transactionId);
+			statement.executeUpdate();
 
-        } catch (SQLException exception) {
+		} catch (SQLException exception) {
+			exception.printStackTrace();
+			throw new BidException("Không thể xóa thông tin đặt giá.");
+		}
+	}
 
-            // FIX LỖI
-            exception.printStackTrace();
-            throw new BidException(
-                    "Không thể lưu thông tin đặt giá (bid transaction).");
-        }
-    }
-
-    /**
-     * Xóa transaction.
-     *
-     * @param transactionId mã transaction
-     */
-    public void deleteTransaction(
-            String transactionId) {
-
-        String sql = "DELETE FROM bid_transactions "
-                + "WHERE transaction_id = ?";
-
-        try (
-                Connection connection = DatabaseConnection.getConnection();
-
-                PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.setString(
-                    1,
-                    transactionId);
-
-            statement.executeUpdate();
-
-        } catch (SQLException exception) {
-
-            exception.printStackTrace();
-            throw new BidException(
-                    "Không thể xóa thông tin đặt giá.");
-        }
-    }
-
-    /**
-     * Validate transaction.
-     *
-     * @param transaction transaction
-     */
-    private void validateTransaction(
-            BidTransaction transaction) {
-
-        if (transaction == null) {
-            throw new BidException(
-                    "Transaction không được null.");
-        }
-    }
+	/**
+	 * Validate transaction.
+	 *
+	 * @param transaction transaction
+	 */
+	private void validateTransaction(BidTransaction transaction) {
+		if (transaction == null) {
+			throw new BidException("Transaction không được null.");
+		}
+	}
 }
