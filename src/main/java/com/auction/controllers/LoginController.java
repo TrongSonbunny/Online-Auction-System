@@ -238,6 +238,9 @@ public class LoginController {
     try {
       switchScene(event, "/com/auction/primary.fxml", "Sàn đấu giá - Bidder");
     } catch (IOException e) {
+      // THÊM DÒNG NÀY ĐỂ IN LỖI ĐỎ THỰC SỰ RA TERMINAL
+      e.printStackTrace();
+
       lblError.setStyle("-fx-text-fill: #ff4c4c;");
       lblError.setText("Lỗi tải giao diện Bidder!");
     }
@@ -248,6 +251,9 @@ public class LoginController {
     try {
       switchScene(event, "/com/auction/seller.fxml", "Quản lý sản phẩm - Seller");
     } catch (IOException e) {
+      // THÊM DÒNG NÀY ĐỂ IN LỖI ĐỎ THỰC SỰ RA TERMINAL
+      e.printStackTrace();
+
       lblError.setStyle("-fx-text-fill: #ff4c4c;");
       lblError.setText("Lỗi tải giao diện Seller!");
     }

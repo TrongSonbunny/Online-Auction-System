@@ -9,7 +9,6 @@ import com.google.gson.annotations.SerializedName;
  */
 public class Message {
 
-  // Hỗ trợ đọc cả "action" và "type" từ JSON để tránh lỗi không nhất quán
   @SerializedName(value = "action", alternate = { "type" })
   private String action;
 
@@ -23,14 +22,12 @@ public class Message {
   @SerializedName("passWord")
   private String password;
 
-  // Hỗ trợ đọc cả "auctionId" và "auctionID"
   @SerializedName(value = "auctionId", alternate = { "auctionID" })
   private String auctionId;
 
   private Double bidAmount;
   private AuctionItem item;
 
-  // Object linh hoạt chứa Map hoặc List (dùng cho các action như GET_ALL)
   private Object data;
 
   /**
@@ -39,8 +36,7 @@ public class Message {
   public Message() {
   }
 
-  // --- GETTERS & SETTERS (Chỉ liệt kê các hàm dùng cho Đăng nhập/Đăng ký trước)
-  // ---
+  // --- GETTERS & SETTERS ---
 
   public String getAction() {
     return action;
@@ -104,5 +100,21 @@ public class Message {
 
   public void setData(Object data) {
     this.data = data;
+  }
+
+  public Double getBidAmount() {
+    return bidAmount;
+  }
+
+  public void setBidAmount(Double bidAmount) {
+    this.bidAmount = bidAmount;
+  }
+
+  public AuctionItem getItem() {
+    return item;
+  }
+
+  public void setItem(AuctionItem item) {
+    this.item = item;
   }
 }

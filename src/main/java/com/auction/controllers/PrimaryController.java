@@ -1,12 +1,12 @@
 package com.auction.controllers;
 
-import com.auction.models.Item;
+import com.auction.models.Message;
+import com.auction.models.item.AuctionItem;
+import com.auction.network.AuctionClient;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -20,193 +20,232 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 /**
- * Controller chính xử lý giao diện bảng danh sách (dành cho Bidder).
- * Tích hợp Socket kết nối Server để nhận dữ liệu Real-time.
+ * Controller xử lý giao diện Sàn đấu giá dành cho Bidder.
+ * Tích hợp lấy dữ liệu JSON qua lớp trung gian AuctionClient.
  */
 public class PrimaryController implements Initializable {
 
   @FXML
-  private TableView<Item> productTable;
+  private HBox titleBar;
 
   @FXML
-  private TableColumn<Item, String> colId;
+  private TableView<AuctionItem> productTable;
 
   @FXML
-  private TableColumn<Item, String> colName;
+  private TableColumn<AuctionItem, String> colId;
 
   @FXML
-  private TableColumn<Item, Double> colPrice;
+  private TableColumn<AuctionItem, String> colName;
+
+  @FXML
+  private TableColumn<AuctionItem, Double> colPrice;
 
   @FXML
   private TextField txtBidAmount;
 
-  private Socket socket;
-  private ObjectOutputStream out;
-  private ObjectInputStream in;
-  private ObservableList<Item> tableData;
-  private volatile boolean isRunning = true;
+  @FXML
+  private Label lblMessage;
+
+  private double offsetX = 0.0;
+  private double offsetY = 0.0;
+  private ObservableList<AuctionItem> tableData;
 
   @Override
   public void initialize(URL location, ResourceBundle resources) {
-    colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+    setupWindowDragging();
+
+    // Map các cột với các biến trong class AuctionItem
+    colId.setCellValueFactory(new PropertyValueFactory<>("itemId"));
     colName.setCellValueFactory(new PropertyValueFactory<>("name"));
-    colPrice.setCellValueFactory(new PropertyValueFactory<>("startingPrice"));
+    colPrice.setCellValueFactory(new PropertyValueFactory<>("estimatedPrice"));
 
     tableData = FXCollections.observableArrayList();
     productTable.setItems(tableData);
 
-    connectToServer();
+    // Tự động kéo dữ liệu từ Server khi vừa mở màn hình
+    loadData();
   }
 
   /**
-   * Kết nối tới Server và liên tục lắng nghe dữ liệu cập nhật.
+   * Thiết lập tính năng kéo thả cửa sổ bằng thanh tiêu đề.
    */
-  private void connectToServer() {
+  private void setupWindowDragging() {
+    if (titleBar != null) {
+      titleBar.setOnMousePressed(event -> {
+        offsetX = event.getSceneX();
+        offsetY = event.getSceneY();
+      });
+
+      titleBar.setOnMouseDragged(event -> {
+        Stage stage = (Stage) titleBar.getScene().getWindow();
+        if (!stage.isMaximized()) {
+          stage.setX(event.getScreenX() - offsetX);
+          stage.setY(event.getScreenY() - offsetY);
+        }
+      });
+    }
+  }
+
+  @FXML
+  private void handleMinimize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setIconified(true);
+  }
+
+  @FXML
+  private void handleMaximize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setMaximized(!stage.isMaximized());
+  }
+
+  @FXML
+  private void handleClose() {
+    Platform.exit();
+    System.exit(0);
+  }
+
+  /**
+   * Chạy luồng ngầm lấy toàn bộ phiên đấu giá bằng gói tin JSON.
+   */
+  @FXML
+  private void loadData() {
+    lblMessage.setStyle("-fx-text-fill: #00c6ff;");
+    lblMessage.setText("Đang tải dữ liệu từ Server...");
+
     new Thread(() -> {
       try {
-        socket = new Socket("127.0.0.1", 8080);
-        out = new ObjectOutputStream(socket.getOutputStream());
-        in = new ObjectInputStream(socket.getInputStream());
+        Message request = new Message();
+        request.setAction("GET_ALL_AUCTIONS_REQUEST"); // Hành động gửi lên
 
-        while (isRunning) {
-          Object response = in.readObject();
+        Message response = AuctionClient.getInstance().sendRequest(request);
 
-          if (response instanceof List) {
-            @SuppressWarnings("unchecked")
-            List<Item> initialItems = (List<Item>) response;
-            Platform.runLater(() -> {
-              tableData.setAll(initialItems);
-            });
-          } else if (response instanceof Item) {
-            Item updatedItem = (Item) response;
-            Platform.runLater(() -> {
-              for (Item item : tableData) {
-                if (item.getId().equals(updatedItem.getId())) {
-                  item.setStartingPrice(updatedItem.getStartingPrice());
-                  break;
-                }
-              }
-              productTable.refresh();
-              showAlert(AlertType.INFORMATION, "Cập nhật từ Server",
-                  "Sản phẩm '" + updatedItem.getName() + "' vừa được đặt giá mới: $"
-                      + updatedItem.getStartingPrice());
-            });
+        Platform.runLater(() -> {
+          if ("SUCCESS".equals(response.getStatus()) && response.getData() != null) {
+            tableData.clear();
+            List<?> list = (List<?>) response.getData();
+
+            for (Object obj : list) {
+              Map<?, ?> map = (Map<?, ?>) obj;
+              String auctionId = (String) map.get("auctionId");
+
+              // Parse giá hiện tại
+              Object priceObj = map.get("currentPrice");
+              double currentPrice = priceObj instanceof Number
+                  ? ((Number) priceObj).doubleValue()
+                  : 0.0;
+
+              // Parse tên sản phẩm từ object item con
+              Map<?, ?> itemMap = (Map<?, ?>) map.get("item");
+              String name = (itemMap != null && itemMap.get("name") != null)
+                  ? (String) itemMap.get("name")
+                  : "Sản phẩm ẩn";
+
+              // Tái tạo lại AuctionItem để đẩy vào TableView
+              AuctionItem item = new AuctionItem(auctionId, name, "", "", "", currentPrice);
+              tableData.add(item);
+            }
+            lblMessage.setText("Tải dữ liệu thành công lúc " + java.time.LocalTime.now());
+          } else {
+            lblMessage.setStyle("-fx-text-fill: #ff4c4c;");
+            lblMessage.setText("Chưa có phiên đấu giá nào đang diễn ra.");
           }
-        }
-      } catch (IOException | ClassNotFoundException e) {
-        if (isRunning) {
-          System.err.println("Mất kết nối tới Server: " + e.getMessage());
-        }
-      } finally {
-        closeResources(); // Đảm bảo dọn dẹp bộ nhớ khi luồng kết thúc
+        });
+      } catch (Exception e) {
+        Platform.runLater(() -> {
+          lblMessage.setStyle("-fx-text-fill: #ff4c4c;");
+          lblMessage.setText("Lỗi mạng: " + e.getMessage());
+        });
       }
     }).start();
   }
 
   /**
-   * Xử lý sự kiện đặt giá, gửi yêu cầu qua Server.
+   * Xử lý luồng đặt giá đấu, gửi lên Server bằng JSON.
    */
   @FXML
   private void handlePlaceBid() {
-    Item selectedItem = productTable.getSelectionModel().getSelectedItem();
+    AuctionItem selectedItem = productTable.getSelectionModel().getSelectedItem();
     if (selectedItem == null) {
-      showAlert(AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một sản phẩm để đặt giá!");
+      showAlert(AlertType.WARNING, "Cảnh báo", "Vui lòng chọn một sản phẩm trên bảng!");
       return;
     }
 
-    String bidText = txtBidAmount.getText();
-    if (bidText == null || bidText.trim().isEmpty()) {
+    String bidText = txtBidAmount.getText().trim();
+    if (bidText.isEmpty()) {
       showAlert(AlertType.WARNING, "Cảnh báo", "Vui lòng nhập số tiền muốn đặt!");
       return;
     }
 
     try {
       double bidAmount = Double.parseDouble(bidText);
-
-      if (bidAmount <= selectedItem.getStartingPrice()) {
-        showAlert(AlertType.ERROR, "Lỗi đặt giá", "Giá đặt phải lớn hơn giá hiện tại ($"
-            + selectedItem.getStartingPrice() + ")!");
+      if (bidAmount <= selectedItem.getEstimatedPrice()) {
+        showAlert(AlertType.ERROR, "Lỗi giá", "Giá đặt phải lớn hơn giá hiện tại ($"
+            + selectedItem.getEstimatedPrice() + ")!");
         return;
       }
 
-      selectedItem.setStartingPrice(bidAmount);
+      lblMessage.setStyle("-fx-text-fill: #00c6ff;");
+      lblMessage.setText("Đang gửi yêu cầu đặt giá...");
 
-      if (out != null) {
-        out.reset();
-        out.writeObject(selectedItem);
-        out.flush();
-        txtBidAmount.clear();
-      } else {
-        showAlert(AlertType.ERROR, "Lỗi mạng", "Chưa kết nối được với Server!");
-      }
+      new Thread(() -> {
+        try {
+          Message request = new Message();
+          request.setAction("BID");
+          request.setRole("BIDDER");
+          request.setAuctionId(selectedItem.getItemId()); // Gửi ID của phiên lên
+          request.setBidAmount(bidAmount);
+
+          Message response = AuctionClient.getInstance().sendRequest(request);
+
+          Platform.runLater(() -> {
+            if ("SUCCESS".equals(response.getStatus())) {
+              lblMessage.setStyle("-fx-text-fill: #27ae60;");
+              lblMessage.setText("Đặt giá thành công!");
+              txtBidAmount.clear();
+              loadData(); // Gọi lại hàm tải dữ liệu để làm mới bảng
+            } else {
+              lblMessage.setStyle("-fx-text-fill: #ff4c4c;");
+              lblMessage.setText("Đặt giá thất bại từ phía Server.");
+            }
+          });
+        } catch (Exception e) {
+          Platform.runLater(() -> {
+            lblMessage.setStyle("-fx-text-fill: #ff4c4c;");
+            lblMessage.setText("Lỗi mạng: " + e.getMessage());
+          });
+        }
+      }).start();
 
     } catch (NumberFormatException e) {
-      showAlert(AlertType.ERROR, "Lỗi dữ liệu", "Số tiền không hợp lệ. Vui lòng chỉ nhập số!");
-    } catch (IOException e) {
-      showAlert(AlertType.ERROR, "Lỗi mạng", "Không thể gửi dữ liệu lên Server!");
+      showAlert(AlertType.ERROR, "Lỗi định dạng", "Số tiền không hợp lệ. Chỉ nhập số!");
     }
   }
 
   /**
-   * Xử lý sự kiện đăng xuất: Ngắt kết nối mạng và quay lại màn hình Login.
-   *
-   * @param event Sự kiện click nút Đăng xuất
+   * Xử lý sự kiện đăng xuất và ngắt hoàn toàn kết nối.
    */
   @FXML
   private void handleLogout(ActionEvent event) {
-    isRunning = false; // Ngừng vòng lặp lắng nghe
-    closeResources(); // Đóng kết nối lập tức để Server nhận diện và xóa Client
-
     try {
       Parent loginRoot = FXMLLoader.load(getClass().getResource("/com/auction/login.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
-      // Tạo Scene mới với kích thước cố định để tránh bị thu nhỏ cửa sổ
-      Scene loginScene = new Scene(loginRoot, 800, 600);
-
-      stage.setScene(loginScene);
-      stage.setTitle("Đăng nhập - Đấu giá trực tuyến");
-      stage.centerOnScreen(); // Tự động căn giữa màn hình
-      stage.show();
+      stage.setScene(new Scene(loginRoot));
+      stage.centerOnScreen();
     } catch (IOException e) {
       showAlert(AlertType.ERROR, "Lỗi hệ thống", "Không thể tải màn hình đăng nhập!");
-      System.err.println("Lỗi load login.fxml: " + e.getMessage());
     }
   }
 
-  /**
-   * Phương thức phụ trợ đóng tất cả tài nguyên mạng an toàn.
-   */
-  private void closeResources() {
-    try {
-      if (socket != null && !socket.isClosed()) {
-        socket.close(); // Đóng socket trước để ép luồng readObject() ném Exception và thoát ngay
-      }
-      if (in != null) {
-        in.close();
-      }
-      if (out != null) {
-        out.close();
-      }
-    } catch (IOException e) {
-      System.err.println("Lỗi khi đóng kết nối Socket: " + e.getMessage());
-    }
-  }
-
-  /**
-   * Hiển thị hộp thoại thông báo cho người dùng.
-   *
-   * @param type    Loại cảnh báo (INFO, WARNING, ERROR)
-   * @param title   Tiêu đề hộp thoại
-   * @param content Nội dung chi tiết
-   */
   private void showAlert(AlertType type, String title, String content) {
     Alert alert = new Alert(type);
     alert.setTitle(title);
