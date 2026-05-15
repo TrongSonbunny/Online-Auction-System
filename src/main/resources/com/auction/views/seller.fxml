@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/8.0.171" 
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.controllers.SellerController">
+    
+    <padding>
+        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
+    </padding>
+
+    <Label text="QUẢN LÝ SẢN PHẨM (NGƯỜI BÁN)" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+
+    <VBox spacing="5.0" maxWidth="250.0">
+        <Label text="Tên sản phẩm:" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="txtName" promptText="Vd: iPhone 16 Pro" />
+    </VBox>
+
+    <VBox spacing="5.0" maxWidth="250.0">
+        <Label text="Danh mục:" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="txtCategory" promptText="Vd: Điện thoại" />
+    </VBox>
+
+    <VBox spacing="5.0" maxWidth="250.0">
+        <Label text="Giá khởi điểm ($):" style="-fx-font-size: 14px;"/>
+        <TextField fx:id="txtStartingPrice" promptText="Vd: 999.0" />
+    </VBox>
+
+    <Label fx:id="lblStatus" text="" style="-fx-font-weight: bold;" />
+
+    <VBox alignment="CENTER" spacing="10.0" maxWidth="250.0">
+        <Button text="Thêm Sản Phẩm" onAction="#handleAddItem" prefWidth="150.0" prefHeight="35.0" 
+                style="-fx-cursor: hand; -fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" />
+        
+        <Button text="Đăng xuất" onAction="#handleLogout" prefWidth="150.0" prefHeight="35.0" 
+                style="-fx-cursor: hand; -fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" />
+    </VBox>
+</VBox>
