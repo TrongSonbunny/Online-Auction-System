@@ -18,21 +18,41 @@ import org.slf4j.LoggerFactory;
 public class NetworkClient {
 
   private static final Logger logger = LoggerFactory.getLogger(NetworkClient.class);
-  
+
+  // 1. Khai báo biến static private lưu trữ instance duy nhất
+  private static volatile NetworkClient instance;
+
   private final Gson gson;
   private final List<MessageListener> listeners;
-  
+
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
   private volatile boolean isRunning = true;
 
   /**
+   * 2. Constructor đổi thành private để ngăn khởi tạo từ bên ngoài.
    * Constructor initializes JSON converter and thread-safe listener list.
    */
-  public NetworkClient() {
+  private NetworkClient() {
     this.gson = new Gson();
     this.listeners = new CopyOnWriteArrayList<>();
+  }
+
+  /**
+   * 3. Hàm public static để lấy instance duy nhất (Double-Checked Locking an toàn cho Thread).
+   *
+   * @return Thể hiện duy nhất của NetworkClient
+   */
+  public static NetworkClient getInstance() {
+    if (instance == null) {
+      synchronized (NetworkClient.class) {
+        if (instance == null) {
+          instance = new NetworkClient();
+        }
+      }
+    }
+    return instance;
   }
 
   /**
@@ -97,7 +117,7 @@ public class NetworkClient {
    * Listens for incoming JSON strings from the server on a separate Virtual Thread.
    */
   private void startListeningThread() {
-    Thread listenerThread = Thread.ofVirtual().start(() -> {
+    Thread.ofVirtual().start(() -> {
       try {
         String jsonLine;
         while (isRunning && (jsonLine = in.readLine()) != null) {
