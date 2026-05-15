@@ -1,21 +1,41 @@
 package com.auction.network;
 
+import com.auction.backend.observer.AuctionObserver;
+import com.auction.backend.observer.FrontendNotifier;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Xử lý vòng đời kết nối mạng của từng máy khách riêng biệt. Được thiết kế để chạy bên trong một
- * Luồng ảo (Virtual Thread) của Java 21.
+ * The bridge between the Network (TCP), Business Logic (Commands), and UI (Observers).
+ * * Lifecycle:
+ * 1. Created by ServerMain when a TCP connection is accepted.
+ * 2. Runs in a Java 21 Virtual Thread.
+ * 3. Listens for JSON strings, converts them to ClientMessage.
+ * 4. Delegates logic to ClientActionHandler (Command Pattern).
+ * 5. Pushes real-time updates back via the FrontendNotifier interface (Observer Pattern).
  */
-public class ClientHandler implements Runnable {
+
+public class ClientHandler implements Runnable, FrontendNotifier {
 
   private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+  
   private final Socket clientSocket;
+  private final Gson gson;
+  
+  // High-performance thread-safe map to track which auctions this user is watching.
+  // This allows us to remove observers cleanly if the client disconnects.
+  private final Map<String, AuctionObserver> activeObservers = new ConcurrentHashMap<>();
+  
+  private PrintWriter writer;
+  private String authenticatedUserId;
 
   /**
    * Khởi tạo một ClientHandler mới.
@@ -24,68 +44,116 @@ public class ClientHandler implements Runnable {
    */
   public ClientHandler(Socket socket) {
     this.clientSocket = socket;
+    this.gson = new Gson();
   }
 
+  /**
+   * Main execution loop for the client connection.
+   */
   @Override
   public void run() {
-    BufferedReader reader = null; // Put reader, writer outside tryblock cause if put them in tryblc
-    PrintWriter writer = null; // They cant be access in the finally and the catch block.
+    // Try-with-resources ensures the reader/writer close automatically if an error occurs.
+    try (
+        BufferedReader reader = new BufferedReader(
+            new InputStreamReader(clientSocket.getInputStream()));
+        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
+    ) {
+      this.writer = out;
+      logger.info("New connection established from: {}", clientSocket.getRemoteSocketAddress());
+
+      String jsonInput;
+      while ((jsonInput = reader.readLine()) != null) {
+        handleIncomingRequest(jsonInput);
+      }
+    } catch (IOException e) {
+      logger.warn("Connection lost for user {}: {}", authenticatedUserId, e.getMessage());
+    } finally {
+      cleanup();
+    }
+  }
+
+  /**
+   * Processes a single JSON request from the client.
+   *
+   * @param rawJson The string received from the TCP socket.
+   */
+  private void handleIncomingRequest(String rawJson) {
     try {
-      logger.info("Luồng ảo đang xử lý máy khách từ: {}", clientSocket.getRemoteSocketAddress());
+      // 1. Parse the JSON into our standard ClientMessage object
+      ClientMessage request = gson.fromJson(rawJson, ClientMessage.class);
 
-      // Khởi tạo input
-      reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-      // Khởi tạo output
-      writer = new PrintWriter(clientSocket.getOutputStream(), true);
-
-      // Khởi tạo Gson để chuyển dữ liệu Json thành một object chứa dữ liệu dùng từ AuctionMessage.
-      Gson gson = new Gson();
-
-      String clientInput;
-      while ((clientInput = reader.readLine()) != null) {
-        logger.info("Nhận được dữ liệu Json từ client: {}", clientInput);
-
-        try {
-          // Gson magic: convert the text from a json format to the real object with its attribut
-          // including action, username, amount
-          ClientMessage message = gson.fromJson(clientInput, ClientMessage.class);
-          // Lợi khi dùng Gson: Ví dụ như khi Client nhập thiếu một trường dữ liệu ({"action":
-          // "BID"} nhưng không có username,...) thì những biến bị bỏ trống đó sẽ được cho vào thành
-          // null/0/false/... mà không làm crash chương trình.
-          // ClientActionHandler.doAction(message, this)
-          
-
-        } catch (com.google.gson.JsonSyntaxException jsonError) {
-          // Gson throws a specific JsonSyntaxException when the JSON is malformed
-          logger.warn("Máy khách thiết lập Dữ liệu Json sai định dạng: {}", clientInput);
-          writer.println("ERROR: Không đúng định dạng Json");
-        }
+      // 2. Identity Management: Once logged in, we track the userId for this socket.
+      if (authenticatedUserId == null && request.getUserId() != null) {
+        this.authenticatedUserId = request.getUserId();
       }
 
-      logger.info("Client đã ngắt kết nối chủ động.");
+      // 3. Command Pattern Execution: 
+      // We pass the request to ClientActionHandler, which finds the right Command class.
+      Object result = ClientActionHandler.doAction(request);
 
+      // 4. Response Routing: Wrap the result into a ServerMessage and send it back.
+      ServerMessage response = ServerMessage.builder()
+          .action(request.getAction().name())
+          .status(ServerMessage.STATUS_SUCCESS)
+          .data(result) // The result might be a User, Auction, or BidResult
+          .build();
+
+      sendToClient(response);
 
     } catch (Exception e) {
-      logger.error("Máy khách đã ngắt kết nối đột ngột: {}", e.getMessage(), e);
+      logger.error("Error processing request: {}", e.getMessage());
+      sendToClient(ServerMessage.error("EXECUTION_ERROR", e.getMessage()));
+    }
+  }
 
-    } finally {
-      // 3. UNSUBSCRIBE: Safely remove them from the roster so we don't broadcast to a dead pipe
-      // if (writer != null) {
-      //   ServerMain.activeClients.remove(writer);
-      //   logger.info("Client left. Total active clients remaining: {}",
-      //       ServerMain.activeClients.size());
-      // }
+  /**
+   * This method is the "Magic Link" to the Observer Pattern.
+   * When an AuctionEvent is published in the backend, the Observer calls this method
+   * to push data to the frontend without the frontend having to ask for it.
+   */
+  @Override
+  public void sendNotification(String auctionId, String jsonPayload) {
+    // Wrap the raw payload from the observer into our standard ServerMessage envelope.
+    ServerMessage eventMessage = ServerMessage.builder()
+        .action(ServerMessage.ACTION_EVENT)
+        .status(ServerMessage.STATUS_SUCCESS)
+        .auctionId(auctionId)
+        .message(jsonPayload)
+        .build();
 
-      // DỌN DẸP: Đóng socket một cách an toàn khi máy khách rời đi hoặc xảy ra lỗi
-      try {
-        if (clientSocket != null && !clientSocket.isClosed()) {
-          logger.info("Đang đóng kết nối cho: {}", clientSocket.getRemoteSocketAddress());
-          clientSocket.close();
-        }
-      } catch (Exception e) {
-        logger.error("Không thể đóng kết nối socket một cách an toàn: {}", e.getMessage(), e);
+    sendToClient(eventMessage);
+  }
+
+  /**
+   * Utility to safely send a ServerMessage object as JSON over the wire.
+   */
+  private synchronized void sendToClient(ServerMessage message) {
+    if (writer != null && !clientSocket.isClosed()) {
+      writer.println(gson.toJson(message));
+    }
+  }
+
+  /**
+   * Prevents "Ghost Observers" and memory leaks.
+   * When a user disconnects, we must remove their observers from the backend Auction objects.
+   */
+  private void cleanup() {
+    logger.info("Cleaning up resources for user: {}", authenticatedUserId);
+    
+    // Iterate through all auctions this client was watching and unregister them.
+    activeObservers.forEach((auctionId, observer) -> {
+      // Access your AuctionManager/Service here to remove the observer.
+      // Example: auctionService.removeObserver(auctionId, observer);
+    });
+    
+    activeObservers.clear();
+
+    try {
+      if (!clientSocket.isClosed()) {
+        clientSocket.close();
       }
+    } catch (IOException e) {
+      logger.error("Failed to close socket: {}", e.getMessage());
     }
   }
 }
