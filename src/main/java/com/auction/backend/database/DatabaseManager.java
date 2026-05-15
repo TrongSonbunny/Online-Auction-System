@@ -27,11 +27,11 @@ public class DatabaseManager {
 
     String sql =
         "CREATE TABLE IF NOT EXISTS users ("
-            + "user_id TEXT PRIMARY KEY,"
-            + "name TEXT NOT NULL,"
-            + "email TEXT NOT NULL UNIQUE,"
-            + "password TEXT NOT NULL,"
-            + "role TEXT NOT NULL"
+            + "user_id VARCHAR(50) PRIMARY KEY,"
+            + "name VARCHAR(255) NOT NULL,"
+            + "email VARCHAR(255) NOT NULL UNIQUE,"
+            + "password VARCHAR(255) NOT NULL,"
+            + "role VARCHAR(50) NOT NULL"
             + ");";
 
     executeSql(sql);

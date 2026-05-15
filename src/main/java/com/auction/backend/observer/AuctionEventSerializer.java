@@ -1,5 +1,6 @@
 package com.auction.backend.observer;
 
+import com.auction.backend.observer.observers.BidEventPayload;
 import com.auction.models.auction.Auction;
 import com.auction.models.bid.BidTransaction;
 import com.google.gson.JsonNull;
@@ -88,8 +89,9 @@ public final class AuctionEventSerializer {
 
       case NEW_BID:
       case AUTO_BID_PLACED:
-        if (raw instanceof BidTransaction tx) {
-          return buildBidPayload(tx);
+        if (raw instanceof BidEventPayload payload) {
+          return buildBidPayload(
+              payload.getTransaction());
         }
         break;
 

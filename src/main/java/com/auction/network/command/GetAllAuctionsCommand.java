@@ -18,6 +18,14 @@ public class GetAllAuctionsCommand extends BaseClientCommand {
     super(context);
   }
 
+  /**
+   * Trả về danh sách toàn bộ auction đang tồn tại trong RAM.
+   *
+   * <p>Không yêu cầu xác thực user — bất kỳ client nào cũng có thể gọi.
+   *
+   * @param message dữ liệu client gửi lên (không dùng)
+   * @return danh sách auction hiện có
+   */
   @Override
   public Object execute(
       ClientMessage message) {
