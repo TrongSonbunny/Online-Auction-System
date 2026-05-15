@@ -3,29 +3,34 @@ package com.auction.models.user;
 import com.auction.exceptions.BidException;
 import com.auction.models.user.permission.PermissionStrategy;
 import java.util.Objects;
+import java.io.Serializable;
 
 /**
  * Lớp cơ sở trừu tượng cho mọi loại user trong hệ thống.
  *
- * <p>Xác định danh tính (userId, name, email, role) và ủy quyền hành động
- * qua {@link com.auction.models.user.permission.PermissionStrategy} (Strategy pattern).
+ * <p>
+ * Xác định danh tính (userId, name, email, role) và ủy quyền hành động
+ * qua {@link com.auction.models.user.permission.PermissionStrategy} (Strategy
+ * pattern).
  * Subclass: {@link Bidder}, {@link Seller}, {@link Admin}.
  */
-public abstract class User {
+public abstract class User implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   private final String userId;
   private String name;
   private String email;
   private final UserRole role;
-  private final PermissionStrategy permissionStrategy;
+  private final transient PermissionStrategy permissionStrategy;
 
   /**
    * Constructor tạo user.
    *
-   * @param userId mã user
-   * @param name tên user
-   * @param email email
-   * @param role role user
+   * @param userId             mã user
+   * @param name               tên user
+   * @param email              email
+   * @param role               role user
    * @param permissionStrategy strategy quyền
    */
   protected User(

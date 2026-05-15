@@ -15,326 +15,160 @@ import java.sql.SQLException;
  */
 public class UserDao {
 
-  /**
-   * Lưu user vào database.
-   *
-   * @param user user cần lưu
-   * @param password mật khẩu
-   */
-  public void saveUser(
-      User user,
-      String password) {
+    /**
+     * Lưu user vào database.
+     *
+     * @param user     user cần lưu
+     * @param password mật khẩu
+     */
+    public void saveUser(User user, String password) {
+        validateUser(user);
+        validatePassword(password);
 
-    validateUser(user);
-    validatePassword(password);
+        String sql = "INSERT INTO users (user_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)";
 
-    String sql =
-        "INSERT INTO users "
-            + "(user_id, name, email, password, role) "
-            + "VALUES (?, ?, ?, ?, ?)";
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
 
-    try (
-        Connection connection =
-            DatabaseConnection.getConnection();
+            statement.setString(1, user.getUserId());
+            statement.setString(2, user.getName());
+            statement.setString(3, user.getEmail());
+            statement.setString(4, password);
+            statement.setString(5, user.getRole().name());
 
-        PreparedStatement statement =
-            connection.prepareStatement(sql)) {
+            statement.executeUpdate();
 
-      statement.setString(
-          1,
-          user.getUserId());
-
-      statement.setString(
-          2,
-          user.getName());
-
-      statement.setString(
-          3,
-          user.getEmail());
-
-      statement.setString(
-          4,
-          password);
-
-      statement.setString(
-          5,
-          user.getRole().name());
-
-      statement.executeUpdate();
-
-    } catch (SQLException exception) {
-
-      throw new AuctionException(
-          "Không thể lưu user.",
-          exception);
-    }
-  }
-
-  /**
-   * Tìm user theo id.
-   *
-   * @param userId mã user
-   * @return user hoặc null
-   */
-  public User findById(
-      String userId) {
-
-    String sql =
-        "SELECT user_id, name, email, role "
-            + "FROM users "
-            + "WHERE user_id = ?";
-
-    try (
-        Connection connection =
-            DatabaseConnection.getConnection();
-
-        PreparedStatement statement =
-            connection.prepareStatement(sql)) {
-
-      statement.setString(
-          1,
-          userId);
-
-      try (ResultSet resultSet =
-          statement.executeQuery()) {
-
-        if (resultSet.next()) {
-          return mapUser(resultSet);
+        } catch (SQLException exception) {
+            // FIX LỖI: Chỉ in lỗi ra log của Server, KHÔNG đính kèm vào Exception ném về
+            // Client
+            exception.printStackTrace();
+            throw new AuctionException("Email này đã được sử dụng hoặc lỗi CSDL!");
         }
-      }
-
-    } catch (SQLException exception) {
-
-      throw new AuctionException(
-          "Không thể tìm user theo id.",
-          exception);
     }
 
-    return null;
-  }
+    /**
+     * Tìm user theo id.
+     */
+    public User findById(String userId) {
+        String sql = "SELECT user_id, name, email, role FROM users WHERE user_id = ?";
 
-  /**
-   * Tìm user theo email.
-   *
-   * @param email email
-   * @return user hoặc null
-   */
-  public User findByEmail(
-      String email) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
 
-    String sql =
-        "SELECT user_id, name, email, role "
-            + "FROM users "
-            + "WHERE email = ?";
-
-    try (
-        Connection connection =
-            DatabaseConnection.getConnection();
-
-        PreparedStatement statement =
-            connection.prepareStatement(sql)) {
-
-      statement.setString(
-          1,
-          email);
-
-      try (ResultSet resultSet =
-          statement.executeQuery()) {
-
-        if (resultSet.next()) {
-          return mapUser(resultSet);
+            statement.setString(1, userId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapUser(resultSet);
+                }
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            throw new AuctionException("Không thể tìm user theo id.");
         }
-      }
-
-    } catch (SQLException exception) {
-
-      throw new AuctionException(
-          "Không thể tìm user theo email.",
-          exception);
+        return null;
     }
 
-    return null;
-  }
+    /**
+     * Tìm user theo email.
+     */
+    public User findByEmail(String email) {
+        String sql = "SELECT user_id, name, email, role FROM users WHERE email = ?";
 
-  /**
-   * Kiểm tra email đã tồn tại chưa.
-   *
-   * @param email email
-   * @return true nếu tồn tại
-   */
-  public boolean existsByEmail(
-      String email) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
 
-    String sql =
-        "SELECT COUNT(*) "
-            + "FROM users "
-            + "WHERE email = ?";
-
-    try (
-        Connection connection =
-            DatabaseConnection.getConnection();
-
-        PreparedStatement statement =
-            connection.prepareStatement(sql)) {
-
-      statement.setString(
-          1,
-          email);
-
-      try (ResultSet resultSet =
-          statement.executeQuery()) {
-
-        if (resultSet.next()) {
-          return resultSet.getInt(1) > 0;
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return mapUser(resultSet);
+                }
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            throw new AuctionException("Không thể tìm user theo email.");
         }
-      }
-
-    } catch (SQLException exception) {
-
-      throw new AuctionException(
-          "Không thể kiểm tra email.",
-          exception);
+        return null;
     }
 
-    return false;
-  }
+    /**
+     * Kiểm tra email đã tồn tại chưa.
+     */
+    public boolean existsByEmail(String email) {
+        String sql = "SELECT COUNT(*) FROM users WHERE email = ?";
 
-  /**
-   * Kiểm tra password.
-   *
-   * @param email email
-   * @param password mật khẩu
-   * @return true nếu đúng
-   */
-  public boolean checkPassword(
-      String email,
-      String password) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
 
-    String sql =
-        "SELECT password "
-            + "FROM users "
-            + "WHERE email = ?";
-
-    try (
-        Connection connection =
-            DatabaseConnection.getConnection();
-
-        PreparedStatement statement =
-            connection.prepareStatement(sql)) {
-
-      statement.setString(
-          1,
-          email);
-
-      try (ResultSet resultSet =
-          statement.executeQuery()) {
-
-        if (resultSet.next()) {
-          return resultSet
-              .getString("password")
-              .equals(password);
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            throw new AuctionException("Lỗi kiểm tra email trong CSDL.");
         }
-      }
-
-    } catch (SQLException exception) {
-
-      throw new AuctionException(
-          "Không thể kiểm tra password.",
-          exception);
+        return false;
     }
 
-    return false;
-  }
+    /**
+     * Kiểm tra password.
+     */
+    public boolean checkPassword(String email, String password) {
+        String sql = "SELECT password FROM users WHERE email = ?";
 
-  /**
-   * Xóa user.
-   *
-   * @param userId mã user
-   */
-  public void deleteUser(
-      String userId) {
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
 
-    String sql =
-        "DELETE FROM users "
-            + "WHERE user_id = ?";
-
-    try (
-        Connection connection =
-            DatabaseConnection.getConnection();
-
-        PreparedStatement statement =
-            connection.prepareStatement(sql)) {
-
-      statement.setString(
-          1,
-          userId);
-
-      statement.executeUpdate();
-
-    } catch (SQLException exception) {
-
-      throw new AuctionException(
-          "Không thể xóa user.",
-          exception);
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("password").equals(password);
+                }
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            throw new AuctionException("Lỗi kiểm tra password trong CSDL.");
+        }
+        return false;
     }
-  }
 
-  /**
-   * Map ResultSet thành User.
-   *
-   * @param resultSet dữ liệu database
-   * @return user
-   * @throws SQLException nếu đọc dữ liệu lỗi
-   */
-  private User mapUser(
-      ResultSet resultSet)
-      throws SQLException {
+    /**
+     * Xóa user.
+     */
+    public void deleteUser(String userId) {
+        String sql = "DELETE FROM users WHERE user_id = ?";
 
-    String userId =
-        resultSet.getString("user_id");
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
 
-    String name =
-        resultSet.getString("name");
-
-    String email =
-        resultSet.getString("email");
-
-    UserRole role =
-        UserRole.valueOf(
-            resultSet.getString("role"));
-
-    return UserFactory.createUserWithId(
-        userId,
-        role,
-        name,
-        email);
-  }
-
-  /**
-   * Validate user.
-   *
-   * @param user user
-   */
-  private void validateUser(
-      User user) {
-
-    if (user == null) {
-      throw new AuctionException(
-          "User không được null.");
+            statement.setString(1, userId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            throw new AuctionException("Không thể xóa user.");
+        }
     }
-  }
 
-  /**
-   * Validate password.
-   *
-   * @param password mật khẩu
-   */
-  private void validatePassword(
-      String password) {
+    private User mapUser(ResultSet resultSet) throws SQLException {
+        String userId = resultSet.getString("user_id");
+        String name = resultSet.getString("name");
+        String email = resultSet.getString("email");
+        UserRole role = UserRole.valueOf(resultSet.getString("role"));
 
-    if (password == null || password.isBlank()) {
-      throw new AuctionException(
-          "Password không hợp lệ.");
+        return UserFactory.createUserWithId(userId, role, name, email);
     }
-  }
+
+    private void validateUser(User user) {
+        if (user == null) {
+            throw new AuctionException("User không được null.");
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.isBlank()) {
+            throw new AuctionException("Password không hợp lệ.");
+        }
+    }
 }

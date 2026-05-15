@@ -1,0 +1,235 @@
+/* Nền tổng của ứng dụng (Dark Mode tối giản) */
+.root {
+  -fx-background-color: #12141d; /* Màu đen xanh đậm cực sang */
+  -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', sans-serif; /* Font không chân */
+}
+
+/* Text tiêu chuẩn */
+.label {
+  -fx-text-fill: #e2e8f0; /* Trắng xám không gây mỏi mắt */
+}
+
+/* Tiêu đề chính */
+.header-text {
+  -fx-font-size: 24px;
+  -fx-font-weight: bold;
+  -fx-text-fill: #ffffff;
+}
+
+/* =========================================
+   HIỆU ỨNG GLASSMORPHISM (Card UI)
+   ========================================= */
+.glass-card {
+  -fx-background-color: rgba(255, 255, 255, 0.05); /* Lớp nền trắng siêu mỏng */
+  -fx-background-radius: 16;
+  -fx-border-color: rgba(255, 255, 255, 0.15); /* Viền sáng mờ tạo độ khối */
+  -fx-border-radius: 16;
+  -fx-border-width: 1;
+  -fx-padding: 25;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 15, 0, 0, 8); /* Đổ bóng sâu */
+}
+
+/* =========================================
+   NÚT BẤM HIỆN ĐẠI
+   ========================================= */
+.btn-primary {
+  -fx-background-color: linear-gradient(to right, #00c6ff, #0072ff);
+  -fx-background-radius: 8;
+  -fx-text-fill: white;
+  -fx-font-weight: bold;
+  -fx-font-size: 14px;
+  -fx-cursor: hand;
+  -fx-padding: 10 20 10 20;
+}
+
+.btn-primary:hover {
+  -fx-background-color: linear-gradient(to right, #33ccff, #3388ff);
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 114, 255, 0.5), 10, 0, 0, 0); /* Glow effect */
+}
+
+.btn-danger {
+  -fx-background-color: rgba(255, 76, 76, 0.2);
+  -fx-border-color: #ff4c4c;
+  -fx-border-radius: 8;
+  -fx-background-radius: 8;
+  -fx-text-fill: #ff4c4c;
+  -fx-font-weight: bold;
+  -fx-cursor: hand;
+}
+
+.btn-danger:hover {
+  -fx-background-color: #ff4c4c;
+  -fx-text-fill: white;
+}
+
+/* =========================================
+   INPUT FIELD (TEXTFIELD) TỐI GIẢN
+   ========================================= */
+.text-field, .password-field {
+  -fx-background-color: rgba(0, 0, 0, 0.3);
+  -fx-text-fill: white;
+  -fx-background-radius: 8;
+  -fx-border-color: rgba(255, 255, 255, 0.2);
+  -fx-border-radius: 8;
+  -fx-padding: 10;
+  -fx-font-size: 14px;
+}
+
+.text-field:focused, .password-field:focused {
+  -fx-border-color: #00c6ff; /* Sáng viền xanh khi nhấp vào */
+  -fx-background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================
+   TÙY CHỈNH TABLE VIEW (Phần khó nhất của Dark Mode)
+   ========================================= */
+.table-view {
+  -fx-background-color: transparent;
+  -fx-border-color: transparent;
+}
+
+.table-view .column-header-background {
+  -fx-background-color: rgba(255, 255, 255, 0.1);
+  -fx-background-radius: 8 8 0 0;
+}
+
+.table-view .column-header {
+  -fx-background-color: transparent;
+}
+
+.table-view .column-header .label {
+  -fx-text-fill: #a0aec0;
+  -fx-font-weight: bold;
+}
+
+.table-row-cell {
+  -fx-background-color: transparent;
+  -fx-border-color: rgba(255, 255, 255, 0.05);
+  -fx-border-width: 0 0 1 0;
+  -fx-table-cell-border-color: transparent;
+}
+
+.table-row-cell:odd {
+  -fx-background-color: rgba(255, 255, 255, 0.02);
+}
+
+.table-row-cell:selected {
+  -fx-background-color: rgba(0, 198, 255, 0.2);
+}
+
+.table-view .cell {
+  -fx-text-fill: #ffffff;
+  -fx-font-size: 14px;
+  -fx-alignment: center-left;
+  -fx-padding: 5 10;
+}
+
+.toggle-container {
+  -fx-background-color: rgba(0, 0, 0, 0.2);
+  -fx-background-radius: 20;
+  -fx-padding: 5;
+}
+
+.btn-toggle {
+  -fx-background-color: transparent;
+  -fx-text-fill: #a0aec0;
+  -fx-font-weight: bold;
+  -fx-background-radius: 15;
+  -fx-cursor: hand;
+}
+
+.btn-toggle-active {
+  -fx-background-color: #00c6ff;
+  -fx-text-fill: white;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 198, 255, 0.4), 10, 0, 0, 0);
+}
+
+.role-card {
+  -fx-background-color: rgba(255, 255, 255, 0.03);
+  -fx-border-color: rgba(255, 255, 255, 0.1);
+  -fx-border-radius: 12;
+  -fx-background-radius: 12;
+  -fx-cursor: hand;
+  -fx-transition: 0.3s;
+}
+
+.role-card:hover {
+  -fx-background-color: rgba(0, 198, 255, 0.1);
+  -fx-border-color: #00c6ff;
+  -fx-scale-x: 1.05;
+  -fx-scale-y: 1.05;
+}
+
+/* =========================================
+   CUSTOM TITLE BAR (Phong cách Spotify)
+   ========================================= */
+.title-bar {
+  -fx-background-color: #000000; /* Nền đen tuyền */
+  -fx-padding: 0 0 0 15; /* Bỏ padding phải/trên/dưới để nút bấm sát lề */
+}
+
+.title-bar-text {
+  -fx-text-fill: #b3b3b3; /* Chữ xám nhạt đặc trưng */
+  -fx-font-size: 12px;
+  -fx-font-weight: bold;
+}
+
+/* Các nút điều khiển cửa sổ */
+.window-btn {
+  -fx-background-color: transparent;
+  -fx-cursor: hand;
+  -fx-min-width: 46px;
+  -fx-min-height: 32px;
+  -fx-max-width: 46px;
+  -fx-max-height: 32px;
+  -fx-padding: 0;
+  -fx-background-radius: 0; /* Vuông vức */
+}
+
+/* THÊM 2 DÒNG FIX LỖI: CẤM KÉO GIÃN VÀ ÉP CĂN GIỮA */
+.icon-min, .icon-max, .icon-close {
+  -fx-background-color: #ffffff; /* Trắng tinh hiển thị rõ ràng */
+  -fx-min-width: 10px;
+  -fx-min-height: 10px;
+  -fx-max-width: 10px;
+  -fx-max-height: 10px;
+  -fx-scale-shape: false;    /* KHÔNG CHO PHÉP JAVAFX KÉO GIÃN SHAPE */
+  -fx-position-shape: true;  /* TỰ ĐỘNG CĂN GIỮA SHAPE */
+}
+
+/* Hiệu ứng Hover (Di chuột) chung */
+.window-btn:hover {
+  -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+.window-btn:hover .icon-min, 
+.window-btn:hover .icon-max {
+  -fx-background-color: #ffffff; /* Icon vẫn sáng lên trắng tinh */
+}
+
+/* Hiệu ứng Hover riêng cho nút Close */
+.window-btn-close:hover {
+  -fx-background-color: #e81123; /* Nền đỏ */
+}
+
+.window-btn-close:hover .icon-close {
+  -fx-background-color: #ffffff;
+}
+
+/* =========================================
+   VẼ ICON BẰNG SVG PATHS
+   ========================================= */
+/* Dấu trừ (Minimize) */
+.icon-min {
+  -fx-shape: "M 0 5 H 10 V 6 H 0 Z"; 
+}
+
+/* Hình vuông rỗng (Maximize) */
+.icon-max {
+  -fx-shape: "M 0 0 H 10 V 10 H 0 Z M 1 1 V 9 H 9 V 1 Z";
+}
+
+/* Dấu X (Close) */
+.icon-close {
+  -fx-shape: "M 0.5 0 L 5 4.5 L 9.5 0 L 10 0.5 L 5.5 5 L 10 9.5 L 9.5 10 L 5 5.5 L 0.5 10 L 0 9.5 L 4.5 5 L 0 0.5 Z";
+}

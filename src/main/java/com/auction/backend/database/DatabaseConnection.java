@@ -10,8 +10,7 @@ import java.sql.Statement;
  */
 public final class DatabaseConnection {
 
-  private static final String URL =
-      "jdbc:sqlite:auction_system.db";
+  private static final String URL = "jdbc:sqlite:auction_system.db";
 
   /**
    * Private constructor.
@@ -20,37 +19,33 @@ public final class DatabaseConnection {
   }
 
   /**
-   * Tạo database connection.
+   * Tạo database connection an toàn.
    *
    * @return Connection object
    * @throws SQLException nếu kết nối thất bại
    */
-  public static Connection getConnection()
-      throws SQLException {
+  public static Connection getConnection() throws SQLException {
+    // 1. Ép Java nạp Driver của SQLite vào bộ nhớ trước khi gọi
+    try {
+      Class.forName("org.sqlite.JDBC");
+    } catch (ClassNotFoundException e) {
+      throw new SQLException("Không tìm thấy Driver SQLite!", e);
+    }
 
-    Connection connection =
-        DriverManager.getConnection(URL);
-
+    Connection connection = DriverManager.getConnection(URL);
     enableForeignKeys(connection);
-
     return connection;
   }
 
   /**
-   * Bật foreign key cho SQLite.
+   * Kích hoạt khóa ngoại (Foreign Keys) cho SQLite.
    *
-   * @param connection kết nối database
-   * @throws SQLException nếu bật foreign key thất bại
+   * @param connection Kết nối cơ sở dữ liệu
+   * @throws SQLException nếu thực thi thất bại
    */
-  private static void enableForeignKeys(
-      Connection connection)
-      throws SQLException {
-
-    try (Statement statement =
-        connection.createStatement()) {
-
-      statement.execute(
-          "PRAGMA foreign_keys = ON");
+  private static void enableForeignKeys(Connection connection) throws SQLException {
+    try (Statement statement = connection.createStatement()) {
+      statement.execute("PRAGMA foreign_keys = ON");
     }
   }
 }

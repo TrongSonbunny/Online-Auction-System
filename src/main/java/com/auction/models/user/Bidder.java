@@ -2,28 +2,33 @@ package com.auction.models.user;
 
 import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.permission.BidderPermission;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * User đặt giá (bidder) trong hệ thống đấu giá.
  *
- * <p>Có thêm {@link PaymentStrategy} để xử lý thanh toán và bộ đếm
+ * <p>
+ * Có thêm {@link PaymentStrategy} để xử lý thanh toán và bộ đếm
  * {@link java.util.concurrent.atomic.AtomicInteger} đảm bảo thread-safe
  * khi nhiều thread cùng ghi nhận bid thành công.
  */
-public class Bidder extends User {
+public class Bidder extends User implements Serializable {
 
-  private PaymentStrategy paymentStrategy;
+  private static final long serialVersionUID = 1L;
+
+  // FIX LỖI: Thêm transient vì PaymentStrategy là logic, không thể gửi qua Socket
+  private transient PaymentStrategy paymentStrategy;
 
   private final AtomicInteger totalBidsPlaced;
 
   /**
    * Constructor bidder.
    *
-   * @param userId mã bidder
-   * @param name tên bidder
-   * @param email email bidder
+   * @param userId          mã bidder
+   * @param name            tên bidder
+   * @param email           email bidder
    * @param paymentStrategy chiến lược thanh toán
    */
   public Bidder(
