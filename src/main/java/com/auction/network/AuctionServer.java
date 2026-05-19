@@ -95,6 +95,9 @@ public class AuctionServer {
 
     /**
      * Bộ định tuyến API xử lý mọi yêu cầu từ ứng dụng.
+     *
+     * @param req Gói tin yêu cầu chứa thông tin từ người dùng.
+     * @return Gói tin phản hồi chuẩn JSON để gửi về Client.
      */
     private Message processRequest(Message req) {
       String action = req.getAction();
@@ -167,7 +170,9 @@ public class AuctionServer {
               if (newBidAmount != null && newBidAmount > currentPrice) {
                 session.put("currentPrice", newBidAmount); // Cập nhật giá mới
                 isBidSuccess = true;
-                System.out.println("Sản phẩm " + targetAuctionId + " được đặt giá mới: $" + newBidAmount);
+                // Xuống dòng chuẩn Checkstyle để không vượt quá giới hạn 100 ký tự
+                System.out.println("Sản phẩm " + targetAuctionId
+                    + " được đặt giá mới: $" + newBidAmount);
               }
               break;
             }
