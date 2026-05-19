@@ -77,10 +77,21 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>com.auction.App</mainClass>
+                            <mainClass>com.auction.Main</mainClass>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.auction.Main</mainClass>
+                    <includeProjectDependencies>true</includeProjectDependencies>
+                    <includePluginDependencies>false</includePluginDependencies>
+                </configuration>
             </plugin>
             
             <plugin>
