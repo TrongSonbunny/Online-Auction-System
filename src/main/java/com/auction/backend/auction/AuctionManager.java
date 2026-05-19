@@ -11,12 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Singleton quản lý toàn bộ auction đang hoạt động trong RAM.
  *
  * <p>Dùng {@link java.util.concurrent.ConcurrentHashMap} để đảm bảo thread-safety
- * khi nhiều thread cùng đọc/ghi. Singleton được tạo lần đầu theo lazy initialization
- * với {@code synchronized} để tránh race condition.
+ * khi nhiều thread cùng đọc/ghi. Singleton khởi tạo theo initialization-on-demand
+ * holder pattern — thread-safe mà không cần {@code synchronized}.
  */
 public class AuctionManager {
-
-  private static AuctionManager instance;
 
   private final Map<String, Auction>
       auctionMap;
@@ -31,18 +29,20 @@ public class AuctionManager {
   }
 
   /**
+   * Holder đảm bảo lazy initialization thread-safe nhờ class-loading semantics.
+   */
+  private static final class Holder {
+    static final AuctionManager INSTANCE =
+        new AuctionManager();
+  }
+
+  /**
    * Lấy instance singleton.
    *
    * @return AuctionManager
    */
-  public static synchronized AuctionManager
-      getInstance() {
-
-    if (instance == null) {
-      instance = new AuctionManager();
-    }
-
-    return instance;
+  public static AuctionManager getInstance() {
+    return Holder.INSTANCE;
   }
 
   /**
