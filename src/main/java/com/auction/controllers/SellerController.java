@@ -1,25 +1,30 @@
 package com.auction.controllers;
 
-import com.auction.factory.ItemFactory;
-import com.auction.models.Item;
+import com.auction.models.Message;
+import com.auction.models.item.AuctionItem;
+import com.auction.network.AuctionClient;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 /**
- * Controller xử lý màn hình dành cho Người bán (Seller).
- * Cho phép nhập và gửi sản phẩm mới lên Server qua Socket.
+ * Controller xử lý logic cho màn hình quản lý sản phẩm của Người bán (Seller).
+ * Đã tích hợp giao diện Dark Mode (kéo thả) và gửi luồng JSON.
  */
 public class SellerController {
+
+  @FXML
+  private HBox titleBar;
 
   @FXML
   private TextField txtName;
@@ -28,115 +33,131 @@ public class SellerController {
   private TextField txtCategory;
 
   @FXML
-  private TextField txtStartingPrice;
+  private TextField txtPrice;
 
-  @FXML
-  private Label lblStatus;
-
-  private Socket socket;
-  private ObjectOutputStream out;
+  private double offsetX = 0.0;
+  private double offsetY = 0.0;
 
   /**
-   * Phương thức này được tự động gọi khi giao diện FXML được tải xong.
-   * Ta dùng nó để khởi tạo kết nối mạng cho Seller.
+   * Phương thức chạy khi giao diện được tải.
+   * Thiết lập tính năng kéo thả cửa sổ.
    */
   @FXML
   public void initialize() {
-    try {
-      socket = new Socket("127.0.0.1", 8080);
-      out = new ObjectOutputStream(socket.getOutputStream());
-      System.out.println("Seller đã kết nối tới Server thành công.");
-    } catch (IOException e) {
-      lblStatus.setStyle("-fx-text-fill: red;");
-      lblStatus.setText("Không thể kết nối tới Server!");
+    if (titleBar != null) {
+      titleBar.setOnMousePressed(event -> {
+        offsetX = event.getSceneX();
+        offsetY = event.getSceneY();
+      });
+
+      titleBar.setOnMouseDragged(event -> {
+        Stage stage = (Stage) titleBar.getScene().getWindow();
+        if (!stage.isMaximized()) {
+          stage.setX(event.getScreenX() - offsetX);
+          stage.setY(event.getScreenY() - offsetY);
+        }
+      });
     }
   }
 
+  @FXML
+  private void handleMinimize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setIconified(true);
+  }
+
+  @FXML
+  private void handleMaximize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setMaximized(!stage.isMaximized());
+  }
+
+  @FXML
+  private void handleClose() {
+    Platform.exit();
+    System.exit(0);
+  }
+
   /**
-   * Xử lý sự kiện khi Seller nhấn nút "Thêm Sản Phẩm".
+   * Xử lý luồng thêm sản phẩm lên Sàn đấu giá.
+   *
+   * @param event Sự kiện nhấn nút.
    */
   @FXML
-  private void handleAddItem() {
-    String name = txtName.getText();
-    String category = txtCategory.getText();
-    String priceText = txtStartingPrice.getText();
+  private void handleAddItem(ActionEvent event) {
+    String name = txtName.getText().trim();
+    String category = txtCategory.getText().trim();
+    String priceText = txtPrice.getText().trim();
 
-    if (name.trim().isEmpty() || category.trim().isEmpty() || priceText.trim().isEmpty()) {
-      lblStatus.setStyle("-fx-text-fill: red;");
-      lblStatus.setText("Vui lòng điền đầy đủ thông tin!");
-      return;
-    }
-
-    if (out == null) {
-      lblStatus.setStyle("-fx-text-fill: red;");
-      lblStatus.setText("Chưa kết nối Server. Không thể gửi!");
+    if (name.isEmpty() || category.isEmpty() || priceText.isEmpty()) {
+      showAlert(AlertType.WARNING, "Cảnh báo", "Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
     try {
       double price = Double.parseDouble(priceText);
 
-      // Lưu ý: Category phải nhập khớp với logic trong ItemFactory
-      Item newItem = ItemFactory.createItem(category, name, price, 24);
+      // Tạo luồng mạng ngầm để không làm đơ giao diện
+      new Thread(() -> {
+        try {
+          // Đóng gói gói tin JSON theo đúng chuẩn API thiết kế
+          Message request = new Message();
+          request.setAction("CREATE_AUCTION");
+          request.setRole("SELLER");
 
-      out.reset();
-      out.writeObject(newItem);
-      out.flush();
+          String randomId = "ITEM-" + (System.currentTimeMillis() % 10000);
+          AuctionItem newItem = new AuctionItem(randomId, name, "Chưa có mô tả", category,
+              "Mới", price);
+          request.setItem(newItem);
 
-      lblStatus.setStyle("-fx-text-fill: green;");
-      lblStatus.setText("Thêm thành công: " + name);
+          // Gửi yêu cầu qua Client và chờ Server trả lời
+          Message response = AuctionClient.getInstance().sendRequest(request);
 
-      txtName.clear();
-      txtCategory.clear();
-      txtStartingPrice.clear();
+          Platform.runLater(() -> {
+            if ("SUCCESS".equals(response.getStatus())) {
+              showAlert(AlertType.INFORMATION, "Thành công", "Đã đưa sản phẩm lên sàn đấu giá!");
+              txtName.clear();
+              txtCategory.clear();
+              txtPrice.clear();
+            } else {
+              showAlert(AlertType.ERROR, "Lỗi Server", "Thêm sản phẩm thất bại!");
+            }
+          });
+        } catch (Exception e) {
+          Platform.runLater(() -> {
+            showAlert(AlertType.ERROR, "Lỗi mạng", "Mất kết nối: " + e.getMessage());
+          });
+        }
+      }).start();
 
     } catch (NumberFormatException e) {
-      lblStatus.setStyle("-fx-text-fill: red;");
-      lblStatus.setText("Giá khởi điểm phải là một số hợp lệ!");
-    } catch (Exception e) {
-      // Bắt TẤT CẢ các lỗi còn lại (bao gồm cả lỗi sai tên Category từ ItemFactory)
-      e.printStackTrace();
-      lblStatus.setStyle("-fx-text-fill: red;");
-      lblStatus.setText("Lỗi: " + e.getMessage() + " (Thử nhập Category là: Electronics)");
+      showAlert(AlertType.ERROR, "Lỗi định dạng", "Giá khởi điểm bắt buộc phải là số!");
     }
   }
 
   /**
-   * Đăng xuất, đóng kết nối và quay lại màn hình đăng nhập.
-   * Giữ nguyên kích thước cửa sổ hiện tại để tránh lỗi giật màn hình.
+   * Xử lý đăng xuất về màn hình đăng nhập.
    *
-   * @param event Sự kiện click nút Đăng xuất từ hệ thống JavaFX.
+   * @param event Sự kiện nhấn nút.
    */
   @FXML
   private void handleLogout(ActionEvent event) {
     try {
-      // 1. Đóng kết nối Server trước khi thoát
-      if (socket != null && !socket.isClosed()) {
-        socket.close();
-      }
-
-      // 2. Tải giao diện Login
-      Parent loginRoot = FXMLLoader.load(getClass().getResource("/com/auction/login.fxml"));
-
-      // 3. Lấy Stage hiện tại thông qua ActionEvent
+      Parent root = FXMLLoader.load(getClass().getResource("/com/auction/login.fxml"));
       Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
-      // 4. Bắt lại kích thước TOÀN BỘ CỬA SỔ
-      double currentWidth = stage.getWidth();
-      double currentHeight = stage.getHeight();
-
-      // 5. Cài đặt Scene mới (Không truyền Width/Height vào Scene để tránh lỗi viền)
-      stage.setScene(new Scene(loginRoot));
-
-      // 6. Ép lại kích thước cũ trực tiếp cho Stage
-      stage.setWidth(currentWidth);
-      stage.setHeight(currentHeight);
+      stage.setScene(new Scene(root, 800, 600));
       stage.setTitle("Đăng nhập - Đấu giá trực tuyến");
-
+      stage.centerOnScreen();
     } catch (IOException e) {
-      lblStatus.setStyle("-fx-text-fill: red;");
-      lblStatus.setText("Không thể đăng xuất!");
-      e.printStackTrace();
+      showAlert(AlertType.ERROR, "Lỗi hệ thống", "Không thể tải màn hình đăng nhập!");
     }
+  }
+
+  private void showAlert(AlertType type, String title, String content) {
+    Alert alert = new Alert(type);
+    alert.setTitle(title);
+    alert.setHeaderText(null);
+    alert.setContentText(content);
+    alert.showAndWait();
   }
 }

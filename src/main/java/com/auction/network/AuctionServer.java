@@ -1,6 +1,7 @@
 package com.auction.network;
 
 import com.auction.models.Message;
+import com.auction.models.item.AuctionItem;
 import com.google.gson.Gson;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,8 +17,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Máy chủ đấu giá đóng vai trò làm Backend xử lý logic và cơ sở dữ liệu SQLite.
- * Giao tiếp với Client hoàn toàn bằng giao thức JSON.
+ * Máy chủ đấu giá đóng vai trò làm Backend xử lý logic và lưu trữ phiên đấu
+ * giá.
  */
 public class AuctionServer {
 
@@ -26,8 +27,11 @@ public class AuctionServer {
   private static final ExecutorService pool = Executors.newFixedThreadPool(100);
   private static final Gson gson = new Gson();
 
+  // Bộ nhớ đệm lưu trữ tất cả các phiên đấu giá đang diễn ra trên toàn hệ thống
+  private static final List<Map<String, Object>> activeAuctions = new CopyOnWriteArrayList<>();
+
   /**
-   * Khởi chạy Server và chuẩn bị cơ sở dữ liệu.
+   * Khởi chạy Server.
    *
    * @param args Tham số dòng lệnh.
    */
@@ -50,7 +54,7 @@ public class AuctionServer {
   }
 
   /**
-   * Lớp xử lý giao tiếp đa luồng với từng Client riêng biệt.
+   * Lớp xử lý giao tiếp đa luồng với từng Client.
    */
   private static class ClientHandler implements Runnable {
     private final Socket socket;
@@ -90,10 +94,7 @@ public class AuctionServer {
     }
 
     /**
-     * Bộ định tuyến xử lý logic Backend dựa trên Action trong JSON Payload.
-     *
-     * @param req Gói tin yêu cầu từ Client.
-     * @return Gói tin phản hồi đã xử lý chuẩn format.
+     * Bộ định tuyến API xử lý mọi yêu cầu từ ứng dụng.
      */
     private Message processRequest(Message req) {
       String action = req.getAction();
@@ -108,7 +109,6 @@ public class AuctionServer {
       switch (action) {
         case "LOGIN_REQUEST":
           res.setAction("LOGIN_RESPONSE");
-          // Lấy trực tiếp username và password từ trường dữ liệu ngoài cùng!
           boolean auth = DatabaseManager.authenticateUser(req.getUsername(), req.getPassword());
           if (auth) {
             res.setStatus("SUCCESS");
@@ -125,6 +125,55 @@ public class AuctionServer {
           res.setAction("REGISTER_RESPONSE");
           boolean reg = DatabaseManager.registerUser(req.getUsername(), req.getPassword());
           res.setStatus(reg ? "SUCCESS" : "ERROR");
+          break;
+
+        // 1. NGƯỜI BÁN TẠO SẢN PHẨM MỚI
+        case "CREATE_AUCTION":
+          res.setAction("ADD_ITEM_RESPONSE");
+          AuctionItem newItem = req.getItem();
+          if (newItem != null) {
+            // Đóng gói sản phẩm thành định dạng Map để Gson dễ xử lý
+            Map<String, Object> auctionSession = new HashMap<>();
+            auctionSession.put("auctionId", newItem.getItemId());
+            auctionSession.put("item", newItem);
+            auctionSession.put("currentPrice", newItem.getEstimatedPrice());
+            auctionSession.put("status", "ACTIVE");
+
+            activeAuctions.add(auctionSession); // Lưu vào RAM Server
+            res.setStatus("SUCCESS");
+            System.out.println("Đã thêm SP mới lên sàn: " + newItem.getName());
+          } else {
+            res.setStatus("ERROR");
+          }
+          break;
+
+        // 2. NGƯỜI MUA LẤY DANH SÁCH SẢN PHẨM
+        case "GET_ALL_AUCTIONS_REQUEST":
+          res.setAction("GET_ALL_AUCTIONS_RESPONSE");
+          res.setStatus("SUCCESS");
+          res.setData(activeAuctions); // Trả về toàn bộ kho đồ
+          break;
+
+        // 3. NGƯỜI MUA ĐẶT GIÁ
+        case "BID":
+          res.setAction("BID_RESPONSE");
+          String targetAuctionId = req.getAuctionId();
+          Double newBidAmount = req.getBidAmount();
+          boolean isBidSuccess = false;
+
+          for (Map<String, Object> session : activeAuctions) {
+            if (session.get("auctionId").equals(targetAuctionId)) {
+              double currentPrice = (Double) session.get("currentPrice");
+              if (newBidAmount != null && newBidAmount > currentPrice) {
+                session.put("currentPrice", newBidAmount); // Cập nhật giá mới
+                isBidSuccess = true;
+                System.out.println("Sản phẩm " + targetAuctionId + " được đặt giá mới: $" + newBidAmount);
+              }
+              break;
+            }
+          }
+
+          res.setStatus(isBidSuccess ? "SUCCESS" : "ERROR");
           break;
 
         default:
