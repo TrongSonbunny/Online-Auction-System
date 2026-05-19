@@ -4,39 +4,72 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox alignment="CENTER" spacing="15.0" xmlns="http://javafx.com/javafx/8.0.171" 
-      xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.controllers.SellerController">
-    
-    <padding>
-        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0"/>
-    </padding>
+<StackPane stylesheets="@style.css" styleClass="mesh-gradient-bg" 
+           xmlns="http://javafx.com/javafx/8.0.171" 
+           xmlns:fx="http://javafx.com/fxml/1" 
+           fx:controller="com.auction.controllers.SellerController">
 
-    <Label text="QUẢN LÝ SẢN PHẨM (NGƯỜI BÁN)" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-
-    <VBox spacing="5.0" maxWidth="250.0">
-        <Label text="Tên sản phẩm:" style="-fx-font-size: 14px;"/>
-        <TextField fx:id="txtName" promptText="Vd: iPhone 16 Pro" />
-    </VBox>
-
-    <VBox spacing="5.0" maxWidth="250.0">
-        <Label text="Danh mục:" style="-fx-font-size: 14px;"/>
-        <TextField fx:id="txtCategory" promptText="Vd: Điện thoại" />
-    </VBox>
-
-    <VBox spacing="5.0" maxWidth="250.0">
-        <Label text="Giá khởi điểm ($):" style="-fx-font-size: 14px;"/>
-        <TextField fx:id="txtStartingPrice" promptText="Vd: 999.0" />
-    </VBox>
-
-    <Label fx:id="lblStatus" text="" style="-fx-font-weight: bold;" />
-
-    <VBox alignment="CENTER" spacing="10.0" maxWidth="250.0">
-        <Button text="Thêm Sản Phẩm" onAction="#handleAddItem" prefWidth="150.0" prefHeight="35.0" 
-                style="-fx-cursor: hand; -fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold;" />
+    <VBox alignment="CENTER" spacing="25.0" styleClass="glass-panel" 
+          StackPane.alignment="CENTER" maxWidth="480.0" maxHeight="600.0">
+          
+        <StackPane.margin>
+            <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
+        </StackPane.margin>
         
-        <Button text="Đăng xuất" onAction="#handleLogout" prefWidth="150.0" prefHeight="35.0" 
-                style="-fx-cursor: hand; -fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold;" />
+        <padding>
+            <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
+        </padding>
+
+        <VBox alignment="CENTER" spacing="10.0">
+            <ImageView fitHeight="60.0" fitWidth="60.0" preserveRatio="true" styleClass="app-logo">
+                <image>
+                    <Image url="@/com/auction/views/assets/logo4.png" />
+                </image>
+            </ImageView>
+            
+            <Label text="SELLER CONSOLE" styleClass="header-text"/>
+            <Label text="HỆ THỐNG PHÁT HÀNH PHIÊN ĐẤU GIÁ MỚI" 
+                   style="-fx-text-fill: #00f0ff; -fx-font-weight: bold; -fx-letter-spacing: 1.2; -fx-font-size: 11px;"/>
+        </VBox>
+
+        <VBox spacing="18.0" styleClass="glass-card" fillWidth="true">
+            <padding>
+                <Insets bottom="25.0" left="25.0" right="25.0" top="25.0"/>
+            </padding>
+            
+            <VBox spacing="6.0">
+                <Label text="TÊN VẬT PHẨM ĐẤU GIÁ" 
+                       style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
+                <TextField fx:id="txtName" promptText="Vd: Siêu xe Koenigsegg Jesko" styleClass="text-field" />
+            </VBox>
+
+            <VBox spacing="6.0">
+                <Label text="DANH MỤC PHÂN LOẠI" 
+                       style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
+                <TextField fx:id="txtCategory" promptText="Vd: VEHICLE hoặc ELECTRONICS, ART..." styleClass="text-field" />
+            </VBox>
+
+            <VBox spacing="6.0">
+                <Label text="GIÁ KHỞI ĐIỂM BAN ĐẦU ($)" 
+                       style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <Label text="USD" style="-fx-font-family: 'Montserrat'; -fx-font-weight: 900; -fx-text-fill: #ffcc00; -fx-font-size: 14px;"/>
+                    <TextField fx:id="txtStartingPrice" promptText="Vd: 250000.0" styleClass="text-field" HBox.hgrow="ALWAYS" />
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <Label fx:id="lblStatus" text="" wrapText="true" alignment="CENTER"
+               style="-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #ffffff;"/>
+
+        <Button text="TẠO PHIÊN ĐẤU GIÁ NGAY" onAction="#handleCreateAuction" 
+                styleClass="btn-autobid-brutal" prefWidth="280.0" prefHeight="46.0" />
+
     </VBox>
-</VBox>
+</StackPane>
