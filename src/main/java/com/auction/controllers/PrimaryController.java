@@ -3,6 +3,7 @@ package com.auction.controllers;
 import com.auction.App;
 import com.auction.models.auction.Auction;
 import com.auction.models.user.UserRole;
+import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
 import com.auction.network.NetworkClient;
@@ -14,6 +15,7 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ResourceBundle;
 import javafx.animation.Animation;
@@ -39,7 +41,6 @@ import javafx.util.Duration;
 
 /**
  * Điều khiển màn hình hiển thị danh sách đấu giá cho Bidder.
- * Chứa cấu hình an toàn cho Gson và hiệu ứng gamification.
  */
 public class PrimaryController implements Initializable, NetworkClient.MessageListener {
 
@@ -56,10 +57,19 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
 
   private final ObservableList<Auction> auctionData = FXCollections.observableArrayList();
 
+  // ĐÃ FIX: Trang bị thêm TypeAdapter cho PermissionStrategy để tránh lỗi sập
+  // Gson
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(
-          LocalDateTime.class,
-          (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> LocalDateTime.now())
+      .registerTypeAdapter(LocalDateTime.class,
+          (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> {
+            try {
+              return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            } catch (Exception e) {
+              return LocalDateTime.now();
+            }
+          })
+      .registerTypeAdapter(PermissionStrategy.class,
+          (JsonDeserializer<PermissionStrategy>) (json, type, ctx) -> null)
       .create();
 
   @Override
@@ -119,14 +129,17 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
 
     try {
       double amount = Double.parseDouble(txtBidAmount.getText());
+
       ClientMessage bidReq = ClientMessage.builder()
           .action(ActionType.BID)
+          .userId(App.loggedInUserId)
           .email(App.loggedInEmail)
           .password(App.loggedInPassword)
-          .role(UserRole.BIDDER) // ĐÃ FIX: Đính kèm Thẻ ngành để Server duyệt lệnh
+          .role(UserRole.BIDDER)
           .auctionId(selected.getAuctionId())
           .bidAmount(amount)
           .build();
+
       NetworkClient.getInstance().sendMessage(bidReq);
     } catch (NumberFormatException e) {
       showAlert("CẢNH BÁO", "Dữ liệu nhập vào không phải là số tiền hợp lệ!");
@@ -137,12 +150,21 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
   public void onMessageReceived(ServerMessage response) {
     Platform.runLater(() -> {
       if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
-        String json = gson.toJson(response.getAuctions());
-        List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {
-        }.getType());
 
-        if (list != null) {
-          auctionData.setAll(list);
+        Object dataSource = response.getData() != null
+            ? response.getData()
+            : response.getAuctions();
+
+        if (dataSource != null) {
+          String json = gson.toJson(dataSource);
+          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {
+          }.getType());
+
+          if (list != null) {
+            auctionData.setAll(list);
+          } else {
+            auctionData.clear();
+          }
         } else {
           auctionData.clear();
         }
@@ -194,6 +216,7 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
     try {
       App.loggedInEmail = null;
       App.loggedInPassword = null;
+      App.loggedInUserId = null;
       App.setRoot("login");
     } catch (IOException e) {
       showAlert("LỖI HỆ THỐNG", "Không thể ngắt kết nối trạm (Logout).");

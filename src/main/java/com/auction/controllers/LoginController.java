@@ -6,10 +6,12 @@ import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
-import java.util.logging.Logger;
 import javafx.animation.AnimationTimer;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
@@ -28,12 +30,9 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 /**
- * Điều khiển màn hình đăng nhập. Tích hợp Máy trạng thái (State Machine)
- * để xử lý linh hoạt trường hợp Backend không trả về Role sau khi Login.
+ * Điều khiển luồng Đăng nhập và Đăng ký.
  */
 public class LoginController implements Initializable, NetworkClient.MessageListener {
-
-  private static final Logger logger = Logger.getLogger(LoginController.class.getName());
 
   @FXML
   private VBox authContainer;
@@ -65,6 +64,9 @@ public class LoginController implements Initializable, NetworkClient.MessageList
 
   private UserRole pendingRole;
   private boolean isRegisteringMode = false;
+
+  private double offsetX = 0;
+  private double offsetY = 0;
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
@@ -176,7 +178,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
     if (isLogin || isRegister || isError) {
       Platform.runLater(() -> {
         if (ServerMessage.STATUS_SUCCESS.equals(message.getStatus())) {
-          handleSuccessResponse(isLogin, isRegister);
+          handleSuccessResponse(message, isLogin, isRegister);
         } else {
           handleErrorResponse(message.getMessage());
         }
@@ -184,10 +186,41 @@ public class LoginController implements Initializable, NetworkClient.MessageList
     }
   }
 
-  private void handleSuccessResponse(boolean isLogin, boolean isRegister) {
+  private void handleSuccessResponse(ServerMessage message, boolean isLogin, boolean isRegister) {
     if (isLogin) {
       App.loggedInEmail = txtEmail.getText();
       App.loggedInPassword = txtPassword.getText();
+
+      // =========================================================================
+      // ĐÃ FIX TẬN GỐC: "Moi" dữ liệu User ID và Role từ bên trong chiếc hộp "data"
+      // =========================================================================
+      if (message.getData() != null) {
+        JsonElement jsonElement = new Gson().toJsonTree(message.getData());
+        if (jsonElement.isJsonObject()) {
+          JsonObject userObj = jsonElement.getAsJsonObject();
+
+          // Trích xuất ID (Tương thích với cả tên biến userId hoặc id)
+          if (userObj.has("userId") && !userObj.get("userId").isJsonNull()) {
+            App.loggedInUserId = userObj.get("userId").getAsString();
+          } else if (userObj.has("id") && !userObj.get("id").isJsonNull()) {
+            App.loggedInUserId = userObj.get("id").getAsString();
+          }
+
+          // Trích xuất Quyền (Role) để điều hướng tự động
+          if (userObj.has("role") && !userObj.get("role").isJsonNull()) {
+            String roleStr = userObj.get("role").getAsString();
+            this.pendingRole = "SELLER".equalsIgnoreCase(roleStr)
+                ? UserRole.SELLER
+                : UserRole.BIDDER;
+          }
+        }
+      }
+
+      // Xóa rác an toàn để đảm bảo không dính chữ "null" vào hệ thống
+      if ("null".equals(App.loggedInUserId)) {
+        App.loggedInUserId = null;
+      }
+      // =========================================================================
 
       if (this.pendingRole != null) {
         if (this.pendingRole == UserRole.SELLER) {
@@ -204,6 +237,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
       }
 
     } else if (isRegister) {
+      // Đăng ký xong thì gửi Login để Server cấp phiên làm việc
       ClientMessage autoLoginReq = ClientMessage.builder()
           .action(ActionType.LOGIN)
           .email(txtRegEmail.getText())
@@ -309,19 +343,16 @@ public class LoginController implements Initializable, NetworkClient.MessageList
     stage.close();
   }
 
-  private double xOffset = 0;
-  private double yOffset = 0;
-
   private void setupUndecoratedWindowHandle(ResourceBundle rb) {
     if (titleBar != null) {
       titleBar.setOnMousePressed(event -> {
-        xOffset = event.getSceneX();
-        yOffset = event.getSceneY();
+        offsetX = event.getSceneX();
+        offsetY = event.getSceneY();
       });
       titleBar.setOnMouseDragged(event -> {
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setX(event.getScreenX() - xOffset);
-        stage.setY(event.getScreenY() - yOffset);
+        stage.setX(event.getScreenX() - offsetX);
+        stage.setY(event.getScreenY() - offsetY);
       });
     }
   }

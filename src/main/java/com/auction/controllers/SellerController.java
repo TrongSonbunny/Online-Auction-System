@@ -21,8 +21,8 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 /**
- * Điều khiển màn hình của Seller (Người bán).
- * Cho phép tạo phiên đấu giá và giao tiếp với Backend Stateless.
+ * Điều khiển màn hình hiển thị và tạo phiên đấu giá dành cho người bán
+ * (Seller).
  */
 public class SellerController implements Initializable, NetworkClient.MessageListener {
 
@@ -40,15 +40,21 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   private AnimationTimer meshGradientTimer;
   private double gradientOffset = 0.0;
 
+  private double offsetX = 0;
+  private double offsetY = 0;
+
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle();
 
     Platform.runLater(() -> {
-      Node root = txtName.getScene().getRoot();
-      if (root != null) {
-        startMeshGradientAnimation(root);
+      // ĐÃ FIX: Lớp giáp bảo vệ kiểm tra Null trước khi chọc vào Scene
+      if (titleBar != null && titleBar.getScene() != null) {
+        Node root = titleBar.getScene().getRoot();
+        if (root != null) {
+          startMeshGradientAnimation(root);
+        }
       }
     });
   }
@@ -78,11 +84,13 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
 
     try {
       double startingPrice = Double.parseDouble(txtStartingPrice.getText());
+
       ClientMessage createRequest = ClientMessage.builder()
           .action(ActionType.CREATE_AUCTION)
+          .userId(App.loggedInUserId)
           .email(App.loggedInEmail)
           .password(App.loggedInPassword)
-          .role(UserRole.SELLER) // ĐÃ FIX: Đính kèm "Thẻ ngành" để Server xác nhận phân quyền
+          .role(UserRole.SELLER)
           .itemName(txtName.getText())
           .itemCategory(txtCategory.getText().toUpperCase())
           .itemDescription("Vật phẩm đấu giá độc bản")
@@ -132,6 +140,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     try {
       App.loggedInEmail = null;
       App.loggedInPassword = null;
+      App.loggedInUserId = null;
       if (meshGradientTimer != null) {
         meshGradientTimer.stop();
       }
@@ -160,19 +169,16 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     ((Stage) ((Node) event.getSource()).getScene().getWindow()).close();
   }
 
-  private double xOffset = 0;
-  private double yOffset = 0;
-
   private void setupUndecoratedWindowHandle() {
     if (titleBar != null) {
       titleBar.setOnMousePressed(event -> {
-        xOffset = event.getSceneX();
-        yOffset = event.getSceneY();
+        offsetX = event.getSceneX();
+        offsetY = event.getSceneY();
       });
       titleBar.setOnMouseDragged(event -> {
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setX(event.getScreenX() - xOffset);
-        stage.setY(event.getScreenY() - yOffset);
+        stage.setX(event.getScreenX() - offsetX);
+        stage.setY(event.getScreenY() - offsetY);
       });
     }
   }

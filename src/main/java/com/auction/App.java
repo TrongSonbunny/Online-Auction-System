@@ -13,15 +13,15 @@ import javafx.stage.StageStyle;
 
 /**
  * Lớp khởi chạy ứng dụng JavaFX cho hệ thống đấu giá.
- * Quản lý vòng đời ứng dụng và thông tin xác thực toàn cục.
  */
 public class App extends Application {
 
   private static Scene scene;
 
-  // Cặp bài trùng "Thẻ căn cước" để vượt qua bảo mật Stateless của Server
+  // LƯU TRỮ ĐỊNH DANH NGƯỜI DÙNG DƯỚI DẠNG CHUỖI (STRING)
   public static String loggedInEmail;
   public static String loggedInPassword;
+  public static String loggedInUserId;
 
   @Override
   public void init() throws Exception {
@@ -50,12 +50,6 @@ public class App extends Application {
     stage.show();
   }
 
-  /**
-   * Thay đổi giao diện gốc (Root) của Scene hiện tại.
-   *
-   * @param fxml Tên file FXML cần tải
-   * @throws IOException Nếu không thể tải được file FXML
-   */
   public static void setRoot(String fxml) throws IOException {
     scene.setRoot(loadFxml(fxml));
   }
