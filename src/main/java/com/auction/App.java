@@ -1,5 +1,6 @@
 package com.auction;
 
+import com.auction.network.NetworkClient;
 import com.auction.utils.WindowResizeUtils;
 import java.io.IOException;
 import javafx.application.Application;
@@ -11,24 +12,30 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
 /**
- * Lớp khởi chạy ứng dụng JavaFX cho hệ thống đấu giá (Frontend Client).
+ * Lớp khởi chạy ứng dụng JavaFX cho hệ thống đấu giá.
+ * Quản lý vòng đời ứng dụng và thông tin xác thực toàn cục.
  */
 public class App extends Application {
 
   private static Scene scene;
 
-  /**
-   * Phương thức khởi chạy giao diện chính của ứng dụng.
-   *
-   * @param stage Cửa sổ chính của ứng dụng (Stage)
-   * @throws IOException Nếu không thể tìm thấy hoặc tải được file FXML
-   */
+  // Cặp bài trùng "Thẻ căn cước" để vượt qua bảo mật Stateless của Server
+  public static String loggedInEmail;
+  public static String loggedInPassword;
+
+  @Override
+  public void init() throws Exception {
+    NetworkClient.getInstance().connect();
+  }
+
+  @Override
+  public void stop() throws Exception {
+    NetworkClient.getInstance().close();
+  }
+
   @Override
   public void start(Stage stage) throws IOException {
-    // 1. Xóa khung viền mặc định của hệ điều hành
     stage.initStyle(StageStyle.UNDECORATED);
-
-    // 2. Thiết lập logo mới cho ứng dụng (Đã thêm /views)
     try {
       Image appIcon = new Image(
           App.class.getResourceAsStream("/com/auction/views/assets/logo4.png"));
@@ -39,43 +46,26 @@ public class App extends Application {
 
     scene = new Scene(loadFxml("login"), 640, 480);
     stage.setScene(scene);
-
-    // 3. Khôi phục tính năng kéo giãn cửa sổ (Resize)
     WindowResizeUtils.addResizeListener(stage);
-
     stage.show();
   }
 
   /**
    * Thay đổi giao diện gốc (Root) của Scene hiện tại.
-   * ĐÂY CHÍNH LÀ HÀM BỊ THIẾU KHIẾN SECONDARY CONTROLLER BÁO LỖI!
    *
-   * @param fxml Tên file FXML cần tải (không bao gồm phần mở rộng .fxml)
+   * @param fxml Tên file FXML cần tải
    * @throws IOException Nếu không thể tải được file FXML
    */
   public static void setRoot(String fxml) throws IOException {
     scene.setRoot(loadFxml(fxml));
   }
 
-  /**
-   * Tải nội dung từ một file FXML.
-   *
-   * @param fxml Tên file FXML (không bao gồm phần mở rộng .fxml)
-   * @return Đối tượng Parent chứa cấu trúc giao diện đã tải
-   * @throws IOException Nếu không thể đọc được file
-   */
   private static Parent loadFxml(String fxml) throws IOException {
-    // Đã thêm /views/ vào đường dẫn
     FXMLLoader fxmlLoader = new FXMLLoader(
         App.class.getResource("/com/auction/views/" + fxml + ".fxml"));
     return fxmlLoader.load();
   }
 
-  /**
-   * Hàm main khởi chạy ứng dụng.
-   *
-   * @param args Tham số dòng lệnh
-   */
   public static void main(String[] args) {
     launch();
   }

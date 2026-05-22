@@ -1,235 +1,199 @@
-/* Nền tổng của ứng dụng (Dark Mode tối giản) */
+/* =========================================================================
+   STYLE.CSS - ROYAL GOLD & NOIR THEME
+   Fonts: Montserrat (Titles/Prices), Plus Jakarta Sans (UI Components)
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Playfair+Display:ital,wght@1,700&family=Plus+Jakarta+Sans:wght@400;600&display=swap');
+
 .root {
-  -fx-background-color: #12141d; /* Màu đen xanh đậm cực sang */
-  -fx-font-family: 'Segoe UI', 'Roboto', 'Inter', sans-serif; /* Font không chân */
+  -fx-background-color: #0a0a0a;
+  -fx-font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui;
+  -fx-font-size: 13px;
 }
 
-/* Text tiêu chuẩn */
 .label {
-  -fx-text-fill: #e2e8f0; /* Trắng xám không gây mỏi mắt */
+  -fx-text-fill: #e2e8f0;
 }
 
-/* Tiêu đề chính */
+/* --- ROYAL GOLD TEXT --- */
+.gold-text {
+  -fx-text-fill: linear-gradient(to bottom, #f9f295, #e0aa3e, #b8860b, #e0aa3e, #f9f295);
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+}
+
 .header-text {
-  -fx-font-size: 24px;
-  -fx-font-weight: bold;
-  -fx-text-fill: #ffffff;
+  -fx-font-family: 'Montserrat';
+  -fx-font-size: 28pt;
+  -fx-font-weight: 900;
+  -fx-text-fill: linear-gradient(to bottom, #d4af37, #fcf6ba, #b8860b);
+  -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.4), 15, 0, 0, 0);
 }
 
-/* =========================================
-   HIỆU ỨNG GLASSMORPHISM (Card UI)
-   ========================================= */
+.price-text {
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+  -fx-font-size: 18pt;
+  -fx-text-fill: #d4af37;
+}
+
+/* --- BRANDING --- */
+.app-logo {
+  -fx-smooth: true;
+  -fx-cache: true;
+  -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.35), 20, 0.3, 0, 0);
+}
+
+/* --- LIQUID / MESH BACKGROUND --- */
+.mesh-gradient-bg {
+  -fx-background-color: linear-gradient(to bottom right, #0a0a0a, #1a1505, #050505);
+}
+
+/* --- GLASS PANEL CAO CẤP --- */
+.glass-panel {
+  -fx-background-color: rgba(20, 20, 20, 0.85);
+  -fx-background-radius: 25;
+  -fx-border-color: linear-gradient(to bottom right, #d4af37, transparent, #b8860b);
+  -fx-border-radius: 25;
+  -fx-border-width: 1.5;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.8), 20, 0, 0, 10);
+}
+
 .glass-card {
-  -fx-background-color: rgba(255, 255, 255, 0.05); /* Lớp nền trắng siêu mỏng */
-  -fx-background-radius: 16;
-  -fx-border-color: rgba(255, 255, 255, 0.15); /* Viền sáng mờ tạo độ khối */
-  -fx-border-radius: 16;
+  -fx-background-color: rgba(255, 255, 255, 0.04);
+  -fx-background-radius: 14;
+  -fx-border-color: rgba(212, 175, 55, 0.2);
+  -fx-border-radius: 14;
   -fx-border-width: 1;
-  -fx-padding: 25;
-  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.6), 15, 0, 0, 8); /* Đổ bóng sâu */
+  -fx-padding: 20;
 }
 
-/* =========================================
-   NÚT BẤM HIỆN ĐẠI
-   ========================================= */
-.btn-primary {
-  -fx-background-color: linear-gradient(to right, #00c6ff, #0072ff);
-  -fx-background-radius: 8;
-  -fx-text-fill: white;
-  -fx-font-weight: bold;
-  -fx-font-size: 14px;
-  -fx-cursor: hand;
-  -fx-padding: 10 20 10 20;
-}
-
-.btn-primary:hover {
-  -fx-background-color: linear-gradient(to right, #33ccff, #3388ff);
-  -fx-effect: dropshadow(three-pass-box, rgba(0, 114, 255, 0.5), 10, 0, 0, 0); /* Glow effect */
-}
-
-.btn-danger {
-  -fx-background-color: rgba(255, 76, 76, 0.2);
-  -fx-border-color: #ff4c4c;
-  -fx-border-radius: 8;
-  -fx-background-radius: 8;
-  -fx-text-fill: #ff4c4c;
-  -fx-font-weight: bold;
-  -fx-cursor: hand;
-}
-
-.btn-danger:hover {
-  -fx-background-color: #ff4c4c;
-  -fx-text-fill: white;
-}
-
-/* =========================================
-   INPUT FIELD (TEXTFIELD) TỐI GIẢN
-   ========================================= */
-.text-field, .password-field {
-  -fx-background-color: rgba(0, 0, 0, 0.3);
-  -fx-text-fill: white;
-  -fx-background-radius: 8;
-  -fx-border-color: rgba(255, 255, 255, 0.2);
-  -fx-border-radius: 8;
-  -fx-padding: 10;
-  -fx-font-size: 14px;
-}
-
-.text-field:focused, .password-field:focused {
-  -fx-border-color: #00c6ff; /* Sáng viền xanh khi nhấp vào */
-  -fx-background-color: rgba(0, 0, 0, 0.5);
-}
-
-/* =========================================
-   TÙY CHỈNH TABLE VIEW (Phần khó nhất của Dark Mode)
-   ========================================= */
-.table-view {
-  -fx-background-color: transparent;
-  -fx-border-color: transparent;
-}
-
-.table-view .column-header-background {
-  -fx-background-color: rgba(255, 255, 255, 0.1);
-  -fx-background-radius: 8 8 0 0;
-}
-
-.table-view .column-header {
-  -fx-background-color: transparent;
-}
-
-.table-view .column-header .label {
-  -fx-text-fill: #a0aec0;
-  -fx-font-weight: bold;
-}
-
-.table-row-cell {
-  -fx-background-color: transparent;
-  -fx-border-color: rgba(255, 255, 255, 0.05);
-  -fx-border-width: 0 0 1 0;
-  -fx-table-cell-border-color: transparent;
-}
-
-.table-row-cell:odd {
-  -fx-background-color: rgba(255, 255, 255, 0.02);
-}
-
-.table-row-cell:selected {
-  -fx-background-color: rgba(0, 198, 255, 0.2);
-}
-
-.table-view .cell {
-  -fx-text-fill: #ffffff;
-  -fx-font-size: 14px;
-  -fx-alignment: center-left;
-  -fx-padding: 5 10;
-}
-
-.toggle-container {
-  -fx-background-color: rgba(0, 0, 0, 0.2);
-  -fx-background-radius: 20;
-  -fx-padding: 5;
-}
-
-.btn-toggle {
-  -fx-background-color: transparent;
-  -fx-text-fill: #a0aec0;
-  -fx-font-weight: bold;
-  -fx-background-radius: 15;
-  -fx-cursor: hand;
-}
-
-.btn-toggle-active {
-  -fx-background-color: #00c6ff;
-  -fx-text-fill: white;
-  -fx-effect: dropshadow(three-pass-box, rgba(0, 198, 255, 0.4), 10, 0, 0, 0);
-}
-
-.role-card {
-  -fx-background-color: rgba(255, 255, 255, 0.03);
-  -fx-border-color: rgba(255, 255, 255, 0.1);
-  -fx-border-radius: 12;
-  -fx-background-radius: 12;
-  -fx-cursor: hand;
-  -fx-transition: 0.3s;
-}
-
-.role-card:hover {
-  -fx-background-color: rgba(0, 198, 255, 0.1);
-  -fx-border-color: #00c6ff;
-  -fx-scale-x: 1.05;
-  -fx-scale-y: 1.05;
-}
-
-/* =========================================
-   CUSTOM TITLE BAR (Phong cách Spotify)
-   ========================================= */
+/* --- TITLE BAR & WINDOW BUTTONS (FIXED SVG) --- */
 .title-bar {
-  -fx-background-color: #000000; /* Nền đen tuyền */
-  -fx-padding: 0 0 0 15; /* Bỏ padding phải/trên/dưới để nút bấm sát lề */
+  -fx-background-color: #050505;
+  -fx-border-color: transparent transparent rgba(212, 175, 55, 0.3) transparent;
+  -fx-border-width: 0 0 1 0;
+  -fx-padding: 0 12;
+  -fx-min-height: 38px;
 }
 
 .title-bar-text {
-  -fx-text-fill: #b3b3b3; /* Chữ xám nhạt đặc trưng */
-  -fx-font-size: 12px;
-  -fx-font-weight: bold;
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+  -fx-font-size: 11pt;
+  -fx-text-fill: #d4af37;
+  -fx-letter-spacing: 2;
 }
 
-/* Các nút điều khiển cửa sổ */
 .window-btn {
   -fx-background-color: transparent;
   -fx-cursor: hand;
   -fx-min-width: 46px;
-  -fx-min-height: 32px;
-  -fx-max-width: 46px;
-  -fx-max-height: 32px;
+  -fx-min-height: 38px;
   -fx-padding: 0;
-  -fx-background-radius: 0; /* Vuông vức */
+  -fx-background-radius: 0;
 }
 
-/* THÊM 2 DÒNG FIX LỖI: CẤM KÉO GIÃN VÀ ÉP CĂN GIỮA */
-.icon-min, .icon-max, .icon-close {
-  -fx-background-color: #ffffff; /* Trắng tinh hiển thị rõ ràng */
-  -fx-min-width: 10px;
-  -fx-min-height: 10px;
-  -fx-max-width: 10px;
-  -fx-max-height: 10px;
-  -fx-scale-shape: false;    /* KHÔNG CHO PHÉP JAVAFX KÉO GIÃN SHAPE */
-  -fx-position-shape: true;  /* TỰ ĐỘNG CĂN GIỮA SHAPE */
-}
-
-/* Hiệu ứng Hover (Di chuột) chung */
 .window-btn:hover {
-  -fx-background-color: rgba(255, 255, 255, 0.1);
+  -fx-background-color: rgba(212, 175, 55, 0.1);
+}
+
+.btn-close:hover {
+  -fx-background-color: #ff3333;
+}
+
+/* Điền màu (background-color) để hiện SVG */
+.icon-min {
+  -fx-shape: "M0 5h10v1H0z";
+  -fx-background-color: #d4af37; 
+  -fx-min-width: 10px; -fx-min-height: 1px;
+  -fx-max-width: 10px; -fx-max-height: 1px;
+}
+
+.icon-max {
+  -fx-shape: "M0 0v10h10V0H0zm9 9H1V1h8v8z";
+  -fx-background-color: #d4af37;
+  -fx-min-width: 10px; -fx-min-height: 10px;
+  -fx-max-width: 10px; -fx-max-height: 10px;
+}
+
+.icon-close {
+  -fx-shape: "M10 0.7L9.3 0 5 4.3 0.7 0 0 0.7 4.3 5 0 9.3l0.7 0.7 4.3-4.3 4.3 4.3 0.7-0.7L5.7 5z";
+  -fx-background-color: #d4af37;
+  -fx-min-width: 10px; -fx-min-height: 10px;
+  -fx-max-width: 10px; -fx-max-height: 10px;
 }
 
 .window-btn:hover .icon-min, 
-.window-btn:hover .icon-max {
-  -fx-background-color: #ffffff; /* Icon vẫn sáng lên trắng tinh */
-}
-
-/* Hiệu ứng Hover riêng cho nút Close */
-.window-btn-close:hover {
-  -fx-background-color: #e81123; /* Nền đỏ */
-}
-
-.window-btn-close:hover .icon-close {
+.window-btn:hover .icon-max, 
+.window-btn:hover .icon-close {
   -fx-background-color: #ffffff;
 }
 
-/* =========================================
-   VẼ ICON BẰNG SVG PATHS
-   ========================================= */
-/* Dấu trừ (Minimize) */
-.icon-min {
-  -fx-shape: "M 0 5 H 10 V 6 H 0 Z"; 
+/* --- INPUT & BUTTONS --- */
+.text-field, .password-field {
+  -fx-background-color: rgba(255, 255, 255, 0.05);
+  -fx-text-fill: #ffffff;
+  -fx-prompt-text-fill: #888888;
+  -fx-border-color: rgba(255, 255, 255, 0.15);
+  -fx-border-radius: 5;
+  -fx-background-radius: 5;
+  -fx-padding: 12 14;
 }
 
-/* Hình vuông rỗng (Maximize) */
-.icon-max {
-  -fx-shape: "M 0 0 H 10 V 10 H 0 Z M 1 1 V 9 H 9 V 1 Z";
+.text-field:focused, .password-field:focused {
+  -fx-background-color: rgba(255, 255, 255, 0.08);
+  -fx-border-color: #d4af37;
+  -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.3), 10, 0, 0, 0);
 }
 
-/* Dấu X (Close) */
-.icon-close {
-  -fx-shape: "M 0.5 0 L 5 4.5 L 9.5 0 L 10 0.5 L 5.5 5 L 10 9.5 L 9.5 10 L 5 5.5 L 0.5 10 L 0 9.5 L 4.5 5 L 0 0.5 Z";
+.btn-primary {
+  -fx-background-color: linear-gradient(to bottom, #d4af37, #b8860b);
+  -fx-text-fill: #000000;
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+  -fx-font-size: 12pt;
+  -fx-background-radius: 6;
+  -fx-cursor: hand;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.5), 10, 0, 0, 2);
+}
+
+.btn-primary:hover {
+  -fx-background-color: linear-gradient(to bottom, #fcf6ba, #d4af37);
+  -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.5), 15, 0, 0, 0);
+}
+
+.btn-primary:pressed {
+  -fx-background-color: #b8860b;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.5), 2, 0, 0, 1);
+}
+
+.button-link {
+  -fx-background-color: transparent;
+  -fx-text-fill: #a0aec0;
+  -fx-cursor: hand;
+  -fx-font-weight: bold;
+}
+
+.button-link:hover {
+  -fx-text-fill: #d4af37;
+  -fx-underline: true;
+}
+
+/* --- ROLE CARDS --- */
+.role-card {
+  -fx-background-color: rgba(255, 255, 255, 0.03);
+  -fx-border-color: #333333;
+  -fx-border-radius: 15;
+  -fx-background-radius: 15;
+  -fx-cursor: hand;
+  -fx-transition: all 0.3s ease;
+}
+
+.role-card:hover {
+  -fx-border-color: #d4af37;
+  -fx-background-color: rgba(212, 175, 55, 0.08);
+  -fx-scale-x: 1.05; 
+  -fx-scale-y: 1.05;
+  -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.3), 15, 0, 0, 0);
 }

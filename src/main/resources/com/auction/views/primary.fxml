@@ -6,9 +6,6 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
@@ -19,7 +16,7 @@
            xmlns:fx="http://javafx.com/fxml/1" 
            fx:controller="com.auction.controllers.PrimaryController">
            
-    <VBox spacing="20.0" styleClass="glass-panel" StackPane.alignment="CENTER">
+    <VBox spacing="20.0" styleClass="glass-panel" StackPane.alignment="CENTER" maxWidth="750.0" maxHeight="550.0">
         
         <StackPane.margin>
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
@@ -28,33 +25,21 @@
         <padding>
             <Insets bottom="25.0" left="25.0" right="25.0" top="25.0"/>
         </padding>
+        
+        <HBox alignment="CENTER_LEFT">
+            <VBox spacing="5.0">
+                <Label text="RADAR ĐẤU GIÁ" styleClass="header-text" style="-fx-font-size: 22px;"/>
+                <Label text="Các báu vật đang chờ được sở hữu" style="-fx-text-fill: #a0aec0; -fx-font-weight: bold;"/>
+            </VBox>
+            <Region HBox.hgrow="ALWAYS" />
+            <Button text="Đăng xuất khỏi hệ thống" onAction="#handleLogout" styleClass="button-link" />
+        </HBox>
 
-        <BorderPane>
-            <left>
-                <HBox spacing="15.0" alignment="CENTER_LEFT" BorderPane.alignment="CENTER_LEFT">
-                    <ImageView fitHeight="45.0" fitWidth="45.0" preserveRatio="true" styleClass="app-logo">
-                        <image>
-                            <Image url="@/com/auction/views/assets/logo4.png" />
-                        </image>
-                    </ImageView>
-                    
-                    <VBox spacing="2.0" alignment="CENTER_LEFT">
-                        <Label text="LIVE AUCTION ARENA" styleClass="header-text"/>
-                        <Label text="TRUNG TÂM ĐẤU GIÁ THỜI GIAN THỰC" style="-fx-text-fill: #00f0ff; -fx-font-weight: bold; -fx-letter-spacing: 1.5;"/>
-                    </VBox>
-                </HBox>
-            </left>
-            
-            <right>
-                <Button text="ĐĂNG XUẤT" onAction="#handleLogout" styleClass="button" BorderPane.alignment="CENTER"/>
-            </right>
-        </BorderPane>
-
-        <TableView fx:id="productTable" VBox.vgrow="ALWAYS" styleClass="table-view">
+        <TableView fx:id="productTable" VBox.vgrow="ALWAYS" styleClass="glass-card">
             <columns>
-                <TableColumn fx:id="colId" text="MÃ SP" prefWidth="120.0" />
-                <TableColumn fx:id="colName" text="TÊN SẢN PHẨM" prefWidth="320.0" />
-                <TableColumn fx:id="colPrice" text="GIÁ HIỆN TẠI ($)" prefWidth="180.0" />
+                <TableColumn fx:id="colId" text="MÃ SP" prefWidth="100.0" />
+                <TableColumn fx:id="colName" text="TÊN SẢN PHẨM" prefWidth="350.0" />
+                <TableColumn fx:id="colPrice" text="GIÁ HIỆN TẠI (VNĐ)" prefWidth="200.0" />
             </columns>
             <placeholder>
                 <Label text="Đang đồng bộ dữ liệu từ trung tâm hệ thống..." style="-fx-text-fill: #a0aec0; -fx-font-size: 14px;"/>
@@ -62,21 +47,17 @@
         </TableView>
 
         <HBox alignment="CENTER_LEFT" spacing="20.0" styleClass="glass-card">
-            
             <VBox spacing="4.0">
-                <Label text="THAM GIA TRANH GIÁ" style="-fx-font-family: 'Montserrat'; -fx-font-weight: 900; -fx-text-fill: #ffffff; -fx-font-size: 15px;"/>
+                <Label text="THAM GIA TRANH GIÁ" style="-fx-font-family: 'Montserrat'; -fx-font-weight: 900; -fx-text-fill: #d4af37; -fx-font-size: 15px;"/>
                 <Label text="Chọn một sản phẩm trên bảng và nhập giá thầu" style="-fx-text-fill: #a0aec0; -fx-font-size: 12px;"/>
             </VBox>
             
             <Region HBox.hgrow="ALWAYS" />
             
             <HBox alignment="CENTER" spacing="12.0">
-                <Label text="$$$" style="-fx-font-family: 'Montserrat'; -fx-font-weight: 900; -fx-text-fill: #00f0ff; -fx-font-size: 18px;"/>
-                <TextField fx:id="txtBidAmount" promptText="VD: 1500.5" prefWidth="180.0" styleClass="text-field" />
-                <Button text="ĐẶT GIÁ NGAY" onAction="#handlePlaceBid" styleClass="btn-bid-brutal" prefWidth="160.0" prefHeight="40.0" />
+                <TextField fx:id="txtBidAmount" promptText="Nhập giá thầu (VNĐ)..." styleClass="text-field" prefWidth="200.0" prefHeight="40.0" />
+                <Button text="ĐẶT GIÁ THẦU" onAction="#handlePlaceBid" styleClass="btn-primary" prefHeight="40.0" prefWidth="150.0" />
             </HBox>
-            
         </HBox>
-        
     </VBox>
 </StackPane>

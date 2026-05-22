@@ -13,122 +13,82 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane stylesheets="@style.css" styleClass="mesh-gradient-bg"
-            xmlns="http://javafx.com/javafx/8.0.171" 
-            xmlns:fx="http://javafx.com/fxml/1" 
-            fx:controller="com.auction.controllers.LoginController">
-    
+<BorderPane styleClass="mesh-gradient-bg" stylesheets="@style.css" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.controllers.LoginController">
     <top>
-        <HBox fx:id="titleBar" alignment="CENTER_LEFT" spacing="0" styleClass="title-bar">
-            <HBox alignment="CENTER_LEFT" spacing="8">
-                <Label text="AUCTION X - PORTAL" styleClass="title-bar-text" />
-            </HBox>
-
-            <Region HBox.hgrow="ALWAYS" /> 
-            
+        <HBox fx:id="titleBar" alignment="CENTER_LEFT" styleClass="title-bar">
+            <Label text=" ROYAL AUCTION" styleClass="title-bar-text" />
+            <Region HBox.hgrow="ALWAYS" />
             <Button onAction="#handleMinimize" styleClass="window-btn">
-                <graphic>
-                    <Region styleClass="icon-min"/>
-                </graphic>
+                <graphic><Region styleClass="icon-min"/></graphic>
             </Button>
-            
             <Button onAction="#handleMaximize" styleClass="window-btn">
-                <graphic>
-                    <Region styleClass="icon-max"/>
-                </graphic>
+                <graphic><Region styleClass="icon-max"/></graphic>
             </Button>
-            
             <Button onAction="#handleClose" styleClass="window-btn btn-close">
-                <graphic>
-                    <Region styleClass="icon-close"/>
-                </graphic>
+                <graphic><Region styleClass="icon-close"/></graphic>
             </Button>
         </HBox>
     </top>
 
     <center>
-        <VBox alignment="CENTER" spacing="25.0">
-            <padding>
-                <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
-            </padding>
-            
-            <VBox alignment="CENTER" spacing="20.0" styleClass="glass-panel" maxWidth="420.0">
-                <padding>
-                    <Insets bottom="35.0" left="35.0" right="35.0" top="35.0"/>
-                </padding>
-
+        <StackPane>
+            <VBox fx:id="authContainer" alignment="CENTER" spacing="30.0" maxWidth="450.0">
                 <VBox alignment="CENTER" spacing="10.0">
-                    <ImageView fitHeight="70.0" fitWidth="70.0" preserveRatio="true" styleClass="app-logo">
+                    <ImageView fitHeight="100.0" preserveRatio="true" styleClass="app-logo">
                         <image>
-                            <Image url="@/com/auction/views/assets/logo4.png" />
+                            <Image url="@assets/logo4.png" />
                         </image>
                     </ImageView>
-                    <Label text="AUCTION X" styleClass="header-text" style="-fx-font-size: 26px; -fx-letter-spacing: 2px;"/>
-                    <Label text="HỆ THỐNG ĐẤU GIÁ ĐỘC BẢN" style="-fx-text-fill: #a0aec0; -fx-font-weight: bold; -fx-letter-spacing: 1.5;"/>
+                    <Label text="ROYAL AUCTION" styleClass="header-text" />
+                    <Label text="NƠI TINH HOA HỘI TỤ" style="-fx-text-fill: #a0aec0; -fx-letter-spacing: 3px; -fx-font-weight: bold;" />
                 </VBox>
 
-                <StackPane>
+                <VBox spacing="20.0" styleClass="glass-panel">
+                    <padding>
+                        <Insets bottom="40.0" left="40.0" right="40.0" top="40.0"/>
+                    </padding>
                     
-                    <VBox fx:id="loginForm" spacing="18.0" visible="true">
-                        <VBox spacing="6.0">
-                            <Label text="EMAIL ĐĂNG NHẬP" style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
-                            <TextField fx:id="txtEmail" promptText="Vd: bidder@auction.com" styleClass="text-field" />
-                        </VBox>
-                        
-                        <VBox spacing="6.0">
-                            <Label text="MẬT KHẨU" style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
-                            <PasswordField fx:id="txtPassword" promptText="••••••••" styleClass="password-field" />
-                        </VBox>
-                        
-                        <VBox spacing="10.0" alignment="CENTER">
-                            <Button text="ĐĂNG NHẬP HỆ THỐNG" onAction="#handleLogin" styleClass="btn-bid-brutal" prefWidth="350.0" prefHeight="45.0" />
-                            <Button text="Chưa có tài khoản? Đăng ký ngay" onAction="#showRegisterView" styleClass="button" prefWidth="350.0" />
-                        </VBox>
-                    </VBox>
-
-                    <VBox fx:id="registerForm" spacing="18.0" visible="false" managed="false">
-                        <VBox spacing="6.0">
-                            <Label text="TÊN HIỂN THỊ" style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
-                            <TextField fx:id="txtRegName" promptText="Vd: Nguyễn Văn A" styleClass="text-field" />
+                    <StackPane>
+                        <VBox fx:id="loginForm" spacing="20.0">
+                            <TextField fx:id="txtEmail" promptText="Email thành viên..." styleClass="text-field" />
+                            <PasswordField fx:id="txtPassword" promptText="Mật khẩu bảo mật..." styleClass="password-field" />
+                            <Button text="ĐĂNG NHẬP HỆ THỐNG" onAction="#handleLogin" prefWidth="400.0" prefHeight="50.0" styleClass="btn-primary" />
+                            <Button text="Chưa có tài khoản? Đăng ký ngay" onAction="#showRegisterView" styleClass="button-link" alignment="CENTER" prefWidth="400.0"/>
                         </VBox>
 
-                        <VBox spacing="6.0">
-                            <Label text="EMAIL ĐĂNG KÝ" style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
-                            <TextField fx:id="txtRegEmail" promptText="Vd: my.email@example.com" styleClass="text-field" />
+                        <VBox fx:id="registerForm" spacing="15.0" visible="false">
+                            <TextField fx:id="txtRegName" promptText="Tên hiển thị..." styleClass="text-field" />
+                            <TextField fx:id="txtRegEmail" promptText="Email liên lạc..." styleClass="text-field" />
+                            <PasswordField fx:id="txtRegPassword" promptText="Mật khẩu..." styleClass="password-field" />
+                            <Button text="TIẾP TỤC CHỌN VAI TRÒ" onAction="#handleRegisterStep1" prefWidth="400.0" prefHeight="50.0" styleClass="btn-primary" />
+                            <Button text="Đã có tài khoản? Đăng nhập" onAction="#showLoginView" styleClass="button-link" alignment="CENTER" prefWidth="400.0"/>
                         </VBox>
-                        
-                        <VBox spacing="6.0">
-                            <Label text="MẬT KHẨU BẢO MẬT" style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #ffffff; -fx-font-size: 11px; -fx-letter-spacing: 1;"/>
-                            <PasswordField fx:id="txtRegPassword" promptText="••••••••" styleClass="password-field" />
-                        </VBox>
-                        
-                        <VBox spacing="10.0" alignment="CENTER">
-                            <Button text="TẠO TÀI KHOẢN MỚI" onAction="#handleRegister" styleClass="btn-autobid-brutal" prefWidth="350.0" prefHeight="45.0" />
-                            <Button text="Quay lại màn hình Đăng nhập" onAction="#showLoginView" styleClass="button" prefWidth="350.0" />
-                        </VBox>
-                    </VBox>
-                    
-                </StackPane>
-
-                <Label fx:id="lblError" text="" style="-fx-text-fill: #ff3c00; -fx-font-weight: bold; -fx-alignment: center; -fx-wrap-text: true;" />
+                    </StackPane>
+                    <Label fx:id="lblError" style="-fx-text-fill: #ff4444; -fx-font-weight: bold;" wrapText="true" alignment="CENTER" maxWidth="400.0"/>
+                </VBox>
             </VBox>
 
-            <VBox alignment="CENTER" spacing="15.0" styleClass="glass-card" maxWidth="420.0">
-                <Label text="TRUY CẬP NHANH BẰNG QUYỀN (DEMO MODE)" style="-fx-font-family: 'Montserrat'; -fx-font-weight: bold; -fx-text-fill: #00f0ff; -fx-font-size: 12px;"/>
-                <HBox spacing="20.0" alignment="CENTER">
-                    <VBox onMouseClicked="#selectBidderRole" spacing="8.0" alignment="CENTER" styleClass="role-card" prefWidth="150.0" prefHeight="130.0">
-                        <Label text="⚡" style="-fx-font-size: 36px; -fx-effect: dropshadow(three-pass-box, rgba(0, 240, 255, 0.5), 10, 0, 0, 0);"/>
-                        <Label text="BIDDER" style="-fx-font-family: 'Montserrat'; -fx-font-weight: 900; -fx-text-fill: #ffffff;"/>
-                        <Label text="Tham gia đấu giá" style="-fx-font-size: 11px; -fx-text-fill: #a0aec0;"/>
+            <VBox fx:id="roleSelection" alignment="CENTER" spacing="30.0" visible="false">
+                
+                <Label fx:id="lblRoleTitle" text="BƯỚC CUỐI: BẠN MUỐN ĐĂNG KÝ LÀ AI?" styleClass="header-text" style="-fx-font-size: 20pt;"/>
+                
+                <Label text="⚠️ LƯU Ý: Một email chỉ được gắn với một vai trò duy nhất. Không thể thay đổi sau khi đăng ký!" 
+                       style="-fx-text-fill: #ff4c4c; -fx-font-weight: bold; -fx-font-size: 11px; -fx-background-color: rgba(255, 76, 76, 0.1); -fx-padding: 8px 15px; -fx-background-radius: 20px;"/>
+
+                <HBox spacing="30.0" alignment="CENTER">
+                    <VBox onMouseClicked="#handleRoleBidder" alignment="CENTER" spacing="20.0" styleClass="role-card" prefWidth="220.0" prefHeight="250.0">
+                        <Label text="⚡" style="-fx-font-size: 60px; -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.5), 10, 0, 0, 0);"/>
+                        <Label text="BIDDER" styleClass="gold-text" style="-fx-font-size: 18px;"/>
+                        <Label text="Người mua / Săn báu vật" style="-fx-text-fill: #888888;"/>
                     </VBox>
-                    <VBox onMouseClicked="#selectSellerRole" spacing="8.0" alignment="CENTER" styleClass="role-card" prefWidth="150.0" prefHeight="130.0">
-                        <Label text="💎" style="-fx-font-size: 36px; -fx-effect: dropshadow(three-pass-box, rgba(255, 0, 122, 0.5), 10, 0, 0, 0);"/>
-                        <Label text="SELLER" style="-fx-font-family: 'Montserrat'; -fx-font-weight: 900; -fx-text-fill: #ffffff;"/>
-                        <Label text="Phát hành vật phẩm" style="-fx-font-size: 11px; -fx-text-fill: #a0aec0;"/>
+                    <VBox onMouseClicked="#handleRoleSeller" alignment="CENTER" spacing="20.0" styleClass="role-card" prefWidth="220.0" prefHeight="250.0">
+                        <Label text="💎" style="-fx-font-size: 60px; -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.5), 10, 0, 0, 0);"/>
+                        <Label text="SELLER" styleClass="gold-text" style="-fx-font-size: 18px;"/>
+                        <Label text="Người bán / Mang giá trị" style="-fx-text-fill: #888888;"/>
                     </VBox>
                 </HBox>
+                <Button text="QUAY LẠI MÀN HÌNH TRƯỚC" onAction="#logoutAndReturn" styleClass="button-link" />
             </VBox>
-
-        </VBox>
+        </StackPane>
     </center>
 </BorderPane>

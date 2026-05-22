@@ -18,13 +18,17 @@ module com.auction {
   requires org.slf4j;
 
   // 5. Cấp quyền cho JavaFX load các file FXML và tạo Controller
-  // Package com.auction PHẢI chứa tệp App.java
   opens com.auction to javafx.fxml, javafx.graphics;
   opens com.auction.controllers to javafx.fxml;
 
-  // 6. Mở gói network để Gson parse được các gói tin JSON
-  // (ClientMessage/ServerMessage)
+  // 6. Mở TOÀN BỘ các gói network và models để Gson parse JSON mượt mà
   opens com.auction.network to com.google.gson;
+  opens com.auction.models.user to com.google.gson;
+  opens com.auction.models.user.permission to com.google.gson; // ĐÃ THÊM: Cấp quyền đọc hệ thống phân quyền
+  opens com.auction.models.auction to com.google.gson;
+  opens com.auction.models.item to com.google.gson;
+  opens com.auction.models.bid to com.google.gson;
+  opens com.auction.models.payment to com.google.gson; // ĐÃ THÊM: Cấp quyền đọc hệ thống thanh toán
 
   // 7. Xuất các gói ra bên ngoài
   exports com.auction;

@@ -40,7 +40,8 @@ public class NetworkClient {
   }
 
   /**
-   * 3. Hàm public static để lấy instance duy nhất (Double-Checked Locking an toàn cho Thread).
+   * 3. Hàm public static để lấy instance duy nhất (Double-Checked Locking an toàn
+   * cho Thread).
    *
    * @return Thể hiện duy nhất của NetworkClient
    */
@@ -77,16 +78,17 @@ public class NetworkClient {
   }
 
   /**
-   * Establishes a connection to the server using system properties for IP and Port.
+   * Establishes a connection to the server using system properties for IP and
+   * Port.
    */
   public void connect() {
-    String serverIp = System.getProperty("server.ip", "trongson-ThinkPad-T450.local"); 
+    String serverIp = System.getProperty("server.ip", "127.0.0.1");
     int port = Integer.getInteger("server.port", 8080);
-    
+
     try {
       logger.info("Connecting to server at {}:{}...", serverIp, port);
       socket = new Socket(serverIp, port);
-      // ... phần còn lại giữ nguyên 
+      // ... phần còn lại giữ nguyên
       out = new PrintWriter(socket.getOutputStream(), true);
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
@@ -113,7 +115,8 @@ public class NetworkClient {
   }
 
   /**
-   * Listens for incoming JSON strings from the server on a separate Virtual Thread.
+   * Listens for incoming JSON strings from the server on a separate Virtual
+   * Thread.
    */
   private void startListeningThread() {
     Thread.ofVirtual().start(() -> {

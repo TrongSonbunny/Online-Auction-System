@@ -1,129 +1,179 @@
 package com.auction.controllers;
 
 import com.auction.App;
+import com.auction.models.user.UserRole;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
 import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
 
 /**
- * Controller xử lý màn hình quản lý dành cho Người bán (Seller).
- * Tuân thủ nghiêm ngặt các trường validate từ CreateAuctionCommand.
+ * Điều khiển màn hình của Seller (Người bán).
+ * Cho phép tạo phiên đấu giá và giao tiếp với Backend Stateless.
  */
-public class SellerController implements NetworkClient.MessageListener {
+public class SellerController implements Initializable, NetworkClient.MessageListener {
 
   @FXML
   private TextField txtName;
-
   @FXML
   private TextField txtCategory;
-
   @FXML
   private TextField txtStartingPrice;
-
   @FXML
   private Label lblStatus;
-
-  /**
-   * Khởi tạo giao diện và đăng ký lắng nghe sự kiện mạng.
-   */
   @FXML
-  public void initialize() {
+  private HBox titleBar;
+
+  private AnimationTimer meshGradientTimer;
+  private double gradientOffset = 0.0;
+
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
     NetworkClient.getInstance().addListener(this);
+    setupUndecoratedWindowHandle();
+
+    Platform.runLater(() -> {
+      Node root = txtName.getScene().getRoot();
+      if (root != null) {
+        startMeshGradientAnimation(root);
+      }
+    });
   }
 
-  /**
-   * Gửi yêu cầu khởi tạo một phiên đấu giá mới.
-   */
+  private void startMeshGradientAnimation(Node targetNode) {
+    meshGradientTimer = new AnimationTimer() {
+      @Override
+      public void handle(long now) {
+        gradientOffset += 0.0005;
+        targetNode.setStyle(
+            "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
+                + "rgba(26, 21, 5, " + (Math.sin(gradientOffset) * 0.1 + 0.9) + "), "
+                + "rgba(5, 5, 5, " + (Math.cos(gradientOffset) * 0.1 + 0.9) + "));");
+      }
+    };
+    meshGradientTimer.start();
+  }
+
   @FXML
   private void handleCreateAuction() {
+    if (txtName.getText().isEmpty()
+        || txtCategory.getText().isEmpty()
+        || txtStartingPrice.getText().isEmpty()) {
+      setStatus("Vui lòng điền đầy đủ thông tin vật phẩm!", true);
+      return;
+    }
+
     try {
       double startingPrice = Double.parseDouble(txtStartingPrice.getText());
-
       ClientMessage createRequest = ClientMessage.builder()
           .action(ActionType.CREATE_AUCTION)
-          .userId("CURRENT_SELLER") // Backend sẽ cần ID user thực tế
+          .email(App.loggedInEmail)
+          .password(App.loggedInPassword)
+          .role(UserRole.SELLER) // ĐÃ FIX: Đính kèm "Thẻ ngành" để Server xác nhận phân quyền
           .itemName(txtName.getText())
-          .itemCategory(txtCategory.getText())
-          .startingPrice(startingPrice)
-          .itemDescription("Mô tả mặc định từ hệ thống")
-          .itemCondition("Mới")
+          .itemCategory(txtCategory.getText().toUpperCase())
+          .itemDescription("Vật phẩm đấu giá độc bản")
+          .itemCondition("NEW")
           .estimatedPrice(startingPrice * 1.5)
-          .durationSeconds(86400) // Đấu giá diễn ra trong 24 giờ
+          .startingPrice(startingPrice)
+          .durationSeconds(3600)
           .build();
 
       NetworkClient.getInstance().sendMessage(createRequest);
-      setStatus("Đang gửi yêu cầu tạo đấu giá...", false);
-
     } catch (NumberFormatException e) {
-      setStatus("Lỗi: Giá khởi điểm phải là một số hợp lệ.", true);
+      setStatus("CẢNH BÁO: Định dạng giá tiền không hợp lệ!", true);
     }
   }
 
-  /**
-   * Xử lý kết quả trả về từ máy chủ sau khi yêu cầu tạo sản phẩm.
-   *
-   * @param response gói dữ liệu phản hồi từ máy chủ
-   */
   @Override
   public void onMessageReceived(ServerMessage response) {
-    if (ActionType.CREATE_AUCTION.name().equals(response.getAction())) {
+    if (ActionType.CREATE_AUCTION.name().equals(response.getAction())
+        || "EXECUTION_ERROR".equals(response.getAction())) {
+
       Platform.runLater(() -> {
         if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
-          setStatus("Tạo phiên đấu giá thành công!", false);
+          setStatus("THÀNH CÔNG! Phiên đấu giá đã lên sóng radar.", false);
           clearInputs();
         } else {
-          setStatus("Lỗi: " + response.getMessage(), true);
+          setStatus("TỪ CHỐI: " + response.getMessage(), true);
         }
       });
     }
   }
 
-  /**
-   * Cập nhật trạng thái hiển thị trên giao diện theo màu sắc.
-   *
-   * @param msg     nội dung thông báo
-   * @param isError đổi màu chữ đỏ nếu là thông báo lỗi
-   */
   private void setStatus(String msg, boolean isError) {
     if (lblStatus != null) {
-      lblStatus.setStyle(isError ? "-fx-text-fill: #ff4c4c;" : "-fx-text-fill: #28a745;");
+      lblStatus.setStyle(isError ? "-fx-text-fill: #ff4444;" : "-fx-text-fill: #d4af37;");
       lblStatus.setText(msg);
     }
   }
 
-  /**
-   * Xóa nội dung của các ô nhập liệu.
-   */
   private void clearInputs() {
-    if (txtName != null) {
-      txtName.clear();
-    }
-    if (txtCategory != null) {
-      txtCategory.clear();
-    }
-    if (txtStartingPrice != null) {
-      txtStartingPrice.clear();
-    }
+    txtName.clear();
+    txtCategory.clear();
+    txtStartingPrice.clear();
   }
 
-  /**
-   * Xử lý đăng xuất và chuyển về màn hình đăng nhập.
-   *
-   * @param event sự kiện click chuột
-   */
   @FXML
   private void handleLogout(ActionEvent event) {
     try {
+      App.loggedInEmail = null;
+      App.loggedInPassword = null;
+      if (meshGradientTimer != null) {
+        meshGradientTimer.stop();
+      }
       App.setRoot("login");
     } catch (IOException e) {
-      setStatus("Không thể thoát lúc này.", true);
+      setStatus("Lỗi hệ thống khi đăng xuất.", true);
+    }
+  }
+
+  @FXML
+  private void handleMinimize(ActionEvent event) {
+    ((Stage) ((Node) event.getSource()).getScene().getWindow()).setIconified(true);
+  }
+
+  @FXML
+  private void handleMaximize(ActionEvent event) {
+    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    stage.setMaximized(!stage.isMaximized());
+  }
+
+  @FXML
+  private void handleClose(ActionEvent event) {
+    if (meshGradientTimer != null) {
+      meshGradientTimer.stop();
+    }
+    ((Stage) ((Node) event.getSource()).getScene().getWindow()).close();
+  }
+
+  private double xOffset = 0;
+  private double yOffset = 0;
+
+  private void setupUndecoratedWindowHandle() {
+    if (titleBar != null) {
+      titleBar.setOnMousePressed(event -> {
+        xOffset = event.getSceneX();
+        yOffset = event.getSceneY();
+      });
+      titleBar.setOnMouseDragged(event -> {
+        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        stage.setX(event.getScreenX() - xOffset);
+        stage.setY(event.getScreenY() - yOffset);
+      });
     }
   }
 }
