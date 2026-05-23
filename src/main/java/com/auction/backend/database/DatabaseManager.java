@@ -1,24 +1,28 @@
 package com.auction.backend.database;
 
+import com.auction.backend.util.PasswordHasher;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Khởi tạo schema database khi ứng dụng start.
- *
- * <p>{@link #initializeDatabase()} tạo lần lượt các bảng {@code users}, {@code items},
- * {@code auctions}, {@code bid_transactions} với {@code CREATE TABLE IF NOT EXISTS}
- * nên an toàn để gọi nhiều lần.
+ * Quản lý khởi tạo database SQLite.
  */
 public class DatabaseManager {
+  private static final String DEFAULT_ADMIN_ID = "ADMIN";
+  private static final String DEFAULT_ADMIN_NAME = "ADMIN";
+  private static final String DEFAULT_ADMIN_EMAIL = "admin@auction.local";
+  private static final String DEFAULT_ADMIN_PASSWORD = "123456789";
+  private static final String DEFAULT_ADMIN_ROLE = "ADMIN";
 
   /**
    * Khởi tạo toàn bộ database.
    */
   public void initializeDatabase() {
-
     createUserTable();
+    createOnlyOneAdminIndex();
+    createDefaultAdminAccount();
     createItemTable();
     createAuctionTable();
     createBidTransactionTable();
@@ -28,7 +32,6 @@ public class DatabaseManager {
    * Tạo bảng users.
    */
   private void createUserTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS users ("
             + "user_id VARCHAR(50) PRIMARY KEY,"
@@ -42,18 +45,72 @@ public class DatabaseManager {
   }
 
   /**
+   * Tạo ràng buộc để hệ thống chỉ có tối đa một tài khoản ADMIN.
+   *
+   * <p>SQLite chỉ áp dụng unique index này cho các dòng có role là ADMIN.
+   * Các role khác như SELLER và BIDDER không bị ảnh hưởng.
+   */
+  private void createOnlyOneAdminIndex() {
+    String sql =
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_only_one_admin "
+            + "ON users(role) "
+            + "WHERE role = 'ADMIN';";
+
+    executeSql(sql);
+  }
+
+  /**
+   * Tạo tài khoản admin mặc định nếu chưa tồn tại.
+   *
+   * <p>Tài khoản đăng nhập mặc định:
+   * <ul>
+   * <li>username: ADMIN
+   * <li>password: 123456789
+   * </ul>
+   *
+   * <p>Trong database vẫn lưu email hợp lệ là {@code admin@auction.local}
+   * để không phá validate email của model User.
+   */
+  private void createDefaultAdminAccount() {
+    String sql =
+        "INSERT OR IGNORE INTO users "
+            + "(user_id, name, email, password, role) "
+            + "VALUES (?, ?, ?, ?, ?)";
+
+    try (
+        Connection connection =
+            DatabaseConnection.getConnection();
+
+        PreparedStatement statement =
+            connection.prepareStatement(sql)) {
+
+      statement.setString(1, DEFAULT_ADMIN_ID);
+      statement.setString(2, DEFAULT_ADMIN_NAME);
+      statement.setString(3, DEFAULT_ADMIN_EMAIL);
+      statement.setString(
+          4,
+          PasswordHasher.hash(DEFAULT_ADMIN_PASSWORD));
+      statement.setString(5, DEFAULT_ADMIN_ROLE);
+
+      statement.executeUpdate();
+
+    } catch (SQLException exception) {
+      exception.printStackTrace();
+    }
+  }
+
+  /**
    * Tạo bảng items.
    */
   private void createItemTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS items ("
-            + "item_id VARCHAR(50) PRIMARY KEY,"
-            + "name VARCHAR(255) NOT NULL,"
+            + "item_id TEXT PRIMARY KEY,"
+            + "name TEXT NOT NULL,"
             + "description TEXT NOT NULL,"
-            + "category VARCHAR(100) NOT NULL,"
-            + "item_condition VARCHAR(100) NOT NULL,"
-            + "estimated_price DOUBLE NOT NULL"
+            + "category TEXT NOT NULL,"
+            + "item_condition TEXT NOT NULL,"
+            + "estimated_price REAL NOT NULL"
             + ");";
 
     executeSql(sql);
@@ -63,23 +120,24 @@ public class DatabaseManager {
    * Tạo bảng auctions.
    */
   private void createAuctionTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS auctions ("
-            + "auction_id VARCHAR(50) PRIMARY KEY,"
-            + "seller_id VARCHAR(50) NOT NULL,"
-            + "item_id VARCHAR(50) NOT NULL,"
-            + "starting_price DOUBLE NOT NULL,"
-            + "current_highest_bid DOUBLE NOT NULL,"
-            + "current_highest_bidder_id VARCHAR(50),"
-            + "status VARCHAR(50) NOT NULL,"
-            + "created_at TIMESTAMP NOT NULL,"
-            + "start_time TIMESTAMP NULL,"
-            + "end_time TIMESTAMP NULL,"
+            + "auction_id TEXT PRIMARY KEY,"
+            + "seller_id TEXT NOT NULL,"
+            + "item_id TEXT NOT NULL,"
+            + "starting_price REAL NOT NULL,"
+            + "current_highest_bid REAL NOT NULL,"
+            + "current_highest_bidder_id TEXT,"
+            + "status TEXT NOT NULL,"
+            + "created_at TEXT NOT NULL,"
+            + "start_time TEXT,"
+            + "end_time TEXT,"
             + "FOREIGN KEY (seller_id)"
             + " REFERENCES users(user_id),"
             + "FOREIGN KEY (item_id)"
-            + " REFERENCES items(item_id)"
+            + " REFERENCES items(item_id),"
+            + "FOREIGN KEY (current_highest_bidder_id)"
+            + " REFERENCES users(user_id)"
             + ");";
 
     executeSql(sql);
@@ -89,15 +147,13 @@ public class DatabaseManager {
    * Tạo bảng bid transactions.
    */
   private void createBidTransactionTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS bid_transactions ("
-            + "transaction_id VARCHAR(50)"
-            + " PRIMARY KEY,"
-            + "bidder_id VARCHAR(50) NOT NULL,"
-            + "auction_id VARCHAR(50) NOT NULL,"
-            + "bid_amount DOUBLE NOT NULL,"
-            + "created_at TIMESTAMP NOT NULL,"
+            + "transaction_id TEXT PRIMARY KEY,"
+            + "bidder_id TEXT NOT NULL,"
+            + "auction_id TEXT NOT NULL,"
+            + "bid_amount REAL NOT NULL,"
+            + "created_at TEXT NOT NULL,"
             + "FOREIGN KEY (bidder_id)"
             + " REFERENCES users(user_id),"
             + "FOREIGN KEY (auction_id)"
@@ -112,19 +168,16 @@ public class DatabaseManager {
    *
    * @param sql câu lệnh SQL
    */
-  private void executeSql(String sql) {
-
+  private void executeSql(
+      String sql) {
     try (
         Connection connection =
             DatabaseConnection.getConnection();
-
         Statement statement =
             connection.createStatement()) {
 
       statement.execute(sql);
-
     } catch (SQLException exception) {
-
       exception.printStackTrace();
     }
   }
