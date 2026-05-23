@@ -125,7 +125,15 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version> <executions>
+                <version>0.8.12</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/auction/Main.class</exclude>
+                        <exclude>com/auction/backend/database/**</exclude>
+                        <exclude>com/auction/network/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
                     <execution>
                         <id>prepare-agent</id>
                         <goals>
