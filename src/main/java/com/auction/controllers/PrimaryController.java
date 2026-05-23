@@ -2,6 +2,7 @@ package com.auction.controllers;
 
 import com.auction.App;
 import com.auction.models.auction.Auction;
+import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.UserRole;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
@@ -22,6 +23,8 @@ import javafx.animation.Animation;
 import javafx.animation.RotateTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -33,15 +36,12 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
-/**
- * Điều khiển màn hình hiển thị danh sách đấu giá cho Bidder.
- */
+/** Điều khiển màn hình hiển thị danh sách đấu giá cho Bidder. */
 public class PrimaryController implements Initializable, NetworkClient.MessageListener {
 
   @FXML
@@ -57,26 +57,48 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
 
   private final ObservableList<Auction> auctionData = FXCollections.observableArrayList();
 
-  // ĐÃ FIX: Trang bị thêm TypeAdapter cho PermissionStrategy để tránh lỗi sập
-  // Gson
   private final Gson gson = new GsonBuilder()
-      .registerTypeAdapter(LocalDateTime.class,
+      .registerTypeAdapter(
+          LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> {
             try {
-              return LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+              return LocalDateTime.parse(
+                  json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             } catch (Exception e) {
               return LocalDateTime.now();
             }
           })
-      .registerTypeAdapter(PermissionStrategy.class,
+      .registerTypeAdapter(
+          PermissionStrategy.class,
           (JsonDeserializer<PermissionStrategy>) (json, type, ctx) -> null)
+      .registerTypeAdapter(
+          PaymentStrategy.class, (JsonDeserializer<PaymentStrategy>) (json, type, ctx) -> null)
       .create();
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    colId.setCellValueFactory(new PropertyValueFactory<>("auctionId"));
-    colName.setCellValueFactory(new PropertyValueFactory<>("itemName"));
-    colPrice.setCellValueFactory(new PropertyValueFactory<>("currentHighestBid"));
+    colId.setCellValueFactory(
+        cellData -> {
+          Auction auction = cellData.getValue();
+          return new SimpleStringProperty(
+              auction != null && auction.getAuctionId() != null ? auction.getAuctionId() : "");
+        });
+
+    colName.setCellValueFactory(
+        cellData -> {
+          Auction auction = cellData.getValue();
+          String displayName = "";
+          if (auction != null && auction.getItem() != null) {
+            displayName = auction.getItem().getName();
+          }
+          return new SimpleStringProperty(displayName != null ? displayName : "");
+        });
+
+    colPrice.setCellValueFactory(
+        cellData -> {
+          Auction auction = cellData.getValue();
+          return new SimpleObjectProperty<>(auction != null ? auction.getCurrentHighestBid() : 0.0);
+        });
 
     productTable.setItems(auctionData);
     setupDynamicColorCoding();
@@ -85,38 +107,38 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
   }
 
   private void setupDynamicColorCoding() {
-    productTable.setRowFactory(tv -> new TableRow<Auction>() {
-      @Override
-      protected void updateItem(Auction item, boolean empty) {
-        super.updateItem(item, empty);
-        getStyleClass().removeAll("theme-electronics", "theme-art", "theme-vehicle", "hot-auction");
+    productTable.setRowFactory(
+        tv -> new TableRow<Auction>() {
+          @Override
+          protected void updateItem(Auction item, boolean empty) {
+            super.updateItem(item, empty);
+            getStyleClass()
+                .removeAll("theme-electronics", "theme-art", "theme-vehicle", "hot-auction");
 
-        if (item == null || empty) {
-          setStyle("");
-        } else {
-          if (item.getItem() != null && item.getItem().getCategory() != null) {
-            String category = item.getItem().getCategory().name();
-            if ("ELECTRONICS".equals(category)) {
-              getStyleClass().add("theme-electronics");
-            } else if ("ART".equals(category)) {
-              getStyleClass().add("theme-art");
+            if (item == null || empty) {
+              setStyle("");
             } else {
-              getStyleClass().add("theme-vehicle");
+              if (item.getItem() != null && item.getItem().getCategory() != null) {
+                String category = item.getItem().getCategory().name();
+                if ("ELECTRONICS".equals(category)) {
+                  getStyleClass().add("theme-electronics");
+                } else if ("ART".equals(category)) {
+                  getStyleClass().add("theme-art");
+                } else {
+                  getStyleClass().add("theme-vehicle");
+                }
+              }
+              if (item.getCurrentHighestBid() > 5000) {
+                getStyleClass().add("hot-auction");
+              }
             }
           }
-          if (item.getCurrentHighestBid() > 5000) {
-            getStyleClass().add("hot-auction");
-          }
-        }
-      }
-    });
+        });
   }
 
   private void refreshData() {
-    ClientMessage getAuctionsReq = ClientMessage.builder()
-        .action(ActionType.GET_ALL_AUCTIONS)
-        .build();
-    NetworkClient.getInstance().sendMessage(getAuctionsReq);
+    ClientMessage req = ClientMessage.builder().action(ActionType.GET_ALL_AUCTIONS).build();
+    NetworkClient.getInstance().sendMessage(req);
   }
 
   @FXML
@@ -148,38 +170,46 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
 
   @Override
   public void onMessageReceived(ServerMessage response) {
-    Platform.runLater(() -> {
-      if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
+    Platform.runLater(
+        () -> {
+          if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
 
-        Object dataSource = response.getData() != null
-            ? response.getData()
-            : response.getAuctions();
+            Object dataSource = response.getData();
+            if (dataSource == null) {
+              dataSource = response.getAuctions();
+            }
 
-        if (dataSource != null) {
-          String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {
-          }.getType());
+            if (dataSource != null) {
+              String json = gson.toJson(dataSource);
 
-          if (list != null) {
-            auctionData.setAll(list);
-          } else {
-            auctionData.clear();
+              TypeToken<List<Auction>> token = new TypeToken<List<Auction>>() {
+              };
+              java.lang.reflect.Type type = token.getType();
+              List<Auction> list = gson.fromJson(json, type);
+
+              if (list != null) {
+                auctionData.setAll(list);
+              } else {
+                auctionData.clear();
+              }
+            } else {
+              auctionData.clear();
+            }
+
+          } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
+            refreshData();
+          } else if (ActionType.BID.name().equals(response.getAction())) {
+            if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
+
+              fireConfettiGamification();
+              txtBidAmount.clear();
+              refreshData();
+
+            } else {
+              showAlert("TỪ CHỐI", response.getMessage());
+            }
           }
-        } else {
-          auctionData.clear();
-        }
-
-      } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
-        refreshData();
-      } else if (ActionType.BID.name().equals(response.getAction())) {
-        if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
-          fireConfettiGamification();
-          txtBidAmount.clear();
-        } else {
-          showAlert("TỪ CHỐI", response.getMessage());
-        }
-      }
-    });
+        });
   }
 
   private void fireConfettiGamification() {
@@ -194,8 +224,8 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
 
         root.getChildren().add(confetti);
 
-        TranslateTransition tt = new TranslateTransition(
-            Duration.seconds(1.5 + Math.random()), confetti);
+        Duration dur = Duration.seconds(1.5 + Math.random());
+        TranslateTransition tt = new TranslateTransition(dur, confetti);
         tt.setByY(1000);
         tt.setByX((Math.random() - 0.5) * 200);
 
@@ -217,6 +247,7 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
       App.loggedInEmail = null;
       App.loggedInPassword = null;
       App.loggedInUserId = null;
+
       App.setRoot("login");
     } catch (IOException e) {
       showAlert("LỖI HỆ THỐNG", "Không thể ngắt kết nối trạm (Logout).");

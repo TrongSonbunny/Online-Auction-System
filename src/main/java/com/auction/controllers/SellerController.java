@@ -20,10 +20,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
-/**
- * Điều khiển màn hình hiển thị và tạo phiên đấu giá dành cho người bán
- * (Seller).
- */
+/** Điều khiển màn hình của Seller (Người bán) để tạo các phiên đấu giá mới. */
 public class SellerController implements Initializable, NetworkClient.MessageListener {
 
   @FXML
@@ -39,7 +36,6 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
 
   private AnimationTimer meshGradientTimer;
   private double gradientOffset = 0.0;
-
   private double offsetX = 0;
   private double offsetY = 0;
 
@@ -48,15 +44,15 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle();
 
-    Platform.runLater(() -> {
-      // ĐÃ FIX: Lớp giáp bảo vệ kiểm tra Null trước khi chọc vào Scene
-      if (titleBar != null && titleBar.getScene() != null) {
-        Node root = titleBar.getScene().getRoot();
-        if (root != null) {
-          startMeshGradientAnimation(root);
-        }
-      }
-    });
+    Platform.runLater(
+        () -> {
+          if (txtName != null && txtName.getScene() != null) {
+            Node root = txtName.getScene().getRoot();
+            if (root != null) {
+              startMeshGradientAnimation(root);
+            }
+          }
+        });
   }
 
   private void startMeshGradientAnimation(Node targetNode) {
@@ -111,14 +107,15 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     if (ActionType.CREATE_AUCTION.name().equals(response.getAction())
         || "EXECUTION_ERROR".equals(response.getAction())) {
 
-      Platform.runLater(() -> {
-        if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
-          setStatus("THÀNH CÔNG! Phiên đấu giá đã lên sóng radar.", false);
-          clearInputs();
-        } else {
-          setStatus("TỪ CHỐI: " + response.getMessage(), true);
-        }
-      });
+      Platform.runLater(
+          () -> {
+            if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
+              setStatus("THÀNH CÔNG! Phiên đấu giá đã lên sóng radar.", false);
+              clearInputs();
+            } else {
+              setStatus("TỪ CHỐI: " + response.getMessage(), true);
+            }
+          });
     }
   }
 
@@ -171,15 +168,17 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
 
   private void setupUndecoratedWindowHandle() {
     if (titleBar != null) {
-      titleBar.setOnMousePressed(event -> {
-        offsetX = event.getSceneX();
-        offsetY = event.getSceneY();
-      });
-      titleBar.setOnMouseDragged(event -> {
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setX(event.getScreenX() - offsetX);
-        stage.setY(event.getScreenY() - offsetY);
-      });
+      titleBar.setOnMousePressed(
+          event -> {
+            offsetX = event.getSceneX();
+            offsetY = event.getSceneY();
+          });
+      titleBar.setOnMouseDragged(
+          event -> {
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setX(event.getScreenX() - offsetX);
+            stage.setY(event.getScreenY() - offsetY);
+          });
     }
   }
 }

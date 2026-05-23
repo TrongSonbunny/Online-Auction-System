@@ -3,6 +3,7 @@ package com.auction;
 import com.auction.network.NetworkClient;
 import com.auction.utils.WindowResizeUtils;
 import java.io.IOException;
+import java.net.URL;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -37,8 +38,9 @@ public class App extends Application {
   public void start(Stage stage) throws IOException {
     stage.initStyle(StageStyle.UNDECORATED);
     try {
-      Image appIcon = new Image(
-          App.class.getResourceAsStream("/com/auction/views/assets/logo4.png"));
+      String logoPath = "/com/auction/views/assets/logo4.png";
+      java.io.InputStream stream = App.class.getResourceAsStream(logoPath);
+      Image appIcon = new Image(stream);
       stage.getIcons().add(appIcon);
     } catch (Exception e) {
       System.out.println("Chưa tìm thấy logo4.png, sử dụng mặc định.");
@@ -50,16 +52,37 @@ public class App extends Application {
     stage.show();
   }
 
+  /**
+   * Thay đổi màn hình (Root) của ứng dụng.
+   *
+   * @param fxml tên file fxml cần load
+   * @throws IOException nếu không thể tìm hoặc đọc file fxml
+   */
   public static void setRoot(String fxml) throws IOException {
+    // Không cần gọi clearListeners() thủ công ở đây nữa
+    // Việc dọn dẹp đã được tự động hóa bên trong NetworkClient.addListener()
     scene.setRoot(loadFxml(fxml));
   }
 
+  /**
+   * Tải giao diện từ file FXML.
+   *
+   * @param fxml tên file fxml cần load
+   * @return Parent node chứa giao diện
+   * @throws IOException nếu không tìm thấy file
+   */
   private static Parent loadFxml(String fxml) throws IOException {
-    FXMLLoader fxmlLoader = new FXMLLoader(
-        App.class.getResource("/com/auction/views/" + fxml + ".fxml"));
+    String fxmlPath = "/com/auction/views/" + fxml + ".fxml";
+    URL url = App.class.getResource(fxmlPath);
+    FXMLLoader fxmlLoader = new FXMLLoader(url);
     return fxmlLoader.load();
   }
 
+  /**
+   * Hàm main để khởi chạy ứng dụng.
+   *
+   * @param args các tham số dòng lệnh
+   */
   public static void main(String[] args) {
     launch();
   }

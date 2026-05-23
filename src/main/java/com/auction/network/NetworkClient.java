@@ -74,6 +74,9 @@ public class NetworkClient {
    * @param listener controller muốn nhận dữ liệu
    */
   public void addListener(MessageListener listener) {
+    // ĐÃ FIX: Tận dụng danh sách có sẵn, dọn sạch Listener cũ trước khi thêm mới
+    // Giải quyết triệt để lỗi "Bóng bàn" (Listener Leak) mà không cần tạo hàm mới!
+    listeners.clear();
     listeners.add(listener);
   }
 

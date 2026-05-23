@@ -2,6 +2,9 @@ package com.auction.network;
 
 import com.auction.backend.observer.AuctionObserver;
 import com.auction.backend.observer.FrontendNotifier;
+import com.auction.models.bid.Transaction; // ĐÃ FIX: Import chuẩn xác đường dẫn mà sếp tìm thấy
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
@@ -14,15 +17,22 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The bridge between the Network (TCP), Business Logic (Commands), and UI
  * (Observers).
- * * Lifecycle:
+ * Each instance of ClientHandler manages one TCP connection to a client and
+ * runs
+ * in its own Virtual Thread. It listens for JSON messages, processes them using
+ * Each client connection is handled by a separate instance of ClientHandler
+ * running
+ * Lifecycle:
  * 1. Created by ServerMain when a TCP connection is accepted.
  * 2. Runs in a Java 21 Virtual Thread.
  * 3. Listens for JSON strings, converts them to ClientMessage.
@@ -33,6 +43,9 @@ import org.slf4j.LoggerFactory;
 public class ClientHandler implements Runnable, FrontendNotifier {
 
   private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+
+  // Danh sách tập trung chứa các Client đang online để phát sóng Real-time
+  private static final List<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
 
   private final Socket clientSocket;
   private final Gson gson;
@@ -52,35 +65,59 @@ public class ClientHandler implements Runnable, FrontendNotifier {
    */
   public ClientHandler(Socket socket) {
     this.clientSocket = socket;
-    // ĐÃ FIX: Tích hợp "Bộ dịch giả" TypeAdapter để Gson không bị chặn bởi bảo mật
-    // của Java 16+
+
+    // ĐÃ FIX TẬN GỐC: Sử dụng ExclusionStrategy để CẤM Gson dùng Reflection quét
+    // vào các biến nhạy cảm!
     this.gson = new GsonBuilder()
-        .registerTypeAdapter(LocalDateTime.class,
+        .registerTypeAdapter(
+            LocalDateTime.class,
             (JsonSerializer<LocalDateTime>) (src, typeOfSrc,
                 context) -> new JsonPrimitive(src.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
-        .registerTypeAdapter(LocalDateTime.class,
+        .registerTypeAdapter(
+            LocalDateTime.class,
             (JsonDeserializer<LocalDateTime>) (json, typeOfT, context) -> LocalDateTime.parse(
                 json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+        .setExclusionStrategies(
+            new ExclusionStrategy() {
+              @Override
+              public boolean shouldSkipField(FieldAttributes f) {
+                // Ngăn chặn Gson chọc ngoáy vào các trường gây lỗi Crash của BidResult
+                String fieldName = f.getName();
+                return fieldName.equals("manualTransaction")
+                    || fieldName.equals("autoBidsPlaced")
+                    || fieldName.equals("autoBidTransactions"); // ĐÃ THÊM: Chặn vĩnh viễn biến này
+              }
+
+              @Override
+              public boolean shouldSkipClass(Class<?> clazz) {
+                // Ngăn chặn serialize bất kỳ class nào là Transaction hoặc kế thừa từ
+                // Transaction
+                return Transaction.class.isAssignableFrom(clazz);
+              }
+            })
         .create();
+
+    // Ghi danh Client vào "Phòng chat chung" ngay khi kết nối
+    activeClients.add(this);
   }
 
-  /**
-   * Main execution loop for the client connection.
-   */
+  /** Main execution loop for the client connection. */
   @Override
   public void run() {
     // Try-with-resources ensures the reader/writer close automatically if an error
     // occurs.
-    try (
-        BufferedReader reader = new BufferedReader(
-            new InputStreamReader(clientSocket.getInputStream()));
-        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
-      this.writer = out;
-      logger.info("New connection established from: {}", clientSocket.getRemoteSocketAddress());
+    try {
+      java.io.InputStream in = clientSocket.getInputStream();
+      java.io.OutputStream os = clientSocket.getOutputStream();
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+          PrintWriter out = new PrintWriter(os, true)) {
+        this.writer = out;
+        logger.info("New connection established from: {}", clientSocket.getRemoteSocketAddress());
 
-      String jsonInput;
-      while ((jsonInput = reader.readLine()) != null) {
-        handleIncomingRequest(jsonInput);
+        String jsonInput;
+        while ((jsonInput = reader.readLine()) != null) {
+          handleIncomingRequest(jsonInput);
+        }
       }
     } catch (IOException e) {
       logger.warn("Connection lost for user {}: {}", authenticatedUserId, e.getMessage());
@@ -118,6 +155,19 @@ public class ClientHandler implements Runnable, FrontendNotifier {
 
       sendToClient(response);
 
+      // =====================================================================
+      // ĐÃ FIX: Tận dụng cơ chế phát sóng EVENT có sẵn để đồng bộ giá Real-time
+      // =====================================================================
+      ActionType action = request.getAction();
+      if (action == ActionType.BID || action == ActionType.CREATE_AUCTION) {
+        for (ClientHandler client : activeClients) {
+          // Báo hiệu EVENT cho các Client KHÁC để họ làm mới màn hình ngay lập tức
+          if (client != this) {
+            client.sendNotification("ALL", "UPDATE_PRICE");
+          }
+        }
+      }
+
     } catch (Exception e) {
       logger.error("Error processing request: {}", e.getMessage());
       sendToClient(ServerMessage.error("EXECUTION_ERROR", e.getMessage()));
@@ -144,9 +194,7 @@ public class ClientHandler implements Runnable, FrontendNotifier {
     sendToClient(eventMessage);
   }
 
-  /**
-   * Utility to safely send a ServerMessage object as JSON over the wire.
-   */
+  /** Utility to safely send a ServerMessage object as JSON over the wire. */
   private synchronized void sendToClient(ServerMessage message) {
     if (writer != null && !clientSocket.isClosed()) {
       writer.println(gson.toJson(message));
@@ -161,11 +209,15 @@ public class ClientHandler implements Runnable, FrontendNotifier {
   private void cleanup() {
     logger.info("Cleaning up resources for user: {}", authenticatedUserId);
 
+    // Xóa Client khỏi danh sách Online khi họ thoát App
+    activeClients.remove(this);
+
     // Iterate through all auctions this client was watching and unregister them.
-    activeObservers.forEach((auctionId, observer) -> {
-      // Access your AuctionManager/Service here to remove the observer.
-      // Example: auctionService.removeObserver(auctionId, observer);
-    });
+    activeObservers.forEach(
+        (auctionId, observer) -> {
+          // Access your AuctionManager/Service here to remove the observer.
+          // Example: auctionService.removeObserver(auctionId, observer);
+        });
 
     activeObservers.clear();
 

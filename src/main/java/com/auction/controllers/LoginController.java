@@ -30,7 +30,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 /**
- * Điều khiển luồng Đăng nhập và Đăng ký.
+ * Điều khiển luồng Đăng nhập và Đăng ký của hệ thống đấu giá.
  */
 public class LoginController implements Initializable, NetworkClient.MessageListener {
 
@@ -61,10 +61,8 @@ public class LoginController implements Initializable, NetworkClient.MessageList
 
   private AnimationTimer meshGradientTimer;
   private double gradientOffset = 0.0;
-
   private UserRole pendingRole;
   private boolean isRegisteringMode = false;
-
   private double offsetX = 0;
   private double offsetY = 0;
 
@@ -74,9 +72,11 @@ public class LoginController implements Initializable, NetworkClient.MessageList
     setupUndecoratedWindowHandle(rb);
 
     Platform.runLater(() -> {
-      Node root = titleBar.getScene().getRoot();
-      if (root != null) {
-        startMeshGradientAnimation(root);
+      if (titleBar != null && titleBar.getScene() != null) {
+        Node root = titleBar.getScene().getRoot();
+        if (root != null) {
+          startMeshGradientAnimation(root);
+        }
       }
     });
 
@@ -191,22 +191,17 @@ public class LoginController implements Initializable, NetworkClient.MessageList
       App.loggedInEmail = txtEmail.getText();
       App.loggedInPassword = txtPassword.getText();
 
-      // =========================================================================
-      // ĐÃ FIX TẬN GỐC: "Moi" dữ liệu User ID và Role từ bên trong chiếc hộp "data"
-      // =========================================================================
       if (message.getData() != null) {
         JsonElement jsonElement = new Gson().toJsonTree(message.getData());
         if (jsonElement.isJsonObject()) {
           JsonObject userObj = jsonElement.getAsJsonObject();
 
-          // Trích xuất ID (Tương thích với cả tên biến userId hoặc id)
           if (userObj.has("userId") && !userObj.get("userId").isJsonNull()) {
             App.loggedInUserId = userObj.get("userId").getAsString();
           } else if (userObj.has("id") && !userObj.get("id").isJsonNull()) {
             App.loggedInUserId = userObj.get("id").getAsString();
           }
 
-          // Trích xuất Quyền (Role) để điều hướng tự động
           if (userObj.has("role") && !userObj.get("role").isJsonNull()) {
             String roleStr = userObj.get("role").getAsString();
             this.pendingRole = "SELLER".equalsIgnoreCase(roleStr)
@@ -216,11 +211,9 @@ public class LoginController implements Initializable, NetworkClient.MessageList
         }
       }
 
-      // Xóa rác an toàn để đảm bảo không dính chữ "null" vào hệ thống
       if ("null".equals(App.loggedInUserId)) {
         App.loggedInUserId = null;
       }
-      // =========================================================================
 
       if (this.pendingRole != null) {
         if (this.pendingRole == UserRole.SELLER) {
@@ -237,7 +230,6 @@ public class LoginController implements Initializable, NetworkClient.MessageList
       }
 
     } else if (isRegister) {
-      // Đăng ký xong thì gửi Login để Server cấp phiên làm việc
       ClientMessage autoLoginReq = ClientMessage.builder()
           .action(ActionType.LOGIN)
           .email(txtRegEmail.getText())
