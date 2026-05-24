@@ -37,9 +37,11 @@
 
         <TableView fx:id="productTable" VBox.vgrow="ALWAYS" styleClass="glass-card">
             <columns>
-                <TableColumn fx:id="colId" text="MÃ SP" prefWidth="100.0" />
-                <TableColumn fx:id="colName" text="TÊN SẢN PHẨM" prefWidth="350.0" />
-                <TableColumn fx:id="colPrice" text="GIÁ HIỆN TẠI (VNĐ)" prefWidth="200.0" />
+                <TableColumn fx:id="colId" text="MÃ SP" prefWidth="80.0" />
+                <TableColumn fx:id="colName" text="TÊN SẢN PHẨM" prefWidth="250.0" />
+                <TableColumn fx:id="colPrice" text="GIÁ HIỆN TẠI (VNĐ)" prefWidth="150.0" />
+                <TableColumn fx:id="colTimeRemaining" text="CÒN LẠI" prefWidth="120.0" />
+                <TableColumn fx:id="colStatus" text="TRẠNG THÁI" prefWidth="100.0" />
             </columns>
             <placeholder>
                 <Label text="Đang đồng bộ dữ liệu từ trung tâm hệ thống..." style="-fx-text-fill: #a0aec0; -fx-font-size: 14px;"/>

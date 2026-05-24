@@ -197,3 +197,121 @@
   -fx-scale-y: 1.05;
   -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.3), 15, 0, 0, 0);
 }
+
+/* TableView Styling */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(212, 175, 55, 0.3);
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: rgba(212, 175, 55, 0.1);
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(212, 175, 55, 0.2);
+    -fx-border-width: 0 1 1 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #d4af37;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.table-view .table-row-cell:filled:selected {
+    -fx-background-color: rgba(212, 175, 55, 0.2);
+}
+
+/* ComboBox Styling */
+.combo-box {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-border-color: #333;
+    -fx-border-radius: 8;
+    -fx-text-fill: white;
+}
+
+.combo-box .list-view {
+    -fx-background-color: #1a1a1a;
+    -fx-border-color: #d4af37;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: white;
+}
+
+/* Action Buttons */
+.action-btn-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: #d4af37;
+    -fx-text-fill: #d4af37;
+    -fx-cursor: hand;
+}
+
+.action-btn-danger {
+    -fx-background-color: transparent;
+    -fx-border-color: #ff4444;
+    -fx-text-fill: #ff4444;
+    -fx-cursor: hand;
+}
+
+/* =========================================================================
+   PREMIUM FORM ADDITIONS
+   ========================================================================= */
+
+/* Label sang trọng cho phần Form input */
+.premium-label {
+    -fx-text-fill: #d4af37;
+    -fx-font-family: 'Plus Jakarta Sans';
+    -fx-font-weight: 600;
+    -fx-font-size: 11pt;
+    -fx-letter-spacing: 0.5;
+}
+
+/* Đảm bảo TextArea cũng tuân thủ style của text-field */
+.text-area {
+    -fx-font-family: 'Plus Jakarta Sans';
+    -fx-font-size: 13px;
+}
+
+/* Đảm bảo ScrollPane bên trong Form trong suốt hoàn toàn */
+.glass-panel ScrollPane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.glass-panel ScrollPane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Tinh chỉnh thanh cuộn (ScrollBar) cho tinh tế hơn */
+.glass-panel ScrollPane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+.glass-panel ScrollPane .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(212, 175, 55, 0.2);
+    -fx-background-radius: 4;
+}
+.glass-panel ScrollPane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(212, 175, 55, 0.5);
+}
+.glass-panel ScrollPane .scroll-bar:vertical .increment-button,
+.glass-panel ScrollPane .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-pref-height: 0;
+}
+
+/* ComboBox Premium tinh chỉnh */
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+}
+.combo-box .list-cell:hover {
+    -fx-background-color: rgba(212, 175, 55, 0.1);
+}

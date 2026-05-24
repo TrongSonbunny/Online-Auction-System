@@ -15,6 +15,8 @@ public enum AuctionEventType {
 
   AUCTION_EXTENDED,
 
+  AUCTION_UPDATED,
+
   NEW_BID,
 
   AUTO_BID_PLACED,

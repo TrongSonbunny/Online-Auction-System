@@ -9,7 +9,9 @@ import com.auction.exceptions.AuctionException;
 import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.item.AuctionItem;
+import com.auction.models.item.ItemCategory;
 import com.auction.models.user.Seller;
+import java.time.LocalDateTime;
 
 /**
  * Service điều phối luồng tạo, hủy và kết thúc auction.
@@ -17,60 +19,36 @@ import com.auction.models.user.Seller;
 public class AuctionService {
 
   private final AuctionManager auctionManager;
-
   private final AuctionValidator auctionValidator;
-
   private final AuctionScheduler auctionScheduler;
-
   private final AuctionEventPublisher eventPublisher;
 
   /**
-   * Constructor mặc định.
+   * Khởi tạo AuctionService với dependency mặc định.
    */
   public AuctionService() {
-    this(
-        new AuctionScheduler(),
-        new AuctionEventPublisher());
+    this(new AuctionScheduler(), new AuctionEventPublisher());
   }
 
   /**
-   * Constructor dùng chung scheduler và event publisher từ bên ngoài.
+   * Khởi tạo AuctionService cho phép inject scheduler và event publisher (dễ test
+   * hơn).
    *
-   * @param auctionScheduler scheduler dùng để kết thúc/gia hạn auction
-   * @param eventPublisher publisher phát event
+   * @param auctionScheduler Scheduler của auction
+   * @param eventPublisher   Publisher để phát event
    */
-  public AuctionService(
-      AuctionScheduler auctionScheduler,
-      AuctionEventPublisher eventPublisher) {
-
+  public AuctionService(AuctionScheduler auctionScheduler, AuctionEventPublisher eventPublisher) {
     if (auctionScheduler == null) {
-      throw new AuctionException(
-          "AuctionScheduler không được null.");
+      throw new AuctionException("AuctionScheduler không được null.");
     }
-
-    this.auctionManager =
-        AuctionManager.getInstance();
-
-    this.auctionValidator =
-        new AuctionValidator();
-
-    this.auctionScheduler =
-        auctionScheduler;
-
-    this.eventPublisher =
-        eventPublisher == null
-            ? new AuctionEventPublisher()
-            : eventPublisher;
+    this.auctionManager = AuctionManager.getInstance();
+    this.auctionValidator = new AuctionValidator();
+    this.auctionScheduler = auctionScheduler;
+    this.eventPublisher = eventPublisher == null ? new AuctionEventPublisher() : eventPublisher;
   }
 
   /**
-   * Tạo auction mới.
-   *
-   * @param seller seller tạo auction
-   * @param item item đấu giá
-   * @param startingPrice giá khởi điểm
-   * @param durationSeconds thời gian đấu giá
-   * @return auction mới
+   * Tạo auction mới (Chỉ lưu ở trạng thái PENDING/NOT OPEN).
    */
   public Auction createAuction(
       Seller seller,
@@ -80,147 +58,124 @@ public class AuctionService {
 
     validateSeller(seller);
 
-    Auction auction =
-        new Auction(
-            IdGenerator.generateAuctionId(),
-            seller,
-            item,
-            startingPrice);
+    Auction auction = new Auction(
+        IdGenerator.generateAuctionId(),
+        seller,
+        item,
+        startingPrice);
 
-    auctionValidator.validateAuctionCreation(
-        auction);
+    // ĐÃ FIX: Lưu trữ thời lượng nhưng KHÔNG gọi auction.start()
+    auction.setDurationSeconds(durationSeconds);
 
+    auctionValidator.validateAuctionCreation(auction);
     seller.incrementAuctionCreated();
+    auctionManager.addAuction(auction);
 
+    publishAuctionEvent(AuctionEventType.AUCTION_CREATED, auction, "Auction được tạo (Nháp).");
+
+    return auction;
+  }
+
+  /**
+   * Bắt đầu auction (OPEN).
+   */
+  public Auction startAuction(String auctionId) {
+    Auction auction = getRequiredAuction(auctionId);
+
+    // Đổi trạng thái thành ACTIVE và set startTime
     auction.start();
 
-    auctionManager.addAuction(
-        auction);
+    // ĐÃ FIX: Thiết lập thời gian kết thúc = startTime + duration
+    long duration = auction.getDurationSeconds();
+    auction.setScheduledEndTime(auction.getStartTime().plusSeconds(duration));
+    auctionScheduler.scheduleAuctionFinish(auction, duration);
 
     publishAuctionEvent(
-        AuctionEventType.AUCTION_CREATED,
-        auction,
-        "Auction được tạo.");
+        AuctionEventType.AUCTION_STARTED, auction,
+        "Auction đã chính thức bắt đầu.");
 
-    auctionScheduler.scheduleAuctionFinish(
-        auction,
-        durationSeconds);
+    return auction;
+  }
 
+  /**
+   * Cập nhật thông số auction.
+   */
+  public Auction updateAuction(
+      String auctionId,
+      String itemName,
+      String itemDescription,
+      ItemCategory category,
+      String itemCondition,
+      double estimatedPrice,
+      double startingPrice,
+      long durationSeconds) {
+
+    Auction auction = getRequiredAuction(auctionId);
+
+    auction.setStartingPrice(startingPrice);
+    auction.setDurationSeconds(durationSeconds);
+
+    AuctionItem item = auction.getItem();
+    if (item != null) {
+      item.setName(itemName);
+      item.setDescription(itemDescription);
+      item.setCategory(category);
+      item.setItemCondition(itemCondition);
+      item.setEstimatedPrice(estimatedPrice);
+    }
+
+    publishAuctionEvent(
+        AuctionEventType.AUCTION_UPDATED,
+        auction, "Auction đã được cập nhật chi tiết.");
     return auction;
   }
 
   /**
    * Hủy auction.
-   *
-   * @param auctionId mã auction
-   * @return auction sau khi hủy
    */
-  public Auction cancelAuction(
-      String auctionId) {
-
-    Auction auction =
-        getRequiredAuction(
-            auctionId);
-
+  public Auction cancelAuction(String auctionId) {
+    Auction auction = getRequiredAuction(auctionId);
     auction.cancel();
-
-    publishAuctionEvent(
-        AuctionEventType.AUCTION_CANCELLED,
-        auction,
-        "Auction đã bị hủy.");
-
+    publishAuctionEvent(AuctionEventType.AUCTION_CANCELLED, auction, "Auction đã bị hủy.");
     return auction;
   }
 
   /**
    * Kết thúc auction thủ công.
-   *
-   * @param auctionId mã auction
-   * @return auction sau khi kết thúc
    */
-  public Auction finishAuction(
-      String auctionId) {
-
-    Auction auction =
-        getRequiredAuction(
-            auctionId);
-
+  public Auction finishAuction(String auctionId) {
+    Auction auction = getRequiredAuction(auctionId);
     auction.finish();
-
-    publishAuctionEvent(
-        AuctionEventType.AUCTION_FINISHED,
-        auction,
-        "Auction đã kết thúc.");
-
+    publishAuctionEvent(AuctionEventType.AUCTION_FINISHED, auction, "Auction đã kết thúc.");
     return auction;
   }
 
-  /**
-   * Lấy auction manager.
-   *
-   * @return auction manager
-   */
   public AuctionManager getAuctionManager() {
     return auctionManager;
   }
 
-  /**
-   * Lấy auction bắt buộc tồn tại.
-   *
-   * @param auctionId mã auction
-   * @return auction
-   */
-  private Auction getRequiredAuction(
-      String auctionId) {
-
-    Auction auction =
-        auctionManager.findAuction(
-            auctionId);
-
+  private Auction getRequiredAuction(String auctionId) {
+    Auction auction = auctionManager.findAuction(auctionId);
     if (auction == null) {
-      throw new AuctionClosedException(
-          "Không tìm thấy auction.");
+      throw new AuctionClosedException("Không tìm thấy auction.");
     }
-
     return auction;
   }
 
-  /**
-   * Publish auction event.
-   *
-   * @param eventType loại event
-   * @param auction auction liên quan
-   * @param message nội dung event
-   */
-  private void publishAuctionEvent(
-      AuctionEventType eventType,
-      Auction auction,
-      String message) {
-
+  private void publishAuctionEvent(AuctionEventType eventType, Auction auction, String message) {
     eventPublisher.publishEvent(
         new AuctionEvent(
             eventType,
             auction.getAuctionId(),
-            message,
-            auction));
+            message, auction));
   }
 
-  /**
-   * Validate seller trước khi tạo auction.
-   *
-   * @param seller seller cần kiểm tra
-   */
-  private void validateSeller(
-      Seller seller) {
-
+  private void validateSeller(Seller seller) {
     if (seller == null) {
-      throw new AuctionException(
-          "Seller không được null.");
+      throw new AuctionException("Seller không được null.");
     }
-
     if (!seller.canCreateAuction()) {
-      throw new UnauthorizedException(
-          "Seller không có quyền tạo auction.");
+      throw new UnauthorizedException("Seller không có quyền tạo auction.");
     }
   }
 }

@@ -68,6 +68,10 @@ public class LoginController implements Initializable, NetworkClient.MessageList
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
+    // 1. THÊM DÒNG NÀY: Khởi tạo kết nối tới server trước tiên
+    NetworkClient.getInstance().connect();
+
+    // 2. Các logic cũ giữ nguyên
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle(rb);
 
@@ -306,7 +310,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
       }
       App.setRoot(fxmlTarget);
     } catch (IOException e) {
-      showError("Lỗi hệ thống: Không thể chuyển giao diện.");
+      showError(e.toString());
     }
   }
 
