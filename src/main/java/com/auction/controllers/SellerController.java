@@ -3,6 +3,7 @@ package com.auction.controllers;
 import com.auction.App;
 import com.auction.models.auction.Auction;
 import com.auction.models.item.ItemCategory;
+import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.UserRole;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
@@ -45,79 +46,62 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 /**
- * Điều khiển màn hình của Seller (Người bán) để tạo và quản lý các phiên đấu
- * giá.
+ * Điều khiển màn hình của Seller (Người bán) để tạo và quản lý các phiên đấu giá.
  */
 public class SellerController implements Initializable, NetworkClient.MessageListener {
 
-  @FXML
-  private HBox titleBar;
-  @FXML
-  private Label lblStatus;
-  @FXML
-  private TableView<Auction> auctionTable;
-  @FXML
-  private TableColumn<Auction, String> colId;
-  @FXML
-  private TableColumn<Auction, String> colName;
-  @FXML
-  private TableColumn<Auction, Double> colCurrentPrice;
-  @FXML
-  private TableColumn<Auction, String> colStartTime;
-  @FXML
-  private TableColumn<Auction, String> colEndTime;
-  @FXML
-  private TableColumn<Auction, String> colDuration;
-  @FXML
-  private TableColumn<Auction, String> colTimeRemaining;
-  @FXML
-  private TableColumn<Auction, String> colStatus;
+  @FXML private HBox titleBar;
+  @FXML private Label lblStatus;
+  @FXML private TableView<Auction> auctionTable;
+  @FXML private TableColumn<Auction, String> colId;
+  @FXML private TableColumn<Auction, String> colName;
+  @FXML private TableColumn<Auction, Double> colCurrentPrice;
+  @FXML private TableColumn<Auction, String> colStartTime;
+  @FXML private TableColumn<Auction, String> colEndTime;
+  @FXML private TableColumn<Auction, String> colDuration;
+  @FXML private TableColumn<Auction, String> colTimeRemaining;
+  @FXML private TableColumn<Auction, String> colStatus;
 
-  @FXML
-  private TextField txtName;
-  @FXML
-  private TextArea txtDescription;
-  @FXML
-  private ComboBox<ItemCategory> cbCategory;
-  @FXML
-  private TextField txtCondition;
-  @FXML
-  private TextField txtEstimatedPrice;
-  @FXML
-  private TextField txtStartingPrice;
-  @FXML
-  private TextField txtDuration;
-  @FXML
-  private Button btnSubmit;
+  @FXML private TextField txtName;
+  @FXML private TextArea txtDescription;
+  @FXML private ComboBox<ItemCategory> cbCategory;
+  @FXML private TextField txtCondition;
+  @FXML private TextField txtEstimatedPrice;
+  @FXML private TextField txtStartingPrice;
+  @FXML private TextField txtDuration;
+  @FXML private Button btnSubmit;
 
   private final ObservableList<Auction> myAuctions = FXCollections.observableArrayList();
   private AnimationTimer meshGradientTimer;
   private Timeline countdownTimer;
-
+  
   private double gradientOffset = 0.0;
   private double offsetX = 0;
   private double offsetY = 0;
-
+  
   private boolean isEditMode = false;
   private Auction selectedAuctionForEdit = null;
 
+  // ĐÃ SỬA: Tách dòng khai báo TypeAdapter để độ dài luôn nhỏ hơn 100 ký tự
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> LocalDateTime.parse(
               json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
       .registerTypeAdapter(PermissionStrategy.class,
           (JsonDeserializer<PermissionStrategy>) (json, type, ctx) -> null)
+      .registerTypeAdapter(PaymentStrategy.class,
+          (JsonDeserializer<PaymentStrategy>) (json, type, ctx) -> null)
       .create();
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle();
-
+    
     if (cbCategory != null) {
       cbCategory.setItems(FXCollections.observableArrayList(ItemCategory.values()));
     }
-
+    
     setupTableColumns();
     startCountdownTimer();
 
@@ -133,18 +117,21 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   }
 
   private void setupTableColumns() {
+
+    // ĐÃ SỬA: Tách dòng các CellValueFactory dài để tránh lỗi LineLength tiềm ẩn
     colId.setCellValueFactory(d -> new SimpleStringProperty(
         d.getValue() != null ? d.getValue().getAuctionId() : ""));
+        
     colName.setCellValueFactory(d -> new SimpleStringProperty(
-        d.getValue() != null && d.getValue().getItem() != null
-            ? d.getValue().getItem().getName()
-            : "Unknown"));
-    colCurrentPrice.setCellValueFactory(
-        d -> new SimpleObjectProperty<>(
-            d.getValue() != null ? d.getValue().getCurrentHighestBid() : 0.0));
-
-    final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
-
+        d.getValue() != null && d.getValue().getItem() != null 
+            ? d.getValue().getItem().getName() : "Unknown"));
+            
+    colCurrentPrice.setCellValueFactory(d -> new SimpleObjectProperty<>(
+        d.getValue() != null ? d.getValue().getCurrentHighestBid() : 0.0));
+    
+    // Đã dời xuống đây để không vi phạm quy tắc khoảng cách sử dụng
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
+    
     colStartTime.setCellValueFactory(d -> {
       Auction a = d.getValue();
       if (a == null || a.getStartTime() == null) {
@@ -152,17 +139,16 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       }
       return new SimpleStringProperty(a.getStartTime().format(dtf));
     });
-
+    
     colEndTime.setCellValueFactory(d -> {
       Auction a = d.getValue();
-      // Lấy ScheduledEndTime (thời gian dự kiến kết thúc được tính toán từ lúc Start)
       LocalDateTime end = a != null ? a.getScheduledEndTime() : null;
       if (end == null) {
         return new SimpleStringProperty("--");
       }
       return new SimpleStringProperty(end.format(dtf));
     });
-
+    
     colDuration.setCellValueFactory(d -> {
       Auction a = d.getValue();
       if (a == null) {
@@ -170,7 +156,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       }
       return new SimpleStringProperty(a.getDurationSeconds() + "s");
     });
-
+    
     colTimeRemaining.setCellValueFactory(d -> {
       Auction a = d.getValue();
       if (a == null) {
@@ -180,12 +166,12 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       if ("PENDING".equals(status)) {
         return new SimpleStringProperty("Chưa mở");
       }
-
+      
       LocalDateTime end = a.getScheduledEndTime();
       if (!"ACTIVE".equals(status) || end == null) {
         return new SimpleStringProperty("00:00:00");
       }
-
+      
       LocalDateTime now = LocalDateTime.now();
       if (now.isAfter(end)) {
         return new SimpleStringProperty("00:00:00");
@@ -194,7 +180,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       return new SimpleStringProperty(
           String.format("%02d:%02d:%02d", s / 3600, (s % 3600) / 60, (s % 60)));
     });
-
+    
     colStatus.setCellValueFactory(d -> {
       Auction a = d.getValue();
       if (a == null || a.getStatus() == null) {
@@ -213,7 +199,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       }
       return new SimpleStringProperty("CLOSED");
     });
-
+    
     if (auctionTable != null) {
       auctionTable.setItems(myAuctions);
     }
@@ -236,9 +222,9 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
         gradientOffset += 0.0005;
         targetNode.setStyle(
             String.format(Locale.US,
-                "-fx-background-color: linear-gradient("
-                    + "to bottom right, #0a0a0a, rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",
-                (Math.sin(gradientOffset) * 0.1 + 0.9),
+                "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
+                    + "rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",
+                (Math.sin(gradientOffset) * 0.1 + 0.9), 
                 (Math.cos(gradientOffset) * 0.1 + 0.9)));
       }
     };
@@ -290,20 +276,18 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       setStatus("Chỉ có thể sửa thông tin khi sản phẩm chưa mở đấu giá (NOT OPEN)!", true);
       return;
     }
-
+    
     isEditMode = true;
     selectedAuctionForEdit = selected;
-
+    
     txtName.setText(selected.getItem().getName());
     txtDescription.setText(selected.getItem().getDescription());
     cbCategory.setValue(ItemCategory.valueOf(selected.getItem().getCategory().name()));
     txtCondition.setText(selected.getItem().getItemCondition());
     txtEstimatedPrice.setText(String.valueOf(selected.getItem().getEstimatedPrice()));
     txtStartingPrice.setText(String.valueOf(selected.getStartingPrice()));
-
-    // Lấy giá trị thời lượng đã được lưu
     txtDuration.setText(String.valueOf(selected.getDurationSeconds()));
-
+    
     btnSubmit.setText("LƯU CẬP NHẬT SẢN PHẨM");
     setStatus("Đang trong chế độ CHỈNH SỬA sản phẩm.", false);
   }
@@ -319,7 +303,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       setStatus("Sản phẩm này đã được mở hoặc đã kết thúc!", true);
       return;
     }
-
+    
     ClientMessage startReq = ClientMessage.builder()
         .action(ActionType.START_AUCTION)
         .userId(App.loggedInUserId)
@@ -334,18 +318,18 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       setStatus("Vui lòng chọn một phiên trên bảng để hủy/xóa!", true);
       return;
     }
-
+    
     Auction selected = auctionTable.getSelectionModel().getSelectedItem();
     String status = selected.getStatus().name();
-
+    
     if ("ACTIVE".equals(status)) {
-      if (selected.getScheduledEndTime() != null
+      if (selected.getScheduledEndTime() != null 
           && LocalDateTime.now().isBefore(selected.getScheduledEndTime())) {
         setStatus("Không thể xóa sản phẩm đang trong quá trình đấu giá (OPEN)!", true);
         return;
       }
     }
-
+    
     ClientMessage cancelReq = ClientMessage.builder()
         .action(ActionType.CANCEL_AUCTION)
         .userId(App.loggedInUserId)
@@ -369,7 +353,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     setStatus("Đang làm mới danh sách đấu giá...", false);
     requestAuctionsData();
   }
-
+  
   private void requestAuctionsData() {
     ClientMessage getReq = ClientMessage.builder()
         .action(ActionType.GET_ALL_AUCTIONS)
@@ -391,31 +375,30 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   @Override
   public void onMessageReceived(ServerMessage response) {
     Platform.runLater(() -> {
-
+      
       if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
-        Object dataSource = response.getData() != null
-            ? response.getData()
-            : response.getAuctions();
+        Object dataSource = response.getData() != null 
+            ? response.getData() : response.getAuctions();
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {
-          }.getType());
-
+          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
+          
           if (list != null) {
             myAuctions.setAll(list.stream()
-                .filter(a -> a.getSeller() != null
+                .filter(a -> a.getSeller() != null 
                     && a.getSeller().getUserId().equals(App.loggedInUserId))
                 .toList());
           }
         }
+      // ĐÃ SỬA: Gom cụm đóng ngoặc và thụt lề chuẩn 2 khoảng trắng (Dòng 268 - 273 cũ)
       } else if (ActionType.CREATE_AUCTION.name().equals(response.getAction())
           || ActionType.UPDATE_AUCTION.name().equals(response.getAction())
           || ActionType.START_AUCTION.name().equals(response.getAction())
           || ActionType.CANCEL_AUCTION.name().equals(response.getAction())) {
-
+          
         if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
           setStatus("THÀNH CÔNG! Đã cập nhật trạng thái phiên đấu giá.", false);
-          if (ActionType.CREATE_AUCTION.name().equals(response.getAction())
+          if (ActionType.CREATE_AUCTION.name().equals(response.getAction()) 
               || ActionType.UPDATE_AUCTION.name().equals(response.getAction())) {
             handleClearForm(null);
           }
@@ -426,7 +409,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
         requestAuctionsData();
       }
-
+      
     });
   }
 
@@ -467,20 +450,21 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       App.loggedInEmail = null;
       App.loggedInPassword = null;
       App.loggedInUserId = null;
-
+      
       if (meshGradientTimer != null) {
         meshGradientTimer.stop();
       }
       if (countdownTimer != null) {
         countdownTimer.stop();
       }
-
+      
       App.setRoot("login");
     } catch (IOException e) {
       setStatus("Lỗi hệ thống khi thực hiện đăng xuất.", true);
     }
   }
 
+  // ĐÃ SỬA: Tách các phương thức JavaFX viết tắt một dòng để không vi phạm quy tắc thụt lề block
   @FXML
   private void handleMinimize(ActionEvent event) {
     ((Stage) ((Node) event.getSource()).getScene().getWindow()).setIconified(true);
@@ -505,15 +489,17 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
 
   private void setupUndecoratedWindowHandle() {
     if (titleBar != null) {
-      titleBar.setOnMousePressed(event -> {
-        offsetX = event.getSceneX();
-        offsetY = event.getSceneY();
-      });
-      titleBar.setOnMouseDragged(event -> {
-        Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        stage.setX(event.getScreenX() - offsetX);
-        stage.setY(event.getScreenY() - offsetY);
-      });
+      titleBar.setOnMousePressed(
+          event -> {
+            offsetX = event.getSceneX();
+            offsetY = event.getSceneY();
+          });
+      titleBar.setOnMouseDragged(
+          event -> {
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.setX(event.getScreenX() - offsetX);
+            stage.setY(event.getScreenY() - offsetY);
+          });
     }
   }
 }

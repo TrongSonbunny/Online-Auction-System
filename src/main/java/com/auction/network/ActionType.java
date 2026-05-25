@@ -48,5 +48,8 @@ public enum ActionType {
   REGISTER_AUTO_BID,
 
   /** Hủy Auto-bid. */
-  CANCEL_AUTO_BID
+  CANCEL_AUTO_BID,
+
+  /** Lấy lịch sử giao dịch của một phiên đấu giá. */
+  GET_BID_HISTORY
 }

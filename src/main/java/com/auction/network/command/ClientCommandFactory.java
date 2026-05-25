@@ -36,6 +36,7 @@ public final class ClientCommandFactory {
     commands.put(ActionType.CANCEL_AUTO_BID, new CancelAutoBidCommand(context));
     commands.put(ActionType.UPDATE_AUCTION, new UpdateAuctionCommand(context));
     commands.put(ActionType.START_AUCTION, new StartAuctionCommand(context));
+    commands.put(ActionType.GET_BID_HISTORY, new GetBidHistoryCommand(context));
 
     return commands;
   }

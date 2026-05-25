@@ -315,3 +315,56 @@
 .combo-box .list-cell:hover {
     -fx-background-color: rgba(212, 175, 55, 0.1);
 }
+
+/* --- LIVE BIDDING DASHBOARD STYLES --- */
+.dark-list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(212, 175, 55, 0.3);
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+.dark-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ccc;
+    -fx-font-family: 'Plus Jakarta Sans';
+    -fx-padding: 5 10;
+}
+.dark-list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.dark-tab-pane .tab-header-background {
+    -fx-background-color: transparent;
+}
+.dark-tab-pane .tab {
+    -fx-background-color: rgba(255,255,255,0.05);
+    -fx-text-base-color: #aaa;
+}
+.dark-tab-pane .tab:selected {
+    -fx-background-color: rgba(212, 175, 55, 0.2);
+    -fx-text-base-color: #d4af37;
+}
+
+/* Biểu đồ Real-time */
+.live-chart {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: rgba(212, 175, 55, 0.2);
+    -fx-border-radius: 5;
+}
+.live-chart .chart-plot-background {
+    -fx-background-color: transparent;
+}
+.live-chart .chart-vertical-grid-lines,
+.live-chart .chart-horizontal-grid-lines {
+    -fx-stroke: rgba(255, 255, 255, 0.05);
+}
+.live-chart .chart-series-line {
+    -fx-stroke: #00ff00;
+    -fx-stroke-width: 2px;
+}
+.live-chart .chart-line-symbol {
+    -fx-background-color: #00ff00, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 5px;
+    -fx-padding: 3px;
+}
