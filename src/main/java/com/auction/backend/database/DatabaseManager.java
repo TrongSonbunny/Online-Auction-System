@@ -8,13 +8,19 @@ import java.sql.Statement;
  * Quản lý khởi tạo database SQLite.
  */
 public class DatabaseManager {
+  private static final String DEFAULT_ADMIN_ID = "ADMIN";
+  private static final String DEFAULT_ADMIN_NAME = "ADMIN";
+  private static final String DEFAULT_ADMIN_EMAIL = "admin@auction.local";
+  private static final String DEFAULT_ADMIN_PASSWORD = "123456789";
+  private static final String DEFAULT_ADMIN_ROLE = "ADMIN";
 
   /**
    * Khởi tạo toàn bộ database.
    */
   public void initializeDatabase() {
-
     createUserTable();
+    createOnlyOneAdminIndex();
+    createDefaultAdminAccount();
     createItemTable();
     createAuctionTable();
     createBidTransactionTable();
@@ -24,7 +30,6 @@ public class DatabaseManager {
    * Tạo bảng users.
    */
   private void createUserTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS users ("
             + "user_id VARCHAR(50) PRIMARY KEY,"
@@ -38,10 +43,55 @@ public class DatabaseManager {
   }
 
   /**
+   * Tạo ràng buộc để hệ thống chỉ có tối đa một tài khoản ADMIN.
+   *
+   * <p>SQLite chỉ áp dụng unique index này cho các dòng có role là ADMIN.
+   * Các role khác như SELLER và BIDDER không bị ảnh hưởng.
+   */
+  private void createOnlyOneAdminIndex() {
+    String sql =
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_only_one_admin "
+            + "ON users(role) "
+            + "WHERE role = 'ADMIN';";
+
+    executeSql(sql);
+  }
+
+  /**
+   * Tạo tài khoản admin mặc định nếu chưa tồn tại.
+   *
+   * <p>Tài khoản đăng nhập mặc định:
+   * <ul>
+   * <li>username: ADMIN
+   * <li>password: 123456789
+   * </ul>
+   *
+   * <p>Trong database vẫn lưu email hợp lệ là {@code admin@auction.local}
+   * để không phá validate email của model User.
+   */
+  private void createDefaultAdminAccount() {
+    String sql =
+        "INSERT OR IGNORE INTO users "
+            + "(user_id, name, email, password, role) "
+            + "VALUES ('"
+            + DEFAULT_ADMIN_ID
+            + "', '"
+            + DEFAULT_ADMIN_NAME
+            + "', '"
+            + DEFAULT_ADMIN_EMAIL
+            + "', '"
+            + DEFAULT_ADMIN_PASSWORD
+            + "', '"
+            + DEFAULT_ADMIN_ROLE
+            + "');";
+
+    executeSql(sql);
+  }
+
+  /**
    * Tạo bảng items.
    */
   private void createItemTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS items ("
             + "item_id TEXT PRIMARY KEY,"
@@ -59,7 +109,6 @@ public class DatabaseManager {
    * Tạo bảng auctions.
    */
   private void createAuctionTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS auctions ("
             + "auction_id TEXT PRIMARY KEY,"
@@ -87,7 +136,6 @@ public class DatabaseManager {
    * Tạo bảng bid transactions.
    */
   private void createBidTransactionTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS bid_transactions ("
             + "transaction_id TEXT PRIMARY KEY,"
@@ -115,14 +163,11 @@ public class DatabaseManager {
     try (
         Connection connection =
             DatabaseConnection.getConnection();
-
         Statement statement =
             connection.createStatement()) {
 
       statement.execute(sql);
-
     } catch (SQLException exception) {
-
       exception.printStackTrace();
     }
   }
