@@ -68,10 +68,10 @@ public class LoginController implements Initializable, NetworkClient.MessageList
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    // 1. THÊM DÒNG NÀY: Khởi tạo kết nối tới server trước tiên
+    // Khởi tạo kết nối tới server trước tiên để đảm bảo tín hiệu luôn sẵn sàng
     NetworkClient.getInstance().connect();
 
-    // 2. Các logic cũ giữ nguyên
+    // Các logic lắng nghe sự kiện
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle(rb);
 
@@ -195,6 +195,9 @@ public class LoginController implements Initializable, NetworkClient.MessageList
       App.loggedInEmail = txtEmail.getText();
       App.loggedInPassword = txtPassword.getText();
 
+      String serverAssignedRole = null;
+
+      // Trích xuất Role từ dữ liệu Server gửi về (nếu có)
       if (message.getData() != null) {
         JsonElement jsonElement = new Gson().toJsonTree(message.getData());
         if (jsonElement.isJsonObject()) {
@@ -207,10 +210,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
           }
 
           if (userObj.has("role") && !userObj.get("role").isJsonNull()) {
-            String roleStr = userObj.get("role").getAsString();
-            this.pendingRole = "SELLER".equalsIgnoreCase(roleStr)
-                ? UserRole.SELLER
-                : UserRole.BIDDER;
+            serverAssignedRole = userObj.get("role").getAsString();
           }
         }
       }
@@ -219,7 +219,15 @@ public class LoginController implements Initializable, NetworkClient.MessageList
         App.loggedInUserId = null;
       }
 
-      if (this.pendingRole != null) {
+      // ĐÃ FIX: Điều hướng thông minh, bao trọn cả vai trò Admin
+      if ("ADMIN".equalsIgnoreCase(serverAssignedRole)) {
+        navigateToMain("admin_dashboard");
+      } else if ("SELLER".equalsIgnoreCase(serverAssignedRole)) {
+        navigateToMain("seller");
+      } else if ("BIDDER".equalsIgnoreCase(serverAssignedRole)) {
+        navigateToMain("primary");
+      } else if (this.pendingRole != null) {
+        // Fallback an toàn nếu Server không gửi Role về nhưng người dùng có pendingRole
         if (this.pendingRole == UserRole.SELLER) {
           navigateToMain("seller");
         } else {
@@ -227,6 +235,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
         }
         this.pendingRole = null;
       } else {
+        // Trường hợp bất khả kháng, yêu cầu xác nhận lại qua UI
         if (lblRoleTitle != null) {
           lblRoleTitle.setText("XÁC NHẬN CHUYÊN TRANG TRUY CẬP");
         }
@@ -234,6 +243,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
       }
 
     } else if (isRegister) {
+      // Đăng nhập tự động ngay sau khi đăng ký thành công
       ClientMessage autoLoginReq = ClientMessage.builder()
           .action(ActionType.LOGIN)
           .email(txtRegEmail.getText())
