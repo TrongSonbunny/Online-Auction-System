@@ -170,6 +170,7 @@ public class DatabaseManager {
    */
   private void executeSql(
       String sql) {
+
     try (
         Connection connection =
             DatabaseConnection.getConnection();

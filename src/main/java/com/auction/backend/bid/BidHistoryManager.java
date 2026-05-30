@@ -51,14 +51,14 @@ public class BidHistoryManager {
   /**
    * Lấy toàn bộ lịch sử bid.
    *
-   * @return danh sách immutable
+   * @return snapshot immutable của lịch sử bid
    */
   public List<BidTransaction> getBidHistory() {
 
     lock.lock();
     try {
       return Collections.unmodifiableList(
-          bidHistory);
+          new ArrayList<>(bidHistory));
     } finally {
       lock.unlock();
     }

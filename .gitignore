@@ -50,3 +50,11 @@ desktop.ini
 # Linux / Text Editor Backup Files
 *~
 *.swp
+
+# Ignore SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+dependency-reduced-pom.xml
