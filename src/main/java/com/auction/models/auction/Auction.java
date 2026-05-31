@@ -34,7 +34,7 @@ public class Auction {
   private LocalDateTime scheduledEndTime;
   private long durationSeconds;
 
-  private final ReentrantLock lock = new ReentrantLock();
+  private final transient ReentrantLock lock = new ReentrantLock();
 
   /**
    * Constructor auction.

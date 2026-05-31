@@ -2,14 +2,11 @@ package com.auction.network;
 
 import com.google.gson.Gson;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -32,13 +29,10 @@ public class NetworkClient {
   private BufferedReader in;
   private volatile boolean isRunning = false;
 
-  private String serverHost;
-  private int serverPort;
-
   private NetworkClient() {
     this.gson = new Gson();
     this.listeners = new CopyOnWriteArrayList<>();
-    loadConfiguration();
+
   }
 
   /**
@@ -52,29 +46,6 @@ public class NetworkClient {
       instance = new NetworkClient();
     }
     return instance;
-  }
-
-  private void loadConfiguration() {
-    this.serverHost = "127.0.0.1";
-    this.serverPort = 8080;
-
-    File configFile = new File("config.properties");
-
-    if (configFile.exists()) {
-      try (FileInputStream fis = new FileInputStream(configFile)) {
-        Properties props = new Properties();
-        props.load(fis);
-
-        this.serverHost = props.getProperty("server.host", "127.0.0.1").trim();
-        this.serverPort = Integer.parseInt(props.getProperty("server.port", "8080").trim());
-
-        logger.info("Loaded config from properties file -> {}:{}", serverHost, serverPort);
-      } catch (Exception e) {
-        logger.warn("Malformed config.properties. Using defaults (127.0.0.1:8080).", e);
-      }
-    } else {
-      logger.info("No config.properties found. Using default IP -> {}:{}", serverHost, serverPort);
-    }
   }
 
   /**
@@ -105,6 +76,7 @@ public class NetworkClient {
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
       logger.info("Connected successfully.");
+      isRunning = true;
       startListeningThread();
     } catch (IOException e) {
       logger.error("Failed to connect to the server: {}", e.getMessage());

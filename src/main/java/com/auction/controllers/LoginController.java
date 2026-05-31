@@ -69,9 +69,6 @@ public class LoginController implements Initializable, MessageListener {
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    // Khởi tạo kết nối tới server trước tiên để đảm bảo tín hiệu luôn sẵn sàng
-    NetworkClient.getInstance().connect();
-
     // Các logic lắng nghe sự kiện
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle(rb);
