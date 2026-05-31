@@ -113,18 +113,16 @@ Sau khi build (`mvn package -DskipTests`), hai file JAR nằm tại:
 
 > **Thứ tự bắt buộc: chạy Server trước, rồi mới chạy Client.**
 
-### Bước 1 — Build (nếu chưa có JAR)
+### Bước 1 — vào github
 
-```bash
-mvn package -DskipTests
-```
+vào github, vào mục release,tải 2 file server.jar và client.jar xuống
 
 ### Bước 2 — Chạy Server
 
 Mở **terminal 1**, chạy:
 
 ```bash
-java -jar target/server.jar
+java -jar server.jar
 ```
 
 Kết quả khi server khởi động thành công:
@@ -140,7 +138,7 @@ Kết quả khi server khởi động thành công:
 Mở **terminal 2**, chạy:
 
 ```bash
-java -jar target/client.jar
+java -jar client.jar
 ```
 
 Client sẽ kết nối tới server tại `127.0.0.1:8080` và hiển thị màn hình đăng nhập.

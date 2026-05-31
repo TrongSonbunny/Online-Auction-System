@@ -27,6 +27,7 @@ import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -55,55 +56,42 @@ public class LiveBiddingController implements Initializable, MessageListener {
 
   public static String targetAuctionId = null;
 
-  @FXML
-  private HBox titleBar;
-  @FXML
-  private Label lblLiveName;
-  @FXML
-  private Label lblLiveSeller;
-  @FXML
-  private Label lblCountdownLive;
-  @FXML
-  private Label lblLiveCurrentPrice;
-  @FXML
-  private Label lblLiveMyStatus;
-  @FXML
-  private Label lblLiveTotalBids;
-
-  @FXML
-  private LineChart<String, Number> priceChart;
-  @FXML
-  private CategoryAxis xaxis;
-  @FXML
-  private NumberAxis yaxis;
-  @FXML
-  private ListView<String> listLiveHistory;
-
-  @FXML
-  private TextField txtLiveBidAmount;
-  @FXML
-  private TextField txtMaxBid;
-  @FXML
-  private TextField txtIncrement;
+  @FXML private HBox titleBar;
+  @FXML private Label lblLiveName;
+  @FXML private Label lblLiveSeller;
+  @FXML private Label lblCountdownLive;
+  @FXML private Label lblLiveCurrentPrice;
+  @FXML private Label lblLiveMyStatus;
+  @FXML private Label lblLiveTotalBids;
+  @FXML private Label lblError; // Label hiển thị lỗi giao diện
+  
+  @FXML private LineChart<String, Number> priceChart;
+  @FXML private CategoryAxis categoryAxis;
+  @FXML private NumberAxis numberAxis;
+  @FXML private ListView<String> listLiveHistory;
+  
+  @FXML private TextField txtLiveBidAmount;
+  @FXML private TextField txtMaxBid;
+  @FXML private TextField txtIncrement;
 
   private final ObservableList<String> historyData = FXCollections.observableArrayList();
   private XYChart.Series<String, Number> priceSeries;
-
+  
   private Timeline countdownTimer;
+  private double gradientOffset = 0.0;
   private AnimationTimer meshGradientTimer;
   private Auction currentAuction;
-
-  private double lastKnownPrice = 0.0;
-  private double offsetX = 0.0;
-  private double offsetY = 0.0;
-  private double gradientOffset = 0.0;
+  
+  private double lastKnownPrice = 0.0; 
+  private double offsetX = 0;
+  private double offsetY = 0;
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> {
             try {
-              return LocalDateTime.parse(
-                  json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+              return LocalDateTime.parse(json.getAsString(),
+                  DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             } catch (Exception e) {
               return LocalDateTime.now();
             }
@@ -117,21 +105,23 @@ public class LiveBiddingController implements Initializable, MessageListener {
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     setupUndecoratedWindowHandle();
-
+    
     priceSeries = new XYChart.Series<>();
     priceChart.getData().add(priceSeries);
     listLiveHistory.setItems(historyData);
-
+    
     NetworkClient.getInstance().addListener(this);
-
+    
     if (targetAuctionId != null) {
       requestAuctionsData();
       requestBidHistory();
       startCountdownTimer();
     } else {
-      lblLiveName.setText("Lỗi: Không nhận được mã sản phẩm.");
+      if (lblLiveName != null) {
+        lblLiveName.setText("Lỗi: Không nhận được mã sản phẩm.");
+      }
     }
-
+    
     Platform.runLater(() -> {
       if (titleBar != null && titleBar.getScene() != null) {
         startMeshGradientAnimation(titleBar.getScene().getRoot());
@@ -140,9 +130,7 @@ public class LiveBiddingController implements Initializable, MessageListener {
   }
 
   private void requestAuctionsData() {
-    ClientMessage getReq = ClientMessage.builder()
-        .action(ActionType.GET_ALL_AUCTIONS)
-        .build();
+    ClientMessage getReq = ClientMessage.builder().action(ActionType.GET_ALL_AUCTIONS).build();
     NetworkClient.getInstance().sendMessage(getReq);
   }
 
@@ -156,90 +144,102 @@ public class LiveBiddingController implements Initializable, MessageListener {
 
   private void updateLiveRoom(Auction auction) {
     this.currentAuction = auction;
-
-    lblLiveName.setText(auction.getItem().getName());
-    String sellerName = (auction.getSeller() != null) 
-        ? auction.getSeller().getName() : "Unknown";
-    lblLiveSeller.setText("Bởi: " + sellerName);
-    lblLiveCurrentPrice.setText(String.format("%,.0f VNĐ", auction.getCurrentHighestBid()));
-
+    
+    if (lblLiveName != null) {
+      lblLiveName.setText(auction.getItem().getName());
+    }
+    if (lblLiveSeller != null) {
+      lblLiveSeller.setText("Bởi: " + (auction.getSeller() != null
+          ? auction.getSeller().getName() : "Unknown"));
+    }
+    if (lblLiveCurrentPrice != null) {
+      lblLiveCurrentPrice.setText(String.format("%,.0f VNĐ", auction.getCurrentHighestBid()));
+    }
+    
     if (auction.getCurrentHighestBidder() != null) {
-      String highestBidderId = auction.getCurrentHighestBidder().getUserId();
-      if (App.loggedInUserId != null && App.loggedInUserId.equals(highestBidderId)) {
-        lblLiveMyStatus.setText("Đang dẫn đầu!");
-        lblLiveMyStatus.setStyle("-fx-text-fill: #00ff00;");
+      if (App.loggedInUserId != null
+          && App.loggedInUserId.equals(auction.getCurrentHighestBidder().getUserId())) {
+        if (lblLiveMyStatus != null) {
+          lblLiveMyStatus.setText("Đang dẫn đầu!");
+          lblLiveMyStatus.setStyle("-fx-text-fill: #00ff00;");
+        }
       } else {
-        lblLiveMyStatus.setText("Bị vượt giá!");
-        lblLiveMyStatus.setStyle("-fx-text-fill: #ff4444;");
+        if (lblLiveMyStatus != null) {
+          lblLiveMyStatus.setText("Bị vượt giá!");
+          lblLiveMyStatus.setStyle("-fx-text-fill: #ff4444;");
+        }
       }
     } else {
-      lblLiveMyStatus.setText("Chưa ra giá");
-      lblLiveMyStatus.setStyle("-fx-text-fill: white;");
+      if (lblLiveMyStatus != null) {
+        lblLiveMyStatus.setText("Chưa ra giá");
+        lblLiveMyStatus.setStyle("-fx-text-fill: white;");
+      }
     }
   }
 
   /**
-   * ĐÃ FIX TẬN GỐC: Đọc dữ liệu phẳng an toàn tuyệt đối từ gói tin DTO của Backend.
+   * Đọc dữ liệu phẳng an toàn tuyệt đối từ gói tin DTO của Backend.
+   *
+   * @param transactions danh sách gói dữ liệu JSON phẳng
    */
   private void renderHistoryAndChart(List<JsonObject> transactions) {
     if (currentAuction == null) {
       return;
     }
-
+    
     Platform.runLater(() -> {
       priceSeries.getData().clear();
       historyData.clear();
-
-      // 1. Ghi lại điểm gốc (Giá khởi điểm)
+      
       double basePrice = currentAuction.getStartingPrice();
-      String startTimeStr = currentAuction.getStartTime() != null
+      String startTimeStr = currentAuction.getStartTime() != null 
           ? currentAuction.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
           : LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-
+            
       priceSeries.getData().add(new XYChart.Data<>(startTimeStr, basePrice));
-      historyData.add(String.format("[%s] Hệ thống: Mở phiên giá %,.0f VNĐ", 
+      historyData.add(String.format("[%s] Hệ thống: Mở phiên giá %,.0f VNĐ",
           startTimeStr, basePrice));
-
-      // 2. Duyệt danh sách giao dịch an toàn từ DTO phẳng
+      
       int totalBids = 0;
       for (JsonObject tx : transactions) {
         if (tx == null || tx.isJsonNull()) {
-          continue;
+          continue; 
         }
-
+        
         totalBids++;
-
+        
         double amount = tx.has("bidAmount") ? tx.get("bidAmount").getAsDouble() : 0.0;
-        String bidderName = tx.has("bidderName") 
+        String bidderName = tx.has("bidderName")
             ? tx.get("bidderName").getAsString() : "Ẩn danh";
-
+        
         LocalDateTime time = LocalDateTime.now();
         if (tx.has("createdAt") && !tx.get("createdAt").isJsonNull()) {
           try {
-            String timeString = tx.get("createdAt").getAsString();
-            time = LocalDateTime.parse(timeString, 
+            time = LocalDateTime.parse(tx.get("createdAt").getAsString(),
                 DateTimeFormatter.ISO_LOCAL_DATE_TIME);
           } catch (Exception e) {
             // Fallback
           }
         }
-
+        
         String exactTime = time.format(DateTimeFormatter.ofPattern("dd/MM HH:mm:ss"));
-        String displayTime = time.format(DateTimeFormatter.ofPattern("HH:mm:ss")) 
+        String displayTime = time.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
             + " ".repeat(totalBids % 20);
-
+        
         priceSeries.getData().add(new XYChart.Data<>(displayTime, amount));
-        String historyLine = String.format("[%s] %s ra giá %,.0f VNĐ", 
+        String historyLine = String.format("[%s] %s ra giá %,.0f VNĐ",
             exactTime, bidderName, amount);
         historyData.add(0, historyLine);
       }
-
+      
       if (priceSeries.getData().size() > 30) {
         priceSeries.getData().remove(0, priceSeries.getData().size() - 30);
       }
-
-      lblLiveTotalBids.setText(String.valueOf(totalBids));
-
+      
+      if (lblLiveTotalBids != null) {
+        lblLiveTotalBids.setText(String.valueOf(totalBids));
+      }
+      
       if (totalBids > 0) {
         JsonObject lastTx = transactions.get(transactions.size() - 1);
         if (lastTx != null && lastTx.has("bidAmount")) {
@@ -249,6 +249,20 @@ public class LiveBiddingController implements Initializable, MessageListener {
         lastKnownPrice = basePrice;
       }
     });
+  }
+
+  /**
+   * Tạo hiệu ứng rung lắc (shake) khi có lỗi nhập liệu.
+   *
+   * @param node thành phần giao diện cần rung lắc
+   */
+  private void triggerShakeAnimation(Node node) {
+    TranslateTransition shake = new TranslateTransition(Duration.millis(100), node);
+    shake.setFromX(0);
+    shake.setToX(5);
+    shake.setCycleCount(4);
+    shake.setAutoReverse(true);
+    shake.play();
   }
 
   // --- CONTROLS ---
@@ -286,11 +300,41 @@ public class LiveBiddingController implements Initializable, MessageListener {
 
   @FXML
   private void handlePlaceLiveBid(ActionEvent event) {
+    if (lblError != null) {
+      lblError.setText("");
+    }
+    txtLiveBidAmount.setStyle("");
+
     if (currentAuction == null) {
+      if (lblError != null) {
+        lblError.setText("LỖI: Chưa có thông tin phiên đấu giá!");
+      }
       return;
     }
+
+    if (txtLiveBidAmount.getText().trim().isEmpty()) {
+      if (lblError != null) {
+        lblError.setText("LỖI: Vui lòng nhập mức giá bạn muốn đặt!");
+      }
+      txtLiveBidAmount.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtLiveBidAmount);
+      return;
+    }
+
     try {
       double amount = Double.parseDouble(txtLiveBidAmount.getText());
+      
+      // LỚP PHÒNG THỦ 1: Validate Local trước khi gửi lên Server để phản hồi tức thì
+      if (amount <= lastKnownPrice) {
+        if (lblError != null) {
+          lblError.setText(String.format(
+              "LỖI: Mức giá đặt phải lớn hơn giá hiện tại (%,.0f VNĐ)!", lastKnownPrice));
+        }
+        txtLiveBidAmount.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+        triggerShakeAnimation(txtLiveBidAmount);
+        return;
+      }
+
       ClientMessage bidReq = ClientMessage.builder()
           .action(ActionType.BID)
           .userId(App.loggedInUserId)
@@ -298,19 +342,68 @@ public class LiveBiddingController implements Initializable, MessageListener {
           .bidAmount(amount)
           .build();
       NetworkClient.getInstance().sendMessage(bidReq);
-    } catch (Exception e) {
-      showAlert("CẢNH BÁO", "Dữ liệu nhập vào không hợp lệ!");
+      
+    } catch (NumberFormatException e) {
+      if (lblError != null) {
+        lblError.setText("LỖI: Dữ liệu nhập vào phải là số hợp lệ!");
+      }
+      txtLiveBidAmount.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtLiveBidAmount);
     }
   }
 
   @FXML
   private void handleRegisterAutoBid(ActionEvent event) {
+    if (lblError != null) {
+      lblError.setText("");
+    }
+    txtMaxBid.setStyle("");
+    txtIncrement.setStyle("");
+
     if (currentAuction == null) {
+      if (lblError != null) {
+        lblError.setText("LỖI: Chưa có thông tin phiên đấu giá!");
+      }
       return;
     }
+
+    boolean hasError = false;
+
+    if (txtMaxBid.getText().trim().isEmpty()) {
+      txtMaxBid.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtMaxBid);
+      hasError = true;
+    }
+
+    if (txtIncrement.getText().trim().isEmpty()) {
+      txtIncrement.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtIncrement);
+      hasError = true;
+    }
+
+    if (hasError) {
+      if (lblError != null) {
+        lblError.setText("LỖI: Vui lòng điền đầy đủ Giới hạn và Bước giá của BOT!");
+      }
+      return;
+    }
+
     try {
       double maxBid = Double.parseDouble(txtMaxBid.getText());
       double increment = Double.parseDouble(txtIncrement.getText());
+      
+      // LỚP PHÒNG THỦ 1: Bắt lỗi ngay tại Client
+      if (maxBid <= lastKnownPrice) {
+        if (lblError != null) {
+          lblError.setText(String.format(
+              "LỖI: Giới hạn túi tiền (Max Bid) phải cao hơn giá hiện tại (%,.0f VNĐ)!",
+              lastKnownPrice));
+        }
+        txtMaxBid.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+        triggerShakeAnimation(txtMaxBid);
+        return;
+      }
+
       ClientMessage autoReq = ClientMessage.builder()
           .action(ActionType.REGISTER_AUTO_BID)
           .userId(App.loggedInUserId)
@@ -319,8 +412,15 @@ public class LiveBiddingController implements Initializable, MessageListener {
           .increment(increment)
           .build();
       NetworkClient.getInstance().sendMessage(autoReq);
-    } catch (Exception e) {
-      showAlert("CẢNH BÁO", "Dữ liệu BOT không hợp lệ!");
+      
+    } catch (NumberFormatException e) {
+      if (lblError != null) {
+        lblError.setText("LỖI: Dữ liệu cấu hình BOT không hợp lệ (Phải là số)!");
+      }
+      txtMaxBid.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      txtIncrement.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtMaxBid);
+      triggerShakeAnimation(txtIncrement);
     }
   }
 
@@ -328,23 +428,21 @@ public class LiveBiddingController implements Initializable, MessageListener {
   public void onMessageReceived(ServerMessage response) {
     Platform.runLater(() -> {
       if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
-        Object dataSource = (response.getData() != null) 
+        Object dataSource = response.getData() != null
             ? response.getData() : response.getAuctions();
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, 
-              new TypeToken<List<Auction>>() {}.getType());
+          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
           if (list != null && targetAuctionId != null) {
             Optional<Auction> target = list.stream()
-                .filter(a -> a.getAuctionId().equals(targetAuctionId))
-                .findFirst();
+                .filter(a -> a.getAuctionId().equals(targetAuctionId)).findFirst();
             target.ifPresent(this::updateLiveRoom);
           }
         }
       } else if ("GET_BID_HISTORY".equals(response.getAction())) {
         if (response.getData() != null) {
           String json = gson.toJson(response.getData());
-          List<JsonObject> txs = gson.fromJson(json, 
+          List<JsonObject> txs = gson.fromJson(json,
               new TypeToken<List<JsonObject>>() {}.getType());
           if (txs != null) {
             renderHistoryAndChart(txs);
@@ -352,7 +450,7 @@ public class LiveBiddingController implements Initializable, MessageListener {
         }
       } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
         requestAuctionsData();
-        requestBidHistory();
+        requestBidHistory(); 
       } else if (ActionType.BID.name().equals(response.getAction())) {
         if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
           boolean outbidByAuto = false;
@@ -360,26 +458,29 @@ public class LiveBiddingController implements Initializable, MessageListener {
             JsonElement jsonElement = gson.toJsonTree(response.getData());
             if (jsonElement.isJsonObject()) {
               JsonObject bidResult = jsonElement.getAsJsonObject();
-              if (bidResult.has("autoBidTransactions") 
+              if (bidResult.has("autoBidTransactions")
                   && bidResult.get("autoBidTransactions").isJsonArray()) {
-                int size = bidResult.get("autoBidTransactions")
-                    .getAsJsonArray().size();
-                if (size > 0) {
+                if (bidResult.get("autoBidTransactions").getAsJsonArray().size() > 0) {
                   outbidByAuto = true;
                 }
               }
             }
           }
           if (outbidByAuto) {
-            showAlert("BỊ CƯỚP HÀNG", 
-                "Bạn vừa đặt thành công, nhưng BOT AUTO-BID "
-                + "của người khác đã đẩy giá lên cao hơn!");
+            showAlert("BỊ CƯỚP HÀNG",
+                "Bạn vừa đặt thành công, nhưng BOT AUTO-BID đã ngay lập tức đẩy giá lên cao hơn!");
           }
           txtLiveBidAmount.clear();
           requestAuctionsData();
           requestBidHistory();
         } else {
-          showAlert("TỪ CHỐI", response.getMessage());
+          // Xử lý lỗi trả về nếu có
+          if (lblError != null) {
+            lblError.setText("LỖI: " + response.getMessage());
+            triggerShakeAnimation(lblError);
+          } else {
+            showAlert("TỪ CHỐI", response.getMessage());
+          }
         }
       } else if (ActionType.REGISTER_AUTO_BID.name().equals(response.getAction())) {
         if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
@@ -387,7 +488,20 @@ public class LiveBiddingController implements Initializable, MessageListener {
           txtMaxBid.clear();
           txtIncrement.clear();
         } else {
-          showAlert("TỪ CHỐI BOT", response.getMessage());
+          if (lblError != null) {
+            lblError.setText("LỖI: " + response.getMessage());
+            triggerShakeAnimation(lblError);
+          } else {
+            showAlert("TỪ CHỐI BOT", response.getMessage());
+          }
+        }
+      } else if ("EXECUTION_ERROR".equals(response.getAction())) {
+        // LỚP PHÒNG THỦ 2: Bắt trọn vẹn lỗi Hệ Thống từ Server (VD: Phiên đấu giá đóng, ID sai...)
+        if (lblError != null) {
+          lblError.setText("LỖI TỪ SERVER: " + response.getMessage());
+          triggerShakeAnimation(lblError);
+        } else {
+          showAlert("LỖI HỆ THỐNG", response.getMessage());
         }
       }
     });
@@ -398,11 +512,15 @@ public class LiveBiddingController implements Initializable, MessageListener {
       if (currentAuction != null) {
         LocalDateTime end = currentAuction.getScheduledEndTime();
         if (end == null || LocalDateTime.now().isAfter(end)) {
-          lblCountdownLive.setText("00:00:00");
+          if (lblCountdownLive != null) {
+            lblCountdownLive.setText("00:00:00");
+          }
         } else {
           long s = java.time.Duration.between(LocalDateTime.now(), end).getSeconds();
-          lblCountdownLive.setText(String.format("%02d:%02d:%02d", 
-              s / 3600, (s % 3600) / 60, (s % 60)));
+          if (lblCountdownLive != null) {
+            lblCountdownLive.setText(String.format("%02d:%02d:%02d",
+                s / 3600, (s % 3600) / 60, (s % 60)));
+          }
         }
       }
     }));
@@ -415,13 +533,11 @@ public class LiveBiddingController implements Initializable, MessageListener {
       @Override
       public void handle(long now) {
         gradientOffset += 0.0005;
-        double color1 = Math.sin(gradientOffset) * 0.1 + 0.9;
-        double color2 = Math.cos(gradientOffset) * 0.1 + 0.9;
-        String style = String.format(Locale.US,
+        targetNode.setStyle(String.format(Locale.US,
             "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
                 + "rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",
-            color1, color2);
-        targetNode.setStyle(style);
+            (Math.sin(gradientOffset) * 0.1 + 0.9),
+            (Math.cos(gradientOffset) * 0.1 + 0.9)));
       }
     };
     meshGradientTimer.start();
@@ -437,21 +553,20 @@ public class LiveBiddingController implements Initializable, MessageListener {
     alert.getDialogPane().getStyleClass().add("glass-panel");
     alert.showAndWait();
   }
-
+  
   @FXML
   private void handleMinimize(ActionEvent event) {
-    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    stage.setIconified(true);
+    ((Stage) ((Node) event.getSource()).getScene().getWindow()).setIconified(true);
   }
-
+  
   @FXML
   private void handleMaximize(ActionEvent event) {
-    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    stage.setMaximized(!stage.isMaximized());
+    Stage s = (Stage) ((Node) event.getSource()).getScene().getWindow();
+    s.setMaximized(!s.isMaximized());
   }
-
+  
   @FXML
-  private void handleClose(ActionEvent event) {
+  private void handleClose(ActionEvent event) { 
     if (meshGradientTimer != null) {
       meshGradientTimer.stop();
     }
@@ -465,7 +580,7 @@ public class LiveBiddingController implements Initializable, MessageListener {
       showAlert("LỖI", "Không thể quay lại màn hình chính.");
     }
   }
-
+  
   private void setupUndecoratedWindowHandle() {
     if (titleBar != null) {
       titleBar.setOnMousePressed(e -> {
@@ -473,9 +588,9 @@ public class LiveBiddingController implements Initializable, MessageListener {
         offsetY = e.getSceneY();
       });
       titleBar.setOnMouseDragged(e -> {
-        Stage stage = (Stage) ((Node) e.getSource()).getScene().getWindow();
-        stage.setX(e.getScreenX() - offsetX);
-        stage.setY(e.getScreenY() - offsetY);
+        Stage s = (Stage) ((Node) e.getSource()).getScene().getWindow();
+        s.setX(e.getScreenX() - offsetX);
+        s.setY(e.getScreenY() - offsetY);
       });
     }
   }

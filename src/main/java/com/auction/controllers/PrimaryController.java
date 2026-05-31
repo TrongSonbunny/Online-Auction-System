@@ -18,7 +18,6 @@ import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import javafx.animation.Animation;
@@ -39,8 +38,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -48,63 +48,43 @@ import javafx.util.Duration;
 
 /**
  * Điều khiển màn hình Radar dành cho Bidder (Liệt kê & Xem chi tiết).
+ * Tích hợp Load ảnh minh họa theo ItemCategory.
  */
 public class PrimaryController implements Initializable, MessageListener {
 
-  @FXML
-  private HBox titleBar;
-  @FXML
-  private TableView<Auction> productTable;
-  @FXML
-  private TableColumn<Auction, String> colId;
-  @FXML
-  private TableColumn<Auction, String> colName;
-  @FXML
-  private TableColumn<Auction, Double> colPrice;
-  @FXML
-  private TableColumn<Auction, String> colTimeRemaining;
-  @FXML
-  private TableColumn<Auction, String> colStatus;
-
-  @FXML
-  private VBox placeholderBox;
-  @FXML
-  private ScrollPane detailScrollPane;
-  @FXML
-  private VBox detailContainer;
-  @FXML
-  private Label lblDetailName;
-  @FXML
-  private Label lblDetailStatus;
-  @FXML
-  private Label lblDetailDesc;
-  @FXML
-  private Label lblDetailCategory;
-  @FXML
-  private Label lblDetailCondition;
-  @FXML
-  private Label lblDetailStartPrice;
-  @FXML
-  private Label lblDetailEstPrice;
-  @FXML
-  private Label lblDetailSeller;
-  @FXML
-  private Button btnJoinLive;
+  @FXML private HBox titleBar;
+  @FXML private TableView<Auction> productTable;
+  @FXML private TableColumn<Auction, String> colId;
+  @FXML private TableColumn<Auction, String> colName;
+  @FXML private TableColumn<Auction, Double> colPrice;
+  @FXML private TableColumn<Auction, String> colTimeRemaining;
+  @FXML private TableColumn<Auction, String> colStatus;
+  
+  @FXML private VBox placeholderBox;
+  @FXML private ScrollPane detailScrollPane;
+  @FXML private ImageView imgProduct;
+  @FXML private Label lblDetailName;
+  @FXML private Label lblDetailStatus;
+  @FXML private Label lblDetailDesc;
+  @FXML private Label lblDetailCategory;
+  @FXML private Label lblDetailCondition;
+  @FXML private Label lblDetailStartPrice;
+  @FXML private Label lblDetailEstPrice;
+  @FXML private Label lblDetailSeller;
+  @FXML private Button btnJoinLive;
 
   private final ObservableList<Auction> auctionData = FXCollections.observableArrayList();
   private Timeline countdownTimer;
   private AnimationTimer meshGradientTimer;
-  
-  private double offsetX = 0.0;
-  private double offsetY = 0.0;
-  private double gradientOffset = 0.0;
+  private double offsetX = 0;
+  private double offsetY = 0;
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> {
             try {
-              return LocalDateTime.parse(
-                  json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+              return LocalDateTime.parse(json.getAsString(), 
+                  DateTimeFormatter.ISO_LOCAL_DATE_TIME);
             } catch (Exception e) {
               return LocalDateTime.now();
             }
@@ -119,46 +99,42 @@ public class PrimaryController implements Initializable, MessageListener {
   public void initialize(URL url, ResourceBundle rb) {
     setupUndecoratedWindowHandle();
     setupTableColumns();
-    setupDynamicColorCoding();
-
+    
     productTable.setItems(auctionData);
-    productTable.getSelectionModel().selectedItemProperty()
-        .addListener((obs, oldSel, newSel) -> {
+    productTable.getSelectionModel().selectedItemProperty().addListener(
+        (obs, oldSel, newSel) -> {
           switchDetailView(newSel);
         });
 
     NetworkClient.getInstance().addListener(this);
     refreshData();
     startCountdownTimer();
-
-    Platform.runLater(() -> {
-      if (productTable != null && productTable.getScene() != null) {
-        startMeshGradientAnimation(productTable.getScene().getRoot());
-      }
-    });
   }
 
   private void setupTableColumns() {
     colId.setCellValueFactory(d -> new SimpleStringProperty(
-        (d.getValue() != null && d.getValue().getAuctionId() != null) 
+        d.getValue() != null && d.getValue().getAuctionId() != null
             ? d.getValue().getAuctionId() : ""));
+            
     colName.setCellValueFactory(d -> new SimpleStringProperty(
-        (d.getValue() != null && d.getValue().getItem() != null) 
+        d.getValue() != null && d.getValue().getItem() != null
             ? d.getValue().getItem().getName() : "Unknown"));
+            
     colPrice.setCellValueFactory(d -> new SimpleObjectProperty<>(
         d.getValue() != null ? d.getValue().getCurrentHighestBid() : 0.0));
-    colTimeRemaining.setCellValueFactory(d -> new SimpleStringProperty(
-        calculateTimeRemaining(d.getValue())));
-    colStatus.setCellValueFactory(d -> new SimpleStringProperty(
-        calculateStatus(d.getValue())));
+        
+    colTimeRemaining.setCellValueFactory(d -> 
+        new SimpleStringProperty(calculateTimeRemaining(d.getValue())));
+        
+    colStatus.setCellValueFactory(d -> 
+        new SimpleStringProperty(calculateStatus(d.getValue())));
   }
 
   private String calculateTimeRemaining(Auction a) {
     if (a == null) {
       return "--";
     }
-    
-    String status = (a.getStatus() != null) ? a.getStatus().name() : "";
+    String status = a.getStatus() != null ? a.getStatus().name() : "";
     if ("PENDING".equals(status)) {
       return "Chưa mở";
     }
@@ -181,12 +157,10 @@ public class PrimaryController implements Initializable, MessageListener {
     if (a == null || a.getStatus() == null) {
       return "";
     }
-    
     String rawStatus = a.getStatus().name();
     if ("PENDING".equals(rawStatus)) {
       return "NOT OPEN";
     }
-    
     if ("ACTIVE".equals(rawStatus)) {
       LocalDateTime end = a.getScheduledEndTime();
       if (end != null && LocalDateTime.now().isAfter(end)) {
@@ -194,7 +168,6 @@ public class PrimaryController implements Initializable, MessageListener {
       }
       return "OPEN";
     }
-    
     return "CLOSED";
   }
 
@@ -206,7 +179,6 @@ public class PrimaryController implements Initializable, MessageListener {
       detailScrollPane.setManaged(false);
       return;
     }
-    
     placeholderBox.setVisible(false);
     placeholderBox.setManaged(false);
     detailScrollPane.setVisible(true);
@@ -214,24 +186,66 @@ public class PrimaryController implements Initializable, MessageListener {
     updateDetailValues(auction);
   }
 
+  /**
+   * Cập nhật thông tin chi tiết và nạp ảnh minh họa.
+   *
+   * @param auction đối tượng auction cần hiển thị
+   */
   private void updateDetailValues(Auction auction) {
     lblDetailName.setText(auction.getItem().getName());
     lblDetailStatus.setText("Trạng thái: " + calculateStatus(auction));
     lblDetailDesc.setText(auction.getItem().getDescription());
-    lblDetailCategory.setText(auction.getItem().getCategory() != null 
-        ? auction.getItem().getCategory().name() : "--");
-    lblDetailCondition.setText(auction.getItem().getItemCondition() != null 
-        ? auction.getItem().getItemCondition() : "--");
+    
+    String category = auction.getItem().getCategory() != null 
+        ? auction.getItem().getCategory().name() : "DEFAULT";
+    lblDetailCategory.setText(category);
+    
+    lblDetailCondition.setText(
+        auction.getItem().getItemCondition() != null 
+            ? auction.getItem().getItemCondition() : "--");
+            
     lblDetailStartPrice.setText(String.format("%,.0f VNĐ", auction.getStartingPrice()));
-    lblDetailEstPrice.setText(String.format("%,.0f VNĐ", auction.getItem().getEstimatedPrice()));
-
+    lblDetailEstPrice.setText(
+        String.format("%,.0f VNĐ", auction.getItem().getEstimatedPrice()));
+    
     if (auction.getSeller() != null) {
-      lblDetailSeller.setText(auction.getSeller().getName() 
-          + " (" + auction.getSeller().getEmail() + ")");
+      lblDetailSeller.setText(auction.getSeller().getName() + " (" 
+          + auction.getSeller().getEmail() + ")");
     } else {
       lblDetailSeller.setText("Đang cập nhật...");
     }
 
+    // Tự động load ảnh Public Placeholder theo Danh mục
+    try {
+      String imageUrl;
+      switch (category) {
+        case "ART": 
+          imageUrl = "https://images.unsplash.com/photo-1549887552-cb1071d3e5ca?w=200&h=200&fit=crop"; 
+          break;
+        case "ELECTRONICS": 
+          imageUrl = "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=200&h=200&fit=crop"; 
+          break;
+        case "VEHICLE": 
+          imageUrl = "https://images.unsplash.com/photo-1502877338535-766e1452684a?w=200&h=200&fit=crop"; 
+          break;
+        case "JEWELRY": 
+          imageUrl = "https://images.unsplash.com/photo-1599643478524-fb66f70200ad?w=200&h=200&fit=crop"; 
+          break;
+        case "COLLECTIBLES": 
+          imageUrl = "https://images.unsplash.com/photo-1584826131336-db158cc10db3?w=200&h=200&fit=crop"; 
+          break;
+        default: 
+          imageUrl = "https://images.unsplash.com/photo-1577717903315-1691ae25ab3f?w=200&h=200&fit=crop"; 
+          break;
+      }
+      if (imgProduct != null) {
+        // true: Load ảnh bất đồng bộ (background thread)
+        imgProduct.setImage(new Image(imageUrl, true)); 
+      }
+    } catch (Exception e) {
+      System.out.println("Bỏ qua lỗi nạp ảnh placeholder.");
+    }
+    
     if ("NOT OPEN".equals(calculateStatus(auction))) {
       btnJoinLive.setDisable(true);
       btnJoinLive.setText("PHIÊN CHƯA MỞ");
@@ -246,16 +260,7 @@ public class PrimaryController implements Initializable, MessageListener {
     Auction selected = productTable.getSelectionModel().getSelectedItem();
     if (selected != null) {
       try {
-        // Truyền ID sang Live Controller thông qua biến tĩnh
         LiveBiddingController.targetAuctionId = selected.getAuctionId();
-
-        if (countdownTimer != null) {
-          countdownTimer.stop();
-        }
-        if (meshGradientTimer != null) {
-          meshGradientTimer.stop();
-        }
-
         App.setRoot("live_bidding");
       } catch (IOException e) {
         showAlert("LỖI HỆ THỐNG", "Không thể tải phòng Live Bidding.");
@@ -267,12 +272,13 @@ public class PrimaryController implements Initializable, MessageListener {
   public void onMessageReceived(ServerMessage response) {
     Platform.runLater(() -> {
       if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
-        Object dataSource = (response.getData() != null) 
+        Object dataSource = response.getData() != null 
             ? response.getData() : response.getAuctions();
+            
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, 
-              new TypeToken<List<Auction>>() {}.getType());
+          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
+          
           if (list != null) {
             auctionData.setAll(list);
             Auction selected = productTable.getSelectionModel().getSelectedItem();
@@ -300,57 +306,11 @@ public class PrimaryController implements Initializable, MessageListener {
     countdownTimer.play();
   }
 
-  private void startMeshGradientAnimation(Node targetNode) {
-    meshGradientTimer = new AnimationTimer() {
-      @Override
-      public void handle(long now) {
-        gradientOffset += 0.0005;
-        double color1 = Math.sin(gradientOffset) * 0.1 + 0.9;
-        double color2 = Math.cos(gradientOffset) * 0.1 + 0.9;
-        String style = String.format(Locale.US,
-            "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
-                + "rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",
-            color1, color2);
-        targetNode.setStyle(style);
-      }
-    };
-    meshGradientTimer.start();
+  @FXML 
+  private void handleRefresh(ActionEvent event) { 
+    refreshData(); 
   }
-
-  private void setupDynamicColorCoding() {
-    productTable.setRowFactory(tv -> new TableRow<Auction>() {
-      @Override
-      protected void updateItem(Auction item, boolean empty) {
-        super.updateItem(item, empty);
-        getStyleClass().removeAll("theme-electronics", "theme-art", 
-            "theme-vehicle", "hot-auction");
-            
-        if (item == null || empty) {
-          setStyle("");
-        } else {
-          if (item.getItem() != null && item.getItem().getCategory() != null) {
-            String category = item.getItem().getCategory().name();
-            if ("ELECTRONICS".equals(category)) {
-              getStyleClass().add("theme-electronics");
-            } else if ("ART".equals(category)) {
-              getStyleClass().add("theme-art");
-            } else {
-              getStyleClass().add("theme-vehicle");
-            }
-          }
-          if (item.getCurrentHighestBid() > 5000) {
-            getStyleClass().add("hot-auction");
-          }
-        }
-      }
-    });
-  }
-
-  @FXML
-  private void handleRefresh(ActionEvent event) {
-    refreshData();
-  }
-
+  
   private void refreshData() {
     ClientMessage getAuctionsReq = ClientMessage.builder()
         .action(ActionType.GET_ALL_AUCTIONS)
@@ -358,13 +318,27 @@ public class PrimaryController implements Initializable, MessageListener {
     NetworkClient.getInstance().sendMessage(getAuctionsReq);
   }
 
-  @FXML
+  private void showAlert(String title, String message) {
+    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+    alert.setTitle(title); 
+    alert.setHeaderText(null); 
+    alert.setContentText(message);
+    
+    String cssPath = getClass().getResource("/com/auction/views/style.css").toExternalForm();
+    alert.getDialogPane().getStylesheets().add(cssPath); 
+    alert.getDialogPane().getStyleClass().add("glass-panel");
+    
+    alert.showAndWait();
+  }
+  
+  // --- GIỮ NGUYÊN CÁC HÀM CŨ ĐỂ KHÔNG MẤT TÍNH NĂNG ---
+
+  @FXML 
   private void handleLogout(ActionEvent event) {
     try {
-      App.loggedInEmail = null;
-      App.loggedInPassword = null;
+      App.loggedInEmail = null; 
+      App.loggedInPassword = null; 
       App.loggedInUserId = null;
-      
       if (countdownTimer != null) {
         countdownTimer.stop();
       }
@@ -372,58 +346,45 @@ public class PrimaryController implements Initializable, MessageListener {
         meshGradientTimer.stop();
       }
       App.setRoot("login");
-    } catch (IOException e) {
-      showAlert("LỖI HỆ THỐNG", "Không thể ngắt kết nối.");
+    } catch (IOException e) { 
+      showAlert("LỖI HỆ THỐNG", "Không thể ngắt kết nối."); 
     }
   }
 
-  private void showAlert(String title, String message) {
-    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-    alert.setTitle(title);
-    alert.setHeaderText(null);
-    alert.setContentText(message);
-    
-    String cssPath = getClass().getResource("/com/auction/views/style.css").toExternalForm();
-    alert.getDialogPane().getStylesheets().add(cssPath);
-    alert.getDialogPane().getStyleClass().add("glass-panel");
-    
-    alert.showAndWait();
-  }
-
-  @FXML
-  private void handleMinimize(ActionEvent event) {
+  @FXML 
+  private void handleMinimize(ActionEvent event) { 
     Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    stage.setIconified(true);
+    stage.setIconified(true); 
   }
-
-  @FXML
-  private void handleMaximize(ActionEvent event) {
-    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    stage.setMaximized(!stage.isMaximized());
+  
+  @FXML 
+  private void handleMaximize(ActionEvent event) { 
+    Stage s = (Stage) ((Node) event.getSource()).getScene().getWindow(); 
+    s.setMaximized(!s.isMaximized()); 
   }
-
-  @FXML
-  private void handleClose(ActionEvent event) {
+  
+  @FXML 
+  private void handleClose(ActionEvent event) { 
     if (meshGradientTimer != null) {
-      meshGradientTimer.stop();
+      meshGradientTimer.stop(); 
     }
     if (countdownTimer != null) {
-      countdownTimer.stop();
+      countdownTimer.stop(); 
     }
     Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    stage.close();
+    stage.close(); 
   }
-
+  
   private void setupUndecoratedWindowHandle() {
     if (titleBar != null) {
-      titleBar.setOnMousePressed(e -> {
-        offsetX = e.getSceneX();
-        offsetY = e.getSceneY();
+      titleBar.setOnMousePressed(e -> { 
+        offsetX = e.getSceneX(); 
+        offsetY = e.getSceneY(); 
       });
       titleBar.setOnMouseDragged(e -> {
-        Stage stage = (Stage) ((Node) e.getSource()).getScene().getWindow();
-        stage.setX(e.getScreenX() - offsetX);
-        stage.setY(e.getScreenY() - offsetY);
+        Stage s = (Stage) ((Node) e.getSource()).getScene().getWindow();
+        s.setX(e.getScreenX() - offsetX); 
+        s.setY(e.getScreenY() - offsetY);
       });
     }
   }

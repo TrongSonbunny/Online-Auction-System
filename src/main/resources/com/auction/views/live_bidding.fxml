@@ -89,6 +89,8 @@
         </Tab>
       </TabPane>
 
+      <Label fx:id="lblError" textFill="#ff4444" style="-fx-font-weight: bold;" wrapText="true"/>
+
       <VBox VBox.vgrow="ALWAYS" spacing="5">
          <Label text="📋 LỊCH SỬ GIAO DỊCH" styleClass="premium-label"/>
          <ListView fx:id="listLiveHistory" styleClass="dark-list-view" VBox.vgrow="ALWAYS" />

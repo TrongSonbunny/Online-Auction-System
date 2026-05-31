@@ -72,6 +72,7 @@
                 <HBox spacing="15.0" alignment="CENTER_LEFT">
                     <Button onAction="#handleCancelAuction" styleClass="action-btn-danger" text="❌ XÓA PHIÊN (PENDING)" prefHeight="40"/>
                     <Button onAction="#handleFinishAuction" style="-fx-background-color: #ff8c00; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 5; -fx-cursor: hand;" text="⏹ KẾT THÚC ÉP BUỘC (ACTIVE)" prefHeight="40"/>
+                    <Label fx:id="lblError" textFill="#ff4444" style="-fx-font-weight: bold;" wrapText="true"/>
                 </HBox>
                 
             </VBox>

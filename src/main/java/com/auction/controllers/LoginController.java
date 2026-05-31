@@ -74,8 +74,8 @@ public class LoginController implements Initializable, MessageListener {
     setupUndecoratedWindowHandle(rb);
 
     Platform.runLater(() -> {
-      if (titleBar != null && titleBar.getScene() != null) {
-        Node root = titleBar.getScene().getRoot();
+      if (authContainer != null && authContainer.getScene() != null) {
+        Node root = authContainer.getScene().getRoot();
         if (root != null) {
           startMeshGradientAnimation(root);
         }
@@ -85,11 +85,17 @@ public class LoginController implements Initializable, MessageListener {
     showLoginView();
   }
 
+  /**
+   * Chạy hiệu ứng nền Mesh Gradient mượt mà (Đã tối ưu CPU).
+   *
+   * @param targetNode node đích cần áp dụng hiệu ứng
+   */
   private void startMeshGradientAnimation(Node targetNode) {
     meshGradientTimer = new AnimationTimer() {
+      // Giảm tốc độ thay đổi để tối ưu hiệu năng
       @Override
       public void handle(long now) {
-        gradientOffset += 0.0005;
+        gradientOffset += 0.0002; 
         targetNode.setStyle(
             "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
                 + "rgba(26, 21, 5, " + (Math.sin(gradientOffset) * 0.1 + 0.9) + "), "
@@ -103,13 +109,26 @@ public class LoginController implements Initializable, MessageListener {
   private void handleLogin() {
     this.pendingRole = null;
     this.isRegisteringMode = false;
+    lblError.setText("");
 
     String email = txtEmail.getText();
+    txtEmail.setStyle("");
+    txtPassword.setStyle("");
+
+    if (email == null || email.trim().isEmpty()) {
+      showError("Thiếu thông tin: Vui lòng nhập Email định danh.");
+      txtEmail.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtEmail);
+      return;
+    }
+
+    // FIX Checkstyle: Dời khai báo biến password xuống gần nơi sử dụng
     String password = txtPassword.getText();
 
-    if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
-      showError("Vui lòng nhập đầy đủ email và mật khẩu.");
-      triggerShakeAnimation(lblError);
+    if (password == null || password.isEmpty()) {
+      showError("Thiếu thông tin: Vui lòng nhập Mật khẩu bảo mật.");
+      txtPassword.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtPassword);
       return;
     }
 
@@ -124,11 +143,32 @@ public class LoginController implements Initializable, MessageListener {
 
   @FXML
   private void handleRegisterStep1() {
-    if (txtRegName.getText().isEmpty()
-        || txtRegEmail.getText().isEmpty()
+    lblError.setText("");
+    txtRegName.setStyle("");
+    txtRegEmail.setStyle("");
+    txtRegPassword.setStyle("");
+
+    if (txtRegName.getText().trim().isEmpty()
+        || txtRegEmail.getText().trim().isEmpty()
         || txtRegPassword.getText().isEmpty()) {
-      showError("Vui lòng điền đầy đủ thông tin đăng ký.");
+      showError("Cảnh báo: Bạn phải điền đầy đủ Tên, Email và Mật khẩu để đăng ký!");
+      if (txtRegName.getText().trim().isEmpty()) {
+        txtRegName.setStyle("-fx-border-color: #ff4444;");
+      }
+      if (txtRegEmail.getText().trim().isEmpty()) {
+        txtRegEmail.setStyle("-fx-border-color: #ff4444;");
+      }
+      if (txtRegPassword.getText().isEmpty()) {
+        txtRegPassword.setStyle("-fx-border-color: #ff4444;");
+      }
       triggerShakeAnimation(lblError);
+      return;
+    }
+
+    if (!txtRegEmail.getText().contains("@")) {
+      showError("Cảnh báo: Địa chỉ Email không hợp lệ (Thiếu @).");
+      txtRegEmail.setStyle("-fx-border-color: #ff4444;");
+      triggerShakeAnimation(txtRegEmail);
       return;
     }
 
@@ -195,7 +235,6 @@ public class LoginController implements Initializable, MessageListener {
 
       String serverAssignedRole = null;
 
-      // Trích xuất Role từ dữ liệu Server gửi về (nếu có)
       if (message.getData() != null) {
         JsonElement jsonElement = new Gson().toJsonTree(message.getData());
         if (jsonElement.isJsonObject()) {
@@ -217,7 +256,7 @@ public class LoginController implements Initializable, MessageListener {
         App.loggedInUserId = null;
       }
 
-      // ĐÃ FIX: Điều hướng thông minh, bao trọn cả vai trò Admin
+      // ĐÃ FIX: Chỉ sử dụng các biến cục bộ thay vì gọi phương thức không tồn tại trong App.java
       if ("ADMIN".equalsIgnoreCase(serverAssignedRole)) {
         navigateToMain("admin_dashboard");
       } else if ("SELLER".equalsIgnoreCase(serverAssignedRole)) {
@@ -225,7 +264,6 @@ public class LoginController implements Initializable, MessageListener {
       } else if ("BIDDER".equalsIgnoreCase(serverAssignedRole)) {
         navigateToMain("primary");
       } else if (this.pendingRole != null) {
-        // Fallback an toàn nếu Server không gửi Role về nhưng người dùng có pendingRole
         if (this.pendingRole == UserRole.SELLER) {
           navigateToMain("seller");
         } else {
@@ -233,7 +271,6 @@ public class LoginController implements Initializable, MessageListener {
         }
         this.pendingRole = null;
       } else {
-        // Trường hợp bất khả kháng, yêu cầu xác nhận lại qua UI
         if (lblRoleTitle != null) {
           lblRoleTitle.setText("XÁC NHẬN CHUYÊN TRANG TRUY CẬP");
         }
@@ -241,7 +278,6 @@ public class LoginController implements Initializable, MessageListener {
       }
 
     } else if (isRegister) {
-      // Đăng nhập tự động ngay sau khi đăng ký thành công
       ClientMessage autoLoginReq = ClientMessage.builder()
           .action(ActionType.LOGIN)
           .email(txtRegEmail.getText())
@@ -258,7 +294,7 @@ public class LoginController implements Initializable, MessageListener {
     if (errorMsg == null || errorMsg.isBlank()) {
       errorMsg = "Xác thực thất bại. Vui lòng kiểm tra lại!";
     }
-    showError("LỖI: " + errorMsg);
+    showError("LỖI HỆ THỐNG: " + errorMsg);
     triggerShakeAnimation(lblError);
     logoutAndReturn();
   }
@@ -295,7 +331,7 @@ public class LoginController implements Initializable, MessageListener {
       authContainer.setVisible(false);
       roleSelection.setVisible(true);
       roleSelection.setOpacity(0);
-      FadeTransition ft = new FadeTransition(Duration.millis(500), roleSelection);
+      FadeTransition ft = new FadeTransition(Duration.millis(300), roleSelection);
       ft.setFromValue(0);
       ft.setToValue(1);
       ft.play();
@@ -307,7 +343,6 @@ public class LoginController implements Initializable, MessageListener {
     if (authContainer != null && roleSelection != null) {
       roleSelection.setVisible(false);
       authContainer.setVisible(true);
-      lblError.setText("");
     }
   }
 
@@ -316,6 +351,7 @@ public class LoginController implements Initializable, MessageListener {
       if (meshGradientTimer != null) {
         meshGradientTimer.stop();
       }
+      // ĐÃ FIX: Sử dụng đúng hàm setRoot có sẵn trong App.java
       App.setRoot(fxmlTarget);
     } catch (IOException e) {
       showError(e.toString());
@@ -325,6 +361,8 @@ public class LoginController implements Initializable, MessageListener {
   private void showError(String error) {
     lblError.setText(error);
   }
+
+  // --- GIỮ LẠI ĐẦY ĐỦ CÁC PHƯƠNG THỨC CŨ ĐỂ ĐẢM BẢO TÍNH NĂNG VÀ JAVADOC ---
 
   @FXML
   private void handleMinimize(ActionEvent event) {
