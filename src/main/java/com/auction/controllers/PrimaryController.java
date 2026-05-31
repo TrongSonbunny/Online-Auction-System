@@ -3,6 +3,7 @@ package com.auction.controllers;
 import com.auction.App;
 import com.auction.models.auction.Auction;
 import com.auction.models.payment.PaymentStrategy;
+import com.auction.models.user.UserRole;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
@@ -12,6 +13,8 @@ import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.net.URL;
@@ -23,7 +26,9 @@ import java.util.ResourceBundle;
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
+import javafx.animation.RotateTransition;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -78,6 +83,7 @@ public class PrimaryController implements Initializable, MessageListener {
   private AnimationTimer meshGradientTimer;
   private double offsetX = 0;
   private double offsetY = 0;
+  private long lastAutoRefreshTime = 0;
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,

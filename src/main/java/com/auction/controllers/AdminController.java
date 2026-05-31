@@ -58,6 +58,7 @@ public class AdminController implements Initializable, MessageListener {
   @FXML private TableColumn<Auction, String> colName;
   @FXML private TableColumn<Auction, String> colSeller;
   @FXML private TableColumn<Auction, Double> colPrice;
+  @FXML private TableColumn<Auction, String> colWinner; // Cột Người chiến thắng
   @FXML private TableColumn<Auction, String> colTimeRemaining;
   @FXML private TableColumn<Auction, String> colStatus;
 
@@ -67,6 +68,7 @@ public class AdminController implements Initializable, MessageListener {
   private double gradientOffset = 0.0;
   private double offsetX = 0;
   private double offsetY = 0;
+  private long lastAutoRefreshTime = 0;
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
@@ -288,7 +290,8 @@ public class AdminController implements Initializable, MessageListener {
             
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
+          List<Auction> list = gson.fromJson(
+              json, new TypeToken<List<Auction>>() {}.getType());
           if (list != null) {
             auctionData.setAll(list);
           }
@@ -309,8 +312,21 @@ public class AdminController implements Initializable, MessageListener {
 
   private void startCountdownTimer() {
     countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+      boolean shouldRefresh = false;
       if (auctionTable != null && !auctionData.isEmpty()) {
         auctionTable.refresh();
+        for (Auction a : auctionData) {
+          if ("ACTIVE".equals(a.getStatus().name()) && a.getScheduledEndTime() != null) {
+            if (LocalDateTime.now().isAfter(a.getScheduledEndTime())) {
+              shouldRefresh = true;
+              break;
+            }
+          }
+        }
+      }
+      if (shouldRefresh && System.currentTimeMillis() - lastAutoRefreshTime > 3000) {
+        lastAutoRefreshTime = System.currentTimeMillis();
+        refreshData();
       }
     }));
     countdownTimer.setCycleCount(Animation.INDEFINITE);
@@ -338,10 +354,11 @@ public class AdminController implements Initializable, MessageListener {
     alert.setHeaderText(null);
     alert.setContentText(message);
     
-    String cssPath = getClass().getResource("/com/auction/views/style.css").toExternalForm();
+    String cssPath = getClass()
+        .getResource("/com/auction/views/style.css").toExternalForm();
     alert.getDialogPane().getStylesheets().add(cssPath);
     alert.getDialogPane().getStyleClass().add("glass-panel");
-    
+
     alert.showAndWait();
   }
 
@@ -351,10 +368,11 @@ public class AdminController implements Initializable, MessageListener {
     alert.setHeaderText(null);
     alert.setContentText(message);
     
-    String cssPath = getClass().getResource("/com/auction/views/style.css").toExternalForm();
+    String cssPath = getClass()
+        .getResource("/com/auction/views/style.css").toExternalForm();
     alert.getDialogPane().getStylesheets().add(cssPath);
     alert.getDialogPane().getStyleClass().add("glass-panel");
-    
+
     return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
   }
 
