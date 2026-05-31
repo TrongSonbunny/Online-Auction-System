@@ -84,6 +84,7 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
   private double lastKnownPrice = 0.0; 
   private double offsetX = 0;
   private double offsetY = 0;
+  private boolean hasRequestedFinish = false; // Cờ kiểm soát fetch dữ liệu khi hết giờ
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
@@ -142,42 +143,89 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
   }
 
   private void updateLiveRoom(Auction auction) {
+    // ĐÃ THÊM: Logic bắt khoảnh khắc vừa kết thúc để nổ Popup!
+    final boolean wasFinished = this.currentAuction != null 
+        && "FINISHED".equals(this.currentAuction.getStatus().name());
+    final boolean isFinishedNow = "FINISHED".equals(auction.getStatus().name());
+
     this.currentAuction = auction;
+    if ("ACTIVE".equals(auction.getStatus().name())) {
+      hasRequestedFinish = false; // Reset cờ nếu phiên đang active
+    }
     
     if (lblLiveName != null) {
       lblLiveName.setText(auction.getItem().getName());
     }
     if (lblLiveSeller != null) {
-      lblLiveSeller.setText("Bởi: " + (auction.getSeller() != null
+      lblLiveSeller.setText("Bởi: " 
+          + (auction.getSeller() != null 
           ? auction.getSeller().getName() : "Unknown"));
     }
     if (lblLiveCurrentPrice != null) {
       lblLiveCurrentPrice.setText(String.format("%,.0f VNĐ", auction.getCurrentHighestBid()));
     }
     
-    if (auction.getCurrentHighestBidder() != null) {
-      if (App.loggedInUserId != null
-          && App.loggedInUserId.equals(auction.getCurrentHighestBidder().getUserId())) {
-        if (lblLiveMyStatus != null) {
-          lblLiveMyStatus.setText("Đang dẫn đầu!");
-          lblLiveMyStatus.setStyle("-fx-text-fill: #00ff00;");
+    // Xử lý nổ Popup
+    if (!wasFinished && isFinishedNow) {
+      String winnerName = auction.getCurrentHighestBidder() != null 
+          ? auction.getCurrentHighestBidder().getName() 
+          : "Không có ai đặt giá!";
+      showAlert("KẾT THÚC PHIÊN ĐẤU GIÁ", 
+          "Phiên đấu giá đã chính thức khép lại!\n🏆 Người chiến thắng: " 
+          + winnerName);
+    }
+
+    // Xử lý trạng thái hiển thị
+    if (isFinishedNow) {
+      if (auction.getCurrentHighestBidder() != null) {
+        if (App.loggedInUserId != null 
+            && App.loggedInUserId.equals(
+            auction.getCurrentHighestBidder().getUserId())) {
+          if (lblLiveMyStatus != null) {
+            lblLiveMyStatus.setText("🎉 BẠN ĐÃ CHIẾN THẮNG!");
+            // Màu Vàng Gold nổi bật
+            lblLiveMyStatus.setStyle("-fx-text-fill: #ffd700; -fx-font-weight: bold;");
+          }
+        } else {
+          if (lblLiveMyStatus != null) {
+            lblLiveMyStatus.setText("Người thắng: " 
+                + auction.getCurrentHighestBidder().getName());
+            lblLiveMyStatus.setStyle("-fx-text-fill: #ff4444;");
+          }
         }
       } else {
         if (lblLiveMyStatus != null) {
-          lblLiveMyStatus.setText("Bị vượt giá!");
-          lblLiveMyStatus.setStyle("-fx-text-fill: #ff4444;");
+          lblLiveMyStatus.setText("Đã kết thúc (Không có người mua)");
+          lblLiveMyStatus.setStyle("-fx-text-fill: #888888;");
         }
       }
     } else {
-      if (lblLiveMyStatus != null) {
-        lblLiveMyStatus.setText("Chưa ra giá");
-        lblLiveMyStatus.setStyle("-fx-text-fill: white;");
+      // Logic khi chưa kết thúc
+      if (auction.getCurrentHighestBidder() != null) {
+        if (App.loggedInUserId != null 
+            && App.loggedInUserId.equals(
+            auction.getCurrentHighestBidder().getUserId())) {
+          if (lblLiveMyStatus != null) {
+            lblLiveMyStatus.setText("Đang dẫn đầu!");
+            lblLiveMyStatus.setStyle("-fx-text-fill: #00ff00;");
+          }
+        } else {
+          if (lblLiveMyStatus != null) {
+            lblLiveMyStatus.setText("Bị vượt giá!");
+            lblLiveMyStatus.setStyle("-fx-text-fill: #ff4444;");
+          }
+        }
+      } else {
+        if (lblLiveMyStatus != null) {
+          lblLiveMyStatus.setText("Chưa ra giá");
+          lblLiveMyStatus.setStyle("-fx-text-fill: white;");
+        }
       }
     }
   }
 
   /**
-   * Đọc dữ liệu phẳng an toàn tuyệt đối từ gói tin DTO của Backend.
+   * Đọc dữ liệu phẳng an sau tuyệt đối từ gói tin DTO của Backend.
    *
    * @param transactions danh sách gói dữ liệu JSON phẳng
    */
@@ -191,9 +239,10 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
       historyData.clear();
       
       double basePrice = currentAuction.getStartingPrice();
+      DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
       String startTimeStr = currentAuction.getStartTime() != null 
-          ? currentAuction.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-          : LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+          ? currentAuction.getStartTime().format(timeFormatter)
+          : LocalDateTime.now().format(timeFormatter);
             
       priceSeries.getData().add(new XYChart.Data<>(startTimeStr, basePrice));
       historyData.add(String.format("[%s] Hệ thống: Mở phiên giá %,.0f VNĐ",
@@ -431,7 +480,8 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
             ? response.getData() : response.getAuctions();
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
+          List<Auction> list = gson.fromJson(
+              json, new TypeToken<List<Auction>>() {}.getType());
           if (list != null && targetAuctionId != null) {
             Optional<Auction> target = list.stream()
                 .filter(a -> a.getAuctionId().equals(targetAuctionId)).findFirst();
@@ -467,7 +517,8 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
           }
           if (outbidByAuto) {
             showAlert("BỊ CƯỚP HÀNG",
-                "Bạn vừa đặt thành công, nhưng BOT AUTO-BID đã ngay lập tức đẩy giá lên cao hơn!");
+                "Bạn vừa đặt thành công, nhưng BOT AUTO-BID của người khác đã ngay lập tức "
+                    + "đẩy giá lên cao hơn!");
           }
           txtLiveBidAmount.clear();
           requestAuctionsData();
@@ -495,7 +546,8 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
           }
         }
       } else if ("EXECUTION_ERROR".equals(response.getAction())) {
-        // LỚP PHÒNG THỦ 2: Bắt trọn vẹn lỗi Hệ Thống từ Server (VD: Phiên đấu giá đóng, ID sai...)
+        // LỚP PHÒNG THỦ 2: Bắt trọn vẹn lỗi Hệ Thống từ Server 
+        // (VD: Phiên đấu giá đóng, ID sai...)
         if (lblError != null) {
           lblError.setText("LỖI TỪ SERVER: " + response.getMessage());
           triggerShakeAnimation(lblError);
@@ -513,6 +565,12 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
         if (end == null || LocalDateTime.now().isAfter(end)) {
           if (lblCountdownLive != null) {
             lblCountdownLive.setText("00:00:00");
+
+            // ĐÃ THÊM: Tự động Fetch kết quả khi hết giờ mà không chờ Server nhắc
+            if (!hasRequestedFinish && "ACTIVE".equals(currentAuction.getStatus().name())) {
+              hasRequestedFinish = true;
+              requestAuctionsData();
+            }
           }
         } else {
           long s = java.time.Duration.between(LocalDateTime.now(), end).getSeconds();

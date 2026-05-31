@@ -83,6 +83,7 @@ public class PrimaryController implements Initializable, NetworkClient.MessageLi
   private AnimationTimer meshGradientTimer;
   private double offsetX = 0;
   private double offsetY = 0;
+  private long lastAutoRefreshTime = 0; // ĐÃ THÊM: Chống spam
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,

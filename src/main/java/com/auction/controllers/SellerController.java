@@ -57,6 +57,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   @FXML private TableColumn<Auction, String> colId;
   @FXML private TableColumn<Auction, String> colName;
   @FXML private TableColumn<Auction, Double> colCurrentPrice;
+  @FXML private TableColumn<Auction, String> colWinner; // Cột Người chiến thắng
   @FXML private TableColumn<Auction, String> colStartTime;
   @FXML private TableColumn<Auction, String> colEndTime;
   @FXML private TableColumn<Auction, String> colDuration;
@@ -79,6 +80,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   private double gradientOffset = 0.0;
   private double offsetX = 0;
   private double offsetY = 0;
+  private long lastAutoRefreshTime = 0; // ĐÃ THÊM: Chống Spam Request
   
   private boolean isEditMode = false;
   private Auction selectedAuctionForEdit = null;
@@ -87,7 +89,9 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) ->
-              LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+              LocalDateTime.parse(
+                  json.getAsString(), 
+                  DateTimeFormatter.ISO_LOCAL_DATE_TIME))
       .registerTypeAdapter(PermissionStrategy.class,
           (JsonDeserializer<PermissionStrategy>) (json, type, ctx) -> null)
       .registerTypeAdapter(PaymentStrategy.class,
@@ -205,8 +209,24 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
 
   private void startCountdownTimer() {
     countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+      boolean shouldRefresh = false;
       if (auctionTable != null && !myAuctions.isEmpty()) {
         auctionTable.refresh();
+        // ĐÃ THÊM: Quét xem có phiên nào vừa hết giờ không để Auto-fetch người thắng!
+        for (Auction a : myAuctions) {
+          if ("ACTIVE".equals(a.getStatus().name()) && a.getScheduledEndTime() != null) {
+            if (LocalDateTime.now().isAfter(a.getScheduledEndTime())) {
+              shouldRefresh = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // Delay 3s giữa các lần fetch tự động để tránh spam Server
+      if (shouldRefresh && System.currentTimeMillis() - lastAutoRefreshTime > 3000) {
+        lastAutoRefreshTime = System.currentTimeMillis();
+        requestAuctionsData();
       }
     }));
     countdownTimer.setCycleCount(Animation.INDEFINITE);
@@ -510,7 +530,8 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
             ? response.getData() : response.getAuctions();
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
-          List<Auction> list = gson.fromJson(json, new TypeToken<List<Auction>>() {}.getType());
+          List<Auction> list = gson.fromJson(
+              json, new TypeToken<List<Auction>>() {}.getType());
           
           if (list != null) {
             myAuctions.setAll(list.stream()
@@ -592,7 +613,6 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     }
   }
 
-  // Tách các phương thức JavaFX viết tắt một dòng để không vi phạm quy tắc thụt lề block
   @FXML
   private void handleMinimize(ActionEvent event) {
     ((Stage) ((Node) event.getSource()).getScene().getWindow()).setIconified(true);
