@@ -5,6 +5,7 @@ import com.auction.exceptions.AuctionException;
 import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.user.User;
 import com.auction.models.user.UserFactory;
+import com.auction.models.user.UserRole;
 import com.auction.network.ClientMessage;
 
 /**
@@ -14,6 +15,8 @@ import com.auction.network.ClientMessage;
  * Dữ liệu người dùng được truy xuất và lưu trữ thông qua {@link UserDao}.
  */
 public class AuthService {
+  private static final String DEFAULT_ADMIN_USERNAME = "ADMIN";
+  private static final String DEFAULT_ADMIN_EMAIL = "admin@auction.local";
 
   private final UserDao userDao;
 
@@ -37,18 +40,21 @@ public class AuthService {
    * đã tồn tại hay chưa, sau đó tạo người dùng mới bằng {@link UserFactory}
    * và lưu thông tin người dùng vào cơ sở dữ liệu.
    *
+   * <p>Không cho đăng ký tài khoản ADMIN từ client. Tài khoản ADMIN mặc định
+   * được tạo sẵn khi khởi tạo database.
+   *
    * @param message thông điệp từ client chứa role, tên, email và mật khẩu
    * @return người dùng vừa được tạo
    * @throws AuctionException nếu dữ liệu đăng ký không hợp lệ hoặc email đã tồn tại
+   * @throws UnauthorizedException nếu client cố đăng ký tài khoản admin
    */
   public User register(
       ClientMessage message) {
-
     validateRegisterMessage(message);
+    validateNotAdminRegister(message);
 
     if (userDao.existsByEmail(
         message.getEmail())) {
-
       throw new AuctionException(
           "Email đã tồn tại.");
     }
@@ -67,34 +73,36 @@ public class AuthService {
   }
 
   /**
-   * Đăng nhập người dùng dựa trên email và mật khẩu nhận từ client.
+   * Đăng nhập người dùng dựa trên email/username và mật khẩu nhận từ client.
    *
-   * <p>Phương thức sẽ kiểm tra dữ liệu đăng nhập, tìm người dùng theo email,
-   * sau đó kiểm tra mật khẩu. Nếu email không tồn tại hoặc mật khẩu không đúng,
-   * phương thức sẽ ném ra ngoại lệ xác thực.
+   * <p>Với admin mặc định, client có thể nhập username là {@code ADMIN}.
+   * Backend sẽ tự ánh xạ thành email nội bộ {@code admin@auction.local}.
    *
-   * @param message thông điệp từ client chứa email và mật khẩu
+   * @param message thông điệp từ client chứa email hoặc username và mật khẩu
    * @return người dùng đăng nhập thành công
    * @throws AuctionException nếu dữ liệu đăng nhập không hợp lệ
-   * @throws UnauthorizedException nếu email không tồn tại hoặc mật khẩu không đúng
+   * @throws UnauthorizedException nếu tài khoản không tồn tại hoặc mật khẩu không đúng
    */
   public User login(
       ClientMessage message) {
-
     validateLoginMessage(message);
+
+    String loginIdentifier =
+        normalizeLoginIdentifier(
+            message.getEmail());
 
     User user =
         userDao.findByEmail(
-            message.getEmail());
+            loginIdentifier);
 
     if (user == null) {
       throw new UnauthorizedException(
-          "Email không tồn tại.");
+          "Tài khoản không tồn tại.");
     }
 
     boolean correctPassword =
         userDao.checkPassword(
-            message.getEmail(),
+            loginIdentifier,
             message.getPassword());
 
     if (!correctPassword) {
@@ -103,6 +111,38 @@ public class AuthService {
     }
 
     return user;
+  }
+
+  /**
+   * Chặn đăng ký tài khoản ADMIN từ client.
+   *
+   * @param message thông điệp đăng ký
+   * @throws UnauthorizedException nếu role đăng ký là ADMIN
+   */
+  private void validateNotAdminRegister(
+      ClientMessage message) {
+    if (message.getRole() == UserRole.ADMIN) {
+      throw new UnauthorizedException(
+          "Không thể đăng ký Admin. Hệ thống chỉ có một tài khoản Admin mặc định.");
+    }
+  }
+
+  /**
+   * Chuẩn hóa thông tin đăng nhập.
+   *
+   * <p>Nếu người dùng nhập {@code ADMIN}, hệ thống sẽ đổi sang email nội bộ
+   * của admin mặc định để truy vấn database.
+   *
+   * @param loginIdentifier email hoặc username người dùng nhập
+   * @return email dùng để truy vấn database
+   */
+  private String normalizeLoginIdentifier(
+      String loginIdentifier) {
+    if (DEFAULT_ADMIN_USERNAME.equals(loginIdentifier)) {
+      return DEFAULT_ADMIN_EMAIL;
+    }
+
+    return loginIdentifier;
   }
 
   /**
@@ -116,7 +156,6 @@ public class AuthService {
    */
   private void validateRegisterMessage(
       ClientMessage message) {
-
     if (message == null) {
       throw new AuctionException(
           "ClientMessage không được null.");
@@ -129,7 +168,6 @@ public class AuthService {
 
     if (message.getName() == null
         || message.getName().isBlank()) {
-
       throw new AuctionException(
           "Tên không hợp lệ.");
     }
@@ -140,31 +178,34 @@ public class AuthService {
   /**
    * Kiểm tra tính hợp lệ của dữ liệu đăng nhập.
    *
-   * <p>Dữ liệu đăng nhập hợp lệ khi thông điệp không null, email không rỗng,
-   * email có chứa ký tự {@code @} và mật khẩu không rỗng.
+   * <p>Dữ liệu đăng nhập hợp lệ khi thông điệp không null, email/username không
+   * rỗng và mật khẩu không rỗng. Riêng admin mặc định được phép đăng nhập bằng
+   * username {@code ADMIN}.
    *
    * @param message thông điệp từ client cần kiểm tra
-   * @throws AuctionException nếu thông điệp, email hoặc mật khẩu không hợp lệ
+   * @throws AuctionException nếu thông điệp, tài khoản hoặc mật khẩu không hợp lệ
    */
   private void validateLoginMessage(
       ClientMessage message) {
-
     if (message == null) {
       throw new AuctionException(
           "ClientMessage không được null.");
     }
 
     if (message.getEmail() == null
-        || message.getEmail().isBlank()
-        || !message.getEmail().contains("@")) {
+        || message.getEmail().isBlank()) {
+      throw new AuctionException(
+          "Tài khoản không hợp lệ.");
+    }
 
+    if (!DEFAULT_ADMIN_USERNAME.equals(message.getEmail())
+        && !message.getEmail().contains("@")) {
       throw new AuctionException(
           "Email không hợp lệ.");
     }
 
     if (message.getPassword() == null
         || message.getPassword().isBlank()) {
-
       throw new AuctionException(
           "Password không hợp lệ.");
     }

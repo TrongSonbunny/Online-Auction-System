@@ -1,6 +1,8 @@
 package com.auction.backend.database;
 
+import com.auction.backend.util.PasswordHasher;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -8,13 +10,19 @@ import java.sql.Statement;
  * Quản lý khởi tạo database SQLite.
  */
 public class DatabaseManager {
+  private static final String DEFAULT_ADMIN_ID = "ADMIN";
+  private static final String DEFAULT_ADMIN_NAME = "ADMIN";
+  private static final String DEFAULT_ADMIN_EMAIL = "admin@auction.local";
+  private static final String DEFAULT_ADMIN_PASSWORD = "123456789";
+  private static final String DEFAULT_ADMIN_ROLE = "ADMIN";
 
   /**
    * Khởi tạo toàn bộ database.
    */
   public void initializeDatabase() {
-
     createUserTable();
+    createOnlyOneAdminIndex();
+    createDefaultAdminAccount();
     createItemTable();
     createAuctionTable();
     createBidTransactionTable();
@@ -24,7 +32,6 @@ public class DatabaseManager {
    * Tạo bảng users.
    */
   private void createUserTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS users ("
             + "user_id VARCHAR(50) PRIMARY KEY,"
@@ -38,10 +45,64 @@ public class DatabaseManager {
   }
 
   /**
+   * Tạo ràng buộc để hệ thống chỉ có tối đa một tài khoản ADMIN.
+   *
+   * <p>SQLite chỉ áp dụng unique index này cho các dòng có role là ADMIN.
+   * Các role khác như SELLER và BIDDER không bị ảnh hưởng.
+   */
+  private void createOnlyOneAdminIndex() {
+    String sql =
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_only_one_admin "
+            + "ON users(role) "
+            + "WHERE role = 'ADMIN';";
+
+    executeSql(sql);
+  }
+
+  /**
+   * Tạo tài khoản admin mặc định nếu chưa tồn tại.
+   *
+   * <p>Tài khoản đăng nhập mặc định:
+   * <ul>
+   * <li>username: ADMIN
+   * <li>password: 123456789
+   * </ul>
+   *
+   * <p>Trong database vẫn lưu email hợp lệ là {@code admin@auction.local}
+   * để không phá validate email của model User.
+   */
+  private void createDefaultAdminAccount() {
+    String sql =
+        "INSERT OR IGNORE INTO users "
+            + "(user_id, name, email, password, role) "
+            + "VALUES (?, ?, ?, ?, ?)";
+
+    try (
+        Connection connection =
+            DatabaseConnection.getConnection();
+
+        PreparedStatement statement =
+            connection.prepareStatement(sql)) {
+
+      statement.setString(1, DEFAULT_ADMIN_ID);
+      statement.setString(2, DEFAULT_ADMIN_NAME);
+      statement.setString(3, DEFAULT_ADMIN_EMAIL);
+      statement.setString(
+          4,
+          PasswordHasher.hash(DEFAULT_ADMIN_PASSWORD));
+      statement.setString(5, DEFAULT_ADMIN_ROLE);
+
+      statement.executeUpdate();
+
+    } catch (SQLException exception) {
+      exception.printStackTrace();
+    }
+  }
+
+  /**
    * Tạo bảng items.
    */
   private void createItemTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS items ("
             + "item_id TEXT PRIMARY KEY,"
@@ -59,7 +120,6 @@ public class DatabaseManager {
    * Tạo bảng auctions.
    */
   private void createAuctionTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS auctions ("
             + "auction_id TEXT PRIMARY KEY,"
@@ -87,7 +147,6 @@ public class DatabaseManager {
    * Tạo bảng bid transactions.
    */
   private void createBidTransactionTable() {
-
     String sql =
         "CREATE TABLE IF NOT EXISTS bid_transactions ("
             + "transaction_id TEXT PRIMARY KEY,"
@@ -111,18 +170,14 @@ public class DatabaseManager {
    */
   private void executeSql(
       String sql) {
-
     try (
         Connection connection =
             DatabaseConnection.getConnection();
-
         Statement statement =
             connection.createStatement()) {
 
       statement.execute(sql);
-
     } catch (SQLException exception) {
-
       exception.printStackTrace();
     }
   }
