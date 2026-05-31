@@ -458,8 +458,12 @@ public class LiveBiddingController implements Initializable, MessageListener {
     if (countdownTimer != null) {
       countdownTimer.stop();
     }
-    Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-    stage.close();
+    targetAuctionId = null;
+    try {
+      App.setRoot("primary");
+    } catch (IOException e) {
+      showAlert("LỖI", "Không thể quay lại màn hình chính.");
+    }
   }
 
   private void setupUndecoratedWindowHandle() {

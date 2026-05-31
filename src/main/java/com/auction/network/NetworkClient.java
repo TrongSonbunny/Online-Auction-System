@@ -126,17 +126,19 @@ public class NetworkClient {
           try {
             String jsonLine;
             while (isRunning && (jsonLine = in.readLine()) != null) {
-              ServerMessage response = gson.fromJson(jsonLine, ServerMessage.class);
-              for (MessageListener listener : listeners) {
-                listener.onMessageReceived(response);
+              try {
+                ServerMessage response = gson.fromJson(jsonLine, ServerMessage.class);
+                for (MessageListener listener : listeners) {
+                  listener.onMessageReceived(response);
+                }
+              } catch (Exception e) {
+                logger.warn("Skipping malformed message: {}", e.getMessage());
               }
             }
           } catch (IOException e) {
             if (isRunning) {
               logger.error("Lost connection to server: {}", e.getMessage());
             }
-          } finally {
-            close();
           }
         });
   }
