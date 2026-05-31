@@ -227,5 +227,5 @@ mvn checkstyle:check
 
 | Tài liệu | Link |
 |---|---|
-| Báo cáo PDF | *(sẽ cập nhật)* |
-| Video demo | *(sẽ cập nhật)* |
+| Báo cáo PDF | *https://drive.google.com/file/d/1MDqt9HI-mBd1XfHI37tmK12o56O9jb35/view* |
+| Video demo | *https://drive.google.com/file/d/1g37h-znAtIF5GU5kXaHrGuxfk6BOml57/view?usp=sharing* |
