@@ -2,15 +2,15 @@
 
 ## Mô tả bài toán
 
-Hệ thống đấu giá trực tuyến cho phép người dùng tạo phiên đấu giá, đặt giá thủ công, và đăng ký tự động đấu giá (auto-bid). Hệ thống hỗ trợ ba vai trò người dùng: **Admin**, **Seller** (người bán), và **Bidder** (người mua). Giao tiếp giữa frontend (CLI) và backend đi qua một lớp `ClientActionHandler` mô phỏng luồng client–server thực tế, dùng mô hình **Command Pattern**. Dữ liệu được lưu trữ bền vững trong cơ sở dữ liệu SQLite.
+Hệ thống đấu giá trực tuyến cho phép người dùng tạo phiên đấu giá, đặt giá thủ công, và đăng ký tự động đấu giá (auto-bid). Hệ thống gồm hai thành phần chạy độc lập: **Server** (backend TCP) và **Client** (giao diện JavaFX). Ba vai trò người dùng: **Admin**, **Seller** (người bán), **Bidder** (người mua).
 
 **Phạm vi hệ thống:**
-- Quản lý phiên đấu giá (tạo, theo dõi, kết thúc, hủy)
+- Quản lý phiên đấu giá theo trạng thái: `PENDING → ACTIVE → FINISHED / CANCELLED`
 - Đặt giá thủ công và tự động (auto-bid cascade)
-- Xác thực phân quyền theo vai trò
-- Tự động kết thúc phiên đấu giá theo thời gian
-- Cơ chế anti-snipe (gia hạn thêm giờ khi có bid sát giờ kết thúc)
-- Thông báo sự kiện qua Observer Pattern
+- Xác thực và phân quyền theo vai trò
+- Tự động kết thúc auction theo thời gian (Java Virtual Threads)
+- Cơ chế anti-snipe (gia hạn khi có bid sát giờ kết thúc)
+- Thông báo real-time qua Observer Pattern + TCP push
 
 ---
 
@@ -20,20 +20,21 @@ Hệ thống đấu giá trực tuyến cho phép người dùng tạo phiên đ
 |---|---|
 | Ngôn ngữ | Java 21 |
 | Build tool | Apache Maven 3.x |
-| Giao diện | CLI (Console) |
-| Cơ sở dữ liệu | SQLite (via `sqlite-jdbc 3.45.1.0`) |
+| Giao diện | JavaFX 21 + FXML |
+| Giao tiếp | TCP Socket (JSON qua Gson) |
+| Cơ sở dữ liệu | SQLite (`sqlite-jdbc 3.46.1.0`) |
 | Serialization | Gson 2.10.1 |
 | Logging | SLF4J + Logback |
-| Test | JUnit Jupiter 5.10.2 |
-| Coverage | JaCoCo |
+| Test | JUnit Jupiter 5.10.2 + JaCoCo |
 | Lint | Google Checkstyle |
+| Đóng gói | maven-shade-plugin 3.5.2 (fat JAR) |
 | Đa luồng | Java Virtual Threads (JDK 21) |
 
 ### Yêu cầu cài đặt
 
-- **JDK 21** trở lên
-- **Maven 3.6+**
-- Không cần cài SQLite riêng (driver đã nhúng trong `pom.xml`)
+- **JDK 21** trở lên (`java -version`)
+- **Maven 3.6+** — chỉ cần khi build từ source (`mvn -version`)
+- Không cần cài SQLite hay JavaFX riêng — đã đóng gói trong JAR
 
 ---
 
@@ -41,106 +42,132 @@ Hệ thống đấu giá trực tuyến cho phép người dùng tạo phiên đ
 
 ```
 Online-Auction-System/
-├── src/
-│   ├── main/java/com/auction/
-│   │   ├── Main.java                        # Entry point — CLI tương tác
-│   │   ├── models/                          # Domain models
-│   │   │   ├── auction/   (Auction, AuctionRules, AuctionStatus)
-│   │   │   ├── bid/       (BidTransaction, AutoBid, Transaction)
-│   │   │   ├── item/      (AuctionItem, ItemCategory, ItemFactory)
-│   │   │   ├── payment/   (PaymentStrategy, BankPayment, MomoPayment, VnPayPayment)
-│   │   │   └── user/      (User, Admin, Seller, Bidder, UserRole, UserFactory, permission/)
-│   │   ├── backend/                         # Business logic
-│   │   │   ├── auction/   (AuctionService, AuctionManager, AuctionScheduler, AuctionValidator)
-│   │   │   ├── auth/      (AuthService)
-│   │   │   ├── bid/       (BidService, BidValidator, AutoBidService, AutoBidManager, BidHistoryManager, BidResult)
-│   │   │   ├── database/  (DatabaseManager, DatabaseConnection, DataManager, dao/)
-│   │   │   ├── observer/  (AuctionEvent, AuctionEventPublisher, AuctionEventType, observers/)
-│   │   │   ├── payment/   (PaymentProcessor, PaymentValidator, PaymentLogger)
-│   │   │   └── util/      (IdGenerator, PasswordHasher)
-│   │   ├── network/                         # Lớp giao tiếp client–server
-│   │   │   ├── ClientActionHandler.java
-│   │   │   ├── ClientMessage.java
-│   │   │   ├── ServerMessage.java
-│   │   │   ├── ActionType.java
-│   │   │   └── command/   (ClientCommand, BidCommand, LoginCommand, CreateAuctionCommand, ...)
-│   │   └── exceptions/                      # Custom exceptions
-│   └── test/                                # Unit tests & concurrency tests
-├── docs/                                    # Tài liệu tham khảo
-├── auction_system.db                        # SQLite DB (tự tạo khi chạy)
+├── src/main/java/com/auction/
+│   ├── App.java                          # JavaFX Application (Client)
+│   ├── Launcher.java                     # Entry point fat JAR Client
+│   ├── Main.java                         # CLI demo (tùy chọn)
+│   ├── controllers/                      # JavaFX Controllers (FXML)
+│   │   ├── LoginController.java
+│   │   ├── PrimaryController.java
+│   │   ├── AdminController.java
+│   │   ├── SellerController.java
+│   │   └── LiveBiddingController.java
+│   ├── models/                           # Domain models
+│   │   ├── auction/  (Auction, AuctionRules, AuctionStatus)
+│   │   ├── bid/      (BidTransaction, AutoBid)
+│   │   ├── item/     (AuctionItem, ItemCategory, ItemFactory)
+│   │   ├── payment/  (PaymentStrategy, BankPayment, MomoPayment, VnPayPayment)
+│   │   └── user/     (User, Admin, Seller, Bidder, UserRole, UserFactory, permission/)
+│   ├── backend/                          # Business logic (chạy trên Server)
+│   │   ├── auction/  (AuctionService, AuctionManager, AuctionScheduler, AuctionValidator)
+│   │   ├── auth/     (AuthService)
+│   │   ├── bid/      (BidService, BidValidator, AutoBidService, AutoBidManager, BidHistoryManager)
+│   │   ├── database/ (DatabaseManager, DatabaseConnection, DataManager, dao/)
+│   │   ├── observer/ (AuctionEventPublisher, observers/)
+│   │   ├── payment/  (PaymentProcessor, PaymentValidator, PaymentLogger)
+│   │   └── util/     (IdGenerator, PasswordHasher)
+│   ├── network/                          # Lớp mạng
+│   │   ├── ServerMain.java               # TCP Server entry point
+│   │   ├── ClientHandler.java            # Xử lý mỗi kết nối client
+│   │   ├── NetworkClient.java            # TCP Client (dùng bởi JavaFX)
+│   │   ├── ClientActionHandler.java      # Command dispatcher
+│   │   ├── ClientMessage.java / ServerMessage.java
+│   │   └── command/  (LoginCommand, BidCommand, CreateAuctionCommand, ...)
+│   ├── exceptions/                       # Custom exceptions
+│   └── utils/                            # Tiện ích UI
+├── src/main/resources/com/auction/views/ # FXML + CSS + assets
+├── src/test/                             # Unit tests & concurrency tests
+├── target/
+│   ├── server.jar                        # ← Server fat JAR (20 MB)
+│   └── client.jar                        # ← Client fat JAR (28 MB, bao gồm JavaFX)
 └── pom.xml
 ```
 
 ### Các module chính
 
-| Module | Trách nhiệm |
-|---|---|
-| `models/` | Định nghĩa entity thuần — không có logic nghiệp vụ |
-| `backend/auction/` | Tạo, kết thúc, hủy phiên đấu giá; lên lịch tự động |
-| `backend/bid/` | Xử lý bid thủ công, auto-bid cascade |
-| `backend/auth/` | Đăng ký, đăng nhập, xác thực mật khẩu (bcrypt-like hashing) |
-| `backend/database/` | DAO layer, kết nối SQLite, khởi tạo schema |
-| `backend/observer/` | Phát và nhận sự kiện đấu giá (Observer Pattern) |
-| `backend/payment/` | Xử lý và hoàn tiền qua Strategy Pattern |
-| `network/command/` | Command Pattern cho từng action của client |
+| Module | Chạy ở | Trách nhiệm |
+|---|---|---|
+| `network/ServerMain` | Server | TCP server port 8080, nhận kết nối |
+| `network/ClientHandler` | Server | Xử lý từng client, dispatch command |
+| `backend/auction/` | Server | Tạo, kết thúc, hủy, lên lịch auction |
+| `backend/bid/` | Server | Bid thủ công, auto-bid cascade |
+| `backend/auth/` | Server | Đăng ký, đăng nhập |
+| `backend/database/` | Server | DAO layer, SQLite |
+| `App.java` + `controllers/` | Client | Giao diện JavaFX |
+| `network/NetworkClient` | Client | Kết nối TCP tới server |
+
+---
+
+## Vị trí file JAR
+
+Sau khi build (`mvn package -DskipTests`), hai file JAR nằm tại:
+
+| File | Vị trí | Kích thước |
+|---|---|---|
+| **Server** | `target/server.jar` | ~20 MB |
+| **Client** | `target/client.jar` | ~28 MB (có JavaFX) |
 
 ---
 
 ## Hướng dẫn chạy
 
-### Bước 1 — Build dự án
+> **Thứ tự bắt buộc: chạy Server trước, rồi mới chạy Client.**
+
+### Bước 1 — Build (nếu chưa có JAR)
 
 ```bash
-mvn compile
+mvn package -DskipTests
 ```
 
-> Lần đầu Maven sẽ tải dependencies (~vài trăm MB). Những lần sau sẽ nhanh hơn.
+### Bước 2 — Chạy Server
 
-### Bước 2 — Chạy ứng dụng CLI
+Mở **terminal 1**, chạy:
 
 ```bash
-mvn exec:java
+java -jar target/server.jar
 ```
 
-Lệnh này sẽ:
-1. Xóa và tạo lại `auction_system.db` (fresh start mỗi lần chạy).
-2. Hiển thị banner CLI và menu tương tác.
-
-> **Lưu ý:** Mỗi lần khởi động, database sẽ được reset hoàn toàn. Đây là thiết kế có chủ ý để demo luôn bắt đầu từ trạng thái sạch.
-
-### Bước 3 — Tương tác qua CLI
-
-Sau khi khởi động, menu chính xuất hiện:
+Kết quả khi server khởi động thành công:
 
 ```
-  ╔══════════════════════════════════════════════╗
-  ║    HỆ THỐNG ĐẤU GIÁ ONLINE — CLI Demo       ║
-  ╚══════════════════════════════════════════════╝
-
-  ┌──────────────────────────────────────────────────┐
-  │  HỆ THỐNG ĐẤU GIÁ ONLINE                        │
-  └──────────────────────────────────────────────────┘
-  1. Đăng ký tài khoản
-  2. Đăng nhập
-  0. Thoát
+[main] INFO  ServerMain - Đang khởi động Máy chủ Đấu giá trên cổng 8080...
+[main] INFO  ServerMain - Khởi tạo cơ sở dữ liệu thành công.
+[main] INFO  ServerMain - Máy chủ đã hoạt động và đang chờ kết nối từ máy khách...
 ```
 
-**Thứ tự thao tác gợi ý khi demo:**
+### Bước 3 — Chạy Client (JavaFX)
 
-1. Đăng ký tài khoản **SELLER** → đăng nhập → tạo auction mới.
-2. Đăng xuất → đăng ký tài khoản **BIDDER** → đăng nhập → xem danh sách auction → đặt giá.
-3. (Tùy chọn) Đăng ký thêm BIDDER thứ hai để thử auto-bid cascade.
-4. Đăng nhập lại SELLER (hoặc ADMIN) → kết thúc auction thủ công hoặc chờ hết giờ.
-
-### Chạy test
+Mở **terminal 2**, chạy:
 
 ```bash
+java --enable-native-access=ALL-UNNAMED -jar target/client.jar
+```
+
+Client sẽ kết nối tới server tại `127.0.0.1:8080` và hiển thị màn hình đăng nhập.
+
+> **Kết nối tới server khác IP:**
+> ```bash
+> java --enable-native-access=ALL-UNNAMED -Dserver.ip=192.168.1.x -jar target/client.jar
+> ```
+
+### Tài khoản mặc định
+
+| Tài khoản | Mật khẩu |
+|---|---|
+| `ADMIN` (hoặc `admin@auction.local`) | `123456789` |
+
+---
+
+### Các lệnh hữu ích khác
+
+```bash
+# Chạy toàn bộ unit tests
 mvn test
-```
 
-### Kiểm tra code style
+# Build đầy đủ kèm tests
+mvn package
 
-```bash
+# Kiểm tra Google Java Style
 mvn checkstyle:check
 ```
 
@@ -149,42 +176,64 @@ mvn checkstyle:check
 ## Danh sách chức năng đã hoàn thành
 
 ### Xác thực & Phân quyền
-- [x] Đăng ký tài khoản với 3 vai trò: `ADMIN`, `SELLER`, `BIDDER`
-- [x] Đăng nhập bằng email + mật khẩu (mật khẩu được hash trước khi lưu)
+- [x] Đăng ký tài khoản: `SELLER`, `BIDDER` (ADMIN chỉ có 1 mặc định)
+- [x] Đăng nhập bằng email + mật khẩu (hash trước khi lưu DB)
+- [x] Đăng nhập Admin bằng username `ADMIN` (ánh xạ nội bộ)
 - [x] Phân quyền theo vai trò qua Strategy Pattern (`PermissionStrategy`)
 
 ### Quản lý Phiên đấu giá
-- [x] Tạo auction mới (Seller) với thông tin sản phẩm, giá khởi điểm, thời gian
-- [x] Xem danh sách toàn bộ auction và trạng thái hiện tại
-- [x] Kết thúc auction thủ công (Seller chỉ được auction của mình; Admin được tất cả)
-- [x] Hủy auction (Seller chỉ được auction của mình; Admin được tất cả)
-- [x] Tự động kết thúc auction theo thời gian (dùng Java Virtual Threads + ScheduledExecutorService)
-- [x] Cơ chế **anti-snipe**: tự động gia hạn auction khi có bid trong khoảng thời gian cuối
+- [x] Tạo auction (PENDING) với thông tin sản phẩm, giá khởi điểm, thời gian
+- [x] Cập nhật thông tin auction khi đang PENDING
+- [x] Mở auction thủ công (PENDING → ACTIVE)
+- [x] Tự động kết thúc auction theo thời gian (Virtual Threads)
+- [x] Kết thúc thủ công (Seller: auction của mình; Admin: tất cả)
+- [x] Hủy auction (Seller: auction của mình; Admin: tất cả)
+- [x] Xem danh sách toàn bộ auction
+- [x] Cơ chế **anti-snipe**: tự động gia hạn khi có bid sát giờ kết thúc
 
 ### Đặt Giá
-- [x] Đặt giá thủ công (Manual Bid) — phải lớn hơn giá hiện tại
+- [x] Đặt giá thủ công (Manual Bid)
 - [x] Đăng ký **auto-bid** với giá tối đa và bước giá tùy chỉnh
-- [x] Hủy auto-bid đã đăng ký trong phiên
-- [x] **Auto-bid cascade**: khi bị vượt giá, hệ thống tự động phản ứng dây chuyền giữa nhiều auto-bid
+- [x] Hủy auto-bid
+- [x] **Auto-bid cascade**: phản ứng dây chuyền giữa nhiều người đăng ký auto-bid
+- [x] Xem lịch sử bid (`GET_BID_HISTORY`)
+
+### Real-time & Mạng
+- [x] TCP Server port 8080, xử lý nhiều client qua Virtual Threads
+- [x] Đồng bộ giá real-time: khi có bid mới, server push `UPDATE_PRICE` tới tất cả client khác
+- [x] JavaFX Client kết nối server qua `NetworkClient` (Singleton)
+- [x] JSON serialization/deserialization qua Gson
 
 ### Lưu trữ dữ liệu
-- [x] Lưu/đọc `User`, `AuctionItem`, `Auction`, `BidTransaction` từ SQLite qua DAO layer
-- [x] Khởi tạo schema tự động khi chạy lần đầu (`DatabaseManager`)
+- [x] Lưu/đọc `User`, `AuctionItem`, `Auction`, `BidTransaction` từ SQLite
+- [x] Khởi tạo schema và tài khoản Admin mặc định khi start server
 
 ### Hệ thống sự kiện
-- [x] Observer Pattern: phát sự kiện khi bid, kết thúc, hủy, gia hạn auction
+- [x] Observer Pattern: phát event khi bid, tạo, kết thúc, hủy, gia hạn auction
 - [x] Các observer: `AdminObserver`, `SellerObserver`, `BidderObserver`, `DataPersistenceObserver`, `FrontendNotificationObserver`
 
 ### Thanh toán (mô phỏng)
-- [x] Strategy Pattern cho 3 phương thức: **BankPayment**, **MomoPayment**, **VnPayPayment**
+- [x] Strategy Pattern: **BankPayment**, **MomoPayment**, **VnPayPayment**
 - [x] Xử lý thanh toán và hoàn tiền qua `PaymentProcessor`
-- [x] Ghi log giao dịch qua `PaymentLogger`
 
-### Danh mục sản phẩm
-- [x] Hỗ trợ 6 danh mục: `ART`, `BOOK`, `ELECTRONICS`, `FASHION`, `FOOD`, `COLLECTIBLE`
+### Giao diện (JavaFX)
+- [x] Màn hình đăng nhập (`login.fxml`)
+- [x] Dashboard chính (`primary.fxml`)
+- [x] Dashboard Admin (`admin_dashboard.fxml`)
+- [x] Giao diện Seller (`seller.fxml`)
+- [x] Màn hình đấu giá live (`live_bidding.fxml`)
 
 ### Kiểm thử & Chất lượng
 - [x] Unit tests cho tất cả service, model, validator, observer, payment
-- [x] Concurrency test (`ConcurrentBiddingTest`) kiểm thử đặt giá đồng thời
+- [x] Concurrency test (`ConcurrentBiddingTest`) — đặt giá đồng thời
 - [x] Code coverage đo bằng JaCoCo
 - [x] Tuân thủ Google Java Style Guide qua Checkstyle
+
+---
+
+## Báo cáo & Demo
+
+| Tài liệu | Link |
+|---|---|
+| Báo cáo PDF | *(sẽ cập nhật)* |
+| Video demo | *(sẽ cập nhật)* |

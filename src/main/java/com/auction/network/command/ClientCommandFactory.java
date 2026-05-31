@@ -22,47 +22,21 @@ public final class ClientCommandFactory {
    */
   public static Map<ActionType, ClientCommand> createDefaultCommands() {
 
-    CommandContext context =
-        new CommandContext();
+    CommandContext context = new CommandContext();
+    Map<ActionType, ClientCommand> commands = new EnumMap<>(ActionType.class);
 
-    Map<ActionType, ClientCommand> commands =
-        new EnumMap<>(ActionType.class);
-
-    commands.put(
-        ActionType.LOGIN,
-        new LoginCommand(context));
-
-    commands.put(
-        ActionType.REGISTER,
-        new RegisterCommand(context));
-
-    commands.put(
-        ActionType.BID,
-        new BidCommand(context));
-
-    commands.put(
-        ActionType.CREATE_AUCTION,
-        new CreateAuctionCommand(context));
-
-    commands.put(
-        ActionType.CANCEL_AUCTION,
-        new CancelAuctionCommand(context));
-
-    commands.put(
-        ActionType.FINISH_AUCTION,
-        new FinishAuctionCommand(context));
-
-    commands.put(
-        ActionType.GET_ALL_AUCTIONS,
-        new GetAllAuctionsCommand(context));
-
-    commands.put(
-        ActionType.REGISTER_AUTO_BID,
-        new RegisterAutoBidCommand(context));
-
-    commands.put(
-        ActionType.CANCEL_AUTO_BID,
-        new CancelAutoBidCommand(context));
+    commands.put(ActionType.LOGIN, new LoginCommand(context));
+    commands.put(ActionType.REGISTER, new RegisterCommand(context));
+    commands.put(ActionType.BID, new BidCommand(context));
+    commands.put(ActionType.CREATE_AUCTION, new CreateAuctionCommand(context));
+    commands.put(ActionType.CANCEL_AUCTION, new CancelAuctionCommand(context));
+    commands.put(ActionType.FINISH_AUCTION, new FinishAuctionCommand(context));
+    commands.put(ActionType.GET_ALL_AUCTIONS, new GetAllAuctionsCommand(context));
+    commands.put(ActionType.REGISTER_AUTO_BID, new RegisterAutoBidCommand(context));
+    commands.put(ActionType.CANCEL_AUTO_BID, new CancelAutoBidCommand(context));
+    commands.put(ActionType.UPDATE_AUCTION, new UpdateAuctionCommand(context));
+    commands.put(ActionType.START_AUCTION, new StartAuctionCommand(context));
+    commands.put(ActionType.GET_BID_HISTORY, new GetBidHistoryCommand(context));
 
     return commands;
   }

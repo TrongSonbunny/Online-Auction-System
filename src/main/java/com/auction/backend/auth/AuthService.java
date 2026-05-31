@@ -59,11 +59,10 @@ public class AuthService {
           "Email đã tồn tại.");
     }
 
-    User user =
-        UserFactory.createUser(
-            message.getRole(),
-            message.getName(),
-            message.getEmail());
+    User user = UserFactory.createUser(
+        message.getRole(),
+        message.getName(),
+        message.getEmail());
 
     userDao.saveUser(
         user,
@@ -152,7 +151,8 @@ public class AuthService {
    * tên không rỗng, email hợp lệ và mật khẩu hợp lệ.
    *
    * @param message thông điệp từ client cần kiểm tra
-   * @throws AuctionException nếu thông điệp, role, tên, email hoặc mật khẩu không hợp lệ
+   * @throws AuctionException nếu thông điệp, role, tên, email hoặc mật khẩu không
+   *                          hợp lệ
    */
   private void validateRegisterMessage(
       ClientMessage message) {

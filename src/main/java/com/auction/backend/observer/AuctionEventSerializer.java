@@ -15,11 +15,11 @@ import com.google.gson.JsonObject;
  * <p>Cấu trúc JSON cơ bản:
  * <pre>{@code
  * {
- *   "eventType": "NEW_BID",
- *   "auctionId": "AUC-12345678",
- *   "message": "Alice đặt giá 500.0",
- *   "createdAt": "2026-05-13T10:30:00",
- *   "payload": { ... }   // phụ thuộc eventType
+ * "eventType": "NEW_BID",
+ * "auctionId": "AUC-12345678",
+ * "message": "Alice đặt giá 500.0",
+ * "createdAt": "2026-05-13T10:30:00",
+ * "payload": { ... } // phụ thuộc eventType
  * }
  * }</pre>
  */
@@ -58,8 +58,7 @@ public final class AuctionEventSerializer {
         "createdAt",
         event.getCreatedAt().toString());
 
-    JsonObject payloadJson =
-        buildPayload(event);
+    JsonObject payloadJson = buildPayload(event);
 
     if (payloadJson != null) {
       root.add("payload", payloadJson);
@@ -89,7 +88,8 @@ public final class AuctionEventSerializer {
 
       case NEW_BID:
       case AUTO_BID_PLACED:
-        if (raw instanceof BidEventPayload payload) {
+        if (raw instanceof BidEventPayload) {
+          BidEventPayload payload = (BidEventPayload) raw;
           return buildBidPayload(
               payload.getTransaction());
         }
@@ -100,7 +100,8 @@ public final class AuctionEventSerializer {
       case AUCTION_FINISHED:
       case AUCTION_CANCELLED:
       case AUCTION_EXTENDED:
-        if (raw instanceof Auction auction) {
+        if (raw instanceof Auction) {
+          Auction auction = (Auction) raw;
           return buildAuctionPayload(auction);
         }
         break;
@@ -159,8 +160,7 @@ public final class AuctionEventSerializer {
         "currentHighestBid",
         auction.getCurrentHighestBid());
 
-    if (auction.getCurrentHighestBidder()
-        != null) {
+    if (auction.getCurrentHighestBidder() != null) {
 
       obj.addProperty(
           "currentHighestBidder",

@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -43,7 +42,8 @@ public class NetworkClient {
   }
 
   /**
-   * Retrieves the singleton instance of the NetworkClient.
+   * 3. Hàm public static để lấy instance duy nhất (Double-Checked Locking an toàn
+   * cho Thread).
    *
    * @return The single instance of NetworkClient.
    */
@@ -78,31 +78,36 @@ public class NetworkClient {
   }
 
   /**
-   * Connects to the server using the loaded configuration.
-   *
-   * @throws IOException If an I/O error occurs while establishing the connection.
-   */
-  public synchronized void connect() throws IOException {
-    if (socket == null || socket.isClosed()) {
-      logger.info("Connecting to server at {}:{}...", serverHost, serverPort);
-      this.socket = new Socket(this.serverHost, this.serverPort);
-      this.out = new PrintWriter(socket.getOutputStream(), true);
-      this.in = new BufferedReader(
-          new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-      this.isRunning = true;
-      startListeningThread();
-      logger.info("Connection established successfully!");
-    }
-  }
-
-  /**
    * Adds a listener to be notified when a new message is received.
    *
    * @param listener The message listener to add.
    */
   public void addListener(MessageListener listener) {
-    if (!listeners.contains(listener)) {
-      listeners.add(listener);
+    // ĐÃ FIX: Tận dụng danh sách có sẵn, dọn sạch Listener cũ trước khi thêm mới
+    // Giải quyết triệt để lỗi "Bóng bàn" (Listener Leak) mà không cần tạo hàm mới!
+    listeners.clear();
+    listeners.add(listener);
+  }
+
+  /**
+   * Establishes a connection to the server using system properties for IP and
+   * Port.
+   */
+  public void connect() {
+    String serverIp = System.getProperty("server.ip", "127.0.0.1");
+    int port = Integer.getInteger("server.port", 8080);
+
+    try {
+      logger.info("Connecting to server at {}:{}...", serverIp, port);
+      socket = new Socket(serverIp, port);
+      // ... phần còn lại giữ nguyên
+      out = new PrintWriter(socket.getOutputStream(), true);
+      in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+      logger.info("Connected successfully.");
+      startListeningThread();
+    } catch (IOException e) {
+      logger.error("Failed to connect to the server: {}", e.getMessage());
     }
   }
 
@@ -139,6 +144,10 @@ public class NetworkClient {
     }
   }
 
+  /**
+   * Listens for incoming JSON strings from the server on a separate Virtual
+   * Thread.
+   */
   private void startListeningThread() {
     Thread.ofVirtual().start(
         () -> {

@@ -58,7 +58,7 @@ public class BidHistoryManager {
     lock.lock();
     try {
       return Collections.unmodifiableList(
-          bidHistory);
+          new ArrayList<>(bidHistory));
     } finally {
       lock.unlock();
     }
