@@ -8,19 +8,18 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages the TCP connection from the client to the server.
- * Handles sending ClientMessages and asynchronously receiving ServerMessages.
+ * Manages the TCP connection using the Singleton Pattern.
+ * Reads the server IP address and port from the config.properties file.
  */
 public class NetworkClient {
 
   private static final Logger logger = LoggerFactory.getLogger(NetworkClient.class);
-
-  // 1. Khai báo biến static private lưu trữ instance duy nhất
-  private static volatile NetworkClient instance;
+  private static NetworkClient instance;
 
   private final Gson gson;
   private final List<MessageListener> listeners;
@@ -28,50 +27,31 @@ public class NetworkClient {
   private Socket socket;
   private PrintWriter out;
   private BufferedReader in;
-  private volatile boolean isRunning = true;
+  private volatile boolean isRunning = false;
 
-  /**
-   * 2. Constructor đổi thành private để ngăn khởi tạo từ bên ngoài.
-   * Constructor initializes JSON converter and thread-safe listener list.
-   */
   private NetworkClient() {
     this.gson = new Gson();
     this.listeners = new CopyOnWriteArrayList<>();
+
   }
 
   /**
    * 3. Hàm public static để lấy instance duy nhất (Double-Checked Locking an toàn
    * cho Thread).
    *
-   * @return Thể hiện duy nhất của NetworkClient
+   * @return The single instance of NetworkClient.
    */
-  public static NetworkClient getInstance() {
+  public static synchronized NetworkClient getInstance() {
     if (instance == null) {
-      synchronized (NetworkClient.class) {
-        if (instance == null) {
-          instance = new NetworkClient();
-        }
-      }
+      instance = new NetworkClient();
     }
     return instance;
   }
 
   /**
-   * Interface để giao diện người dùng (UI) đăng ký nhận dữ liệu từ server.
-   */
-  public interface MessageListener {
-    /**
-     * Called when a message is received from the server.
-     *
-     * @param message The ServerMessage received from the server.
-     */
-    void onMessageReceived(ServerMessage message);
-  }
-
-  /**
-   * Đăng ký một listener (thường là một Controller của UI).
+   * Adds a listener to be notified when a new message is received.
    *
-   * @param listener controller muốn nhận dữ liệu
+   * @param listener The message listener to add.
    */
   public void addListener(MessageListener listener) {
     // ĐÃ FIX: Tận dụng danh sách có sẵn, dọn sạch Listener cũ trước khi thêm mới
@@ -96,6 +76,7 @@ public class NetworkClient {
       in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
       logger.info("Connected successfully.");
+      isRunning = true;
       startListeningThread();
     } catch (IOException e) {
       logger.error("Failed to connect to the server: {}", e.getMessage());
@@ -103,17 +84,35 @@ public class NetworkClient {
   }
 
   /**
-   * Sends a message to the server in JSON format.
+   * Removes a previously registered message listener.
    *
-   * @param message The ClientMessage object to be sent.
+   * @param listener The message listener to remove.
    */
-  public void sendMessage(ClientMessage message) {
-    if (socket != null && socket.isConnected() && !socket.isClosed()) {
+  public void removeListener(MessageListener listener) {
+    listeners.remove(listener);
+  }
+
+  /**
+   * Helper method to assign a callback directly without instantiating an interface.
+   *
+   * @param callback The consumer function handling the server message.
+   */
+  public void setOnUpdateReceived(Consumer<ServerMessage> callback) {
+    addListener(callback::accept);
+  }
+
+  /**
+   * Serializes the given message to JSON and sends it to the server.
+   *
+   * @param message The object payload to send.
+   */
+  public void sendMessage(Object message) {
+    if (isRunning && out != null) {
       String json = gson.toJson(message);
       out.println(json);
-      logger.debug("Sent: {}", json);
+      logger.debug("Message sent: {}", json);
     } else {
-      logger.warn("Cannot send message: Not connected to server.");
+      logger.error("Failed to send message: Not connected to the server.");
     }
   }
 
@@ -122,45 +121,41 @@ public class NetworkClient {
    * Thread.
    */
   private void startListeningThread() {
-    Thread.ofVirtual().start(() -> {
-      try {
-        String jsonLine;
-        while (isRunning && (jsonLine = in.readLine()) != null) {
-          ServerMessage response = gson.fromJson(jsonLine, ServerMessage.class);
-          notifyListeners(response);
-        }
-      } catch (IOException e) {
-        if (isRunning) {
-          logger.error("Connection lost: {}", e.getMessage());
-        }
-      } finally {
-        close();
-      }
-    });
+    Thread.ofVirtual().start(
+        () -> {
+          try {
+            String jsonLine;
+            while (isRunning && (jsonLine = in.readLine()) != null) {
+              ServerMessage response = gson.fromJson(jsonLine, ServerMessage.class);
+              for (MessageListener listener : listeners) {
+                listener.onMessageReceived(response);
+              }
+            }
+          } catch (IOException e) {
+            if (isRunning) {
+              logger.error("Lost connection to server: {}", e.getMessage());
+            }
+          } finally {
+            close();
+          }
+        });
   }
 
   /**
-   * Chuyển tiếp ServerMessage cho tất cả các màn hình UI đang lắng nghe.
+   * Closes the network connection and gracefully stops the listening thread.
    */
-  private void notifyListeners(ServerMessage response) {
-    logger.debug("Received action: {} with status: {}", response.getAction(), response.getStatus());
-    for (MessageListener listener : listeners) {
-      listener.onMessageReceived(response);
+  public synchronized void close() {
+    if (!isRunning) {
+      return;
     }
-  }
-
-  /**
-   * Closes the network resources gracefully.
-   */
-  public void close() {
     isRunning = false;
     try {
       if (socket != null && !socket.isClosed()) {
         socket.close();
       }
-      logger.info("Network client closed.");
+      logger.info("NetworkClient connection closed safely.");
     } catch (IOException e) {
-      logger.error("Error while closing socket: {}", e.getMessage());
+      logger.error("Error occurred while closing the socket", e);
     }
   }
 }

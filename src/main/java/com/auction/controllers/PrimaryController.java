@@ -6,6 +6,7 @@ import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
+import com.auction.network.MessageListener;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
@@ -48,7 +49,7 @@ import javafx.util.Duration;
 /**
  * Điều khiển màn hình Radar dành cho Bidder (Liệt kê & Xem chi tiết).
  */
-public class PrimaryController implements Initializable, NetworkClient.MessageListener {
+public class PrimaryController implements Initializable, MessageListener {
 
   @FXML
   private HBox titleBar;

@@ -18,6 +18,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * Mọi getter/setter trên trạng thái mutable ({@code status}, {@code currentHighestBid},
  * {@code currentHighestBidder}, {@code scheduledEndTime}) đều dùng {@link ReentrantLock}
  * thay vì {@code synchronized} để tương thích với virtual thread mà không pin carrier thread.
+ *
+ * <p>Lock được khai báo {@code transient} để không bị Gson serialize. Khi đối tượng
+ * được tạo bởi Gson (phía Client), lock có thể là {@code null} — mọi method đều
+ * kiểm tra null trước khi gọi lock để tránh NPE.
  */
 public class Auction {
 
@@ -34,7 +38,7 @@ public class Auction {
   private LocalDateTime scheduledEndTime;
   private long durationSeconds;
 
-  private final ReentrantLock lock = new ReentrantLock();
+  private final transient ReentrantLock lock = new ReentrantLock();
 
   /**
    * Constructor auction.
@@ -65,8 +69,9 @@ public class Auction {
 
   /**
    * Lấy lock để caller bao nhóm nhiều thao tác thành một critical section duy nhất.
+   * Có thể trả về {@code null} khi object được tạo bởi Gson (phía Client).
    *
-   * @return ReentrantLock của auction
+   * @return ReentrantLock của auction, hoặc null nếu chưa khởi tạo
    */
   public ReentrantLock getLock() {
     return lock;
@@ -76,20 +81,19 @@ public class Auction {
    * Bắt đầu auction.
    */
   public void start() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
-
       if (status != AuctionStatus.PENDING) {
-        throw new IllegalStateException(
-            "Chỉ auction pending mới được start.");
+        throw new IllegalStateException("Chỉ auction pending mới được start.");
       }
-
       status = AuctionStatus.ACTIVE;
       startTime = LocalDateTime.now();
-
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -97,20 +101,19 @@ public class Auction {
    * Kết thúc auction.
    */
   public void finish() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
-
       if (status != AuctionStatus.ACTIVE) {
-        throw new IllegalStateException(
-            "Chỉ auction active mới được finish.");
+        throw new IllegalStateException("Chỉ auction active mới được finish.");
       }
-
       status = AuctionStatus.FINISHED;
       endTime = LocalDateTime.now();
-
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -118,20 +121,19 @@ public class Auction {
    * Hủy auction.
    */
   public void cancel() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
-
       if (status == AuctionStatus.FINISHED) {
-        throw new IllegalStateException(
-            "Không thể hủy auction đã finish.");
+        throw new IllegalStateException("Không thể hủy auction đã finish.");
       }
-
       status = AuctionStatus.CANCELLED;
       endTime = LocalDateTime.now();
-
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -141,31 +143,26 @@ public class Auction {
    * @param bidder bidder mới
    * @param amount số tiền bid
    */
-  public void updateHighestBid(
-      Bidder bidder,
-      double amount) {
-
-    lock.lock();
+  public void updateHighestBid(Bidder bidder, double amount) {
+    if (lock != null) {
+      lock.lock();
+    }
     try {
-
       validateBidder(bidder);
       validateBidAmount(amount);
 
       if (!isActive()) {
-        throw new AuctionClosedException(
-            "Auction không hoạt động.");
+        throw new AuctionClosedException("Auction không hoạt động.");
       }
-
       if (amount <= currentHighestBid) {
-        throw new InvalidBidException(
-            "Bid phải lớn hơn giá hiện tại.");
+        throw new InvalidBidException("Bid phải lớn hơn giá hiện tại.");
       }
-
       currentHighestBid = amount;
       currentHighestBidder = bidder;
-
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -175,40 +172,39 @@ public class Auction {
    * @return true nếu trạng thái là ACTIVE
    */
   public boolean isActive() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       return status == AuctionStatus.ACTIVE;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
   private void validateAuctionId(String id) {
     if (id == null || id.isBlank()) {
-      throw new AuctionException(
-          "AuctionId không hợp lệ.");
+      throw new AuctionException("AuctionId không hợp lệ.");
     }
   }
 
   private void validateStartingPrice(double price) {
     if (price < 0) {
-      throw new BidException(
-          "Starting price không được âm.");
+      throw new BidException("Starting price không được âm.");
     }
   }
 
   private void validateBidder(Bidder bidder) {
     if (bidder == null) {
-      throw new BidException(
-          "Bidder không được null.");
+      throw new BidException("Bidder không được null.");
     }
   }
 
   private void validateBidAmount(double amount) {
     if (amount <= 0) {
-      throw new BidException(
-          "Bid amount phải lớn hơn 0.");
+      throw new BidException("Bid amount phải lớn hơn 0.");
     }
   }
 
@@ -234,12 +230,15 @@ public class Auction {
    * @return currentHighestBid
    */
   public double getCurrentHighestBid() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       return currentHighestBid;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -249,12 +248,15 @@ public class Auction {
    * @return currentHighestBidder
    */
   public Bidder getCurrentHighestBidder() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       return currentHighestBidder;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -264,12 +266,15 @@ public class Auction {
    * @return AuctionStatus
    */
   public AuctionStatus getStatus() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       return status;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -291,12 +296,15 @@ public class Auction {
    * @return scheduledEndTime
    */
   public LocalDateTime getScheduledEndTime() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       return scheduledEndTime;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -305,14 +313,16 @@ public class Auction {
    *
    * @param time thời gian mới
    */
-  public void setScheduledEndTime(
-      LocalDateTime time) {
-
-    lock.lock();
+  public void setScheduledEndTime(LocalDateTime time) {
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       this.scheduledEndTime = time;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -322,12 +332,15 @@ public class Auction {
    * @return durationSeconds
    */
   public long getDurationSeconds() {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       return durationSeconds;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -337,12 +350,15 @@ public class Auction {
    * @param durationSeconds thời lượng tính bằng giây
    */
   public void setDurationSeconds(long durationSeconds) {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       this.durationSeconds = durationSeconds;
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -352,8 +368,9 @@ public class Auction {
    * @param startingPrice giá khởi điểm mới
    */
   public void setStartingPrice(double startingPrice) {
-
-    lock.lock();
+    if (lock != null) {
+      lock.lock();
+    }
     try {
       validateStartingPrice(startingPrice);
       this.startingPrice = startingPrice;
@@ -361,7 +378,9 @@ public class Auction {
         this.currentHighestBid = startingPrice;
       }
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -370,21 +389,19 @@ public class Auction {
    *
    * @param seconds số giây cần cộng thêm
    */
-  public void extendScheduledEndTime(
-      long seconds) {
-
-    lock.lock();
+  public void extendScheduledEndTime(long seconds) {
+    if (lock != null) {
+      lock.lock();
+    }
     try {
-
       if (scheduledEndTime == null) {
         scheduledEndTime = LocalDateTime.now();
       }
-
-      scheduledEndTime =
-          scheduledEndTime.plusSeconds(seconds);
-
+      scheduledEndTime = scheduledEndTime.plusSeconds(seconds);
     } finally {
-      lock.unlock();
+      if (lock != null) {
+        lock.unlock();
+      }
     }
   }
 
@@ -392,8 +409,8 @@ public class Auction {
   public String toString() {
     return "Auction{"
         + "auctionId='" + auctionId + '\''
-        + ", seller=" + seller.getName()
-        + ", item=" + item.getName()
+        + ", seller=" + (seller != null ? seller.getName() : "null")
+        + ", item=" + (item != null ? item.getName() : "null")
         + ", startingPrice=" + startingPrice
         + ", currentHighestBid=" + currentHighestBid
         + ", currentHighestBidder="

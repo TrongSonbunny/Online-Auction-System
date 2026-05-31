@@ -6,6 +6,7 @@ import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
+import com.auction.network.MessageListener;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
@@ -45,7 +46,7 @@ import javafx.util.Duration;
  * Điều khiển màn hình Quản trị hệ thống (Admin Dashboard).
  * Quản lý toàn bộ phiên đấu giá: Xem, Xóa (PENDING) và Kết thúc ép buộc (ACTIVE).
  */
-public class AdminController implements Initializable, NetworkClient.MessageListener {
+public class AdminController implements Initializable, MessageListener {
 
   @FXML private HBox titleBar;
   @FXML private Label lblAdminName;

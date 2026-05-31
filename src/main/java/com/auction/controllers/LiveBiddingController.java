@@ -6,6 +6,7 @@ import com.auction.models.payment.PaymentStrategy;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
+import com.auction.network.MessageListener;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
@@ -50,7 +51,7 @@ import javafx.util.Duration;
  * Sử dụng Server-Side State làm Nguồn Chân Lý Duy Nhất (Single Source of Truth)
  * để đồng bộ hóa số lượt Bid, Lịch sử và Biểu đồ cho tất cả Client.
  */
-public class LiveBiddingController implements Initializable, NetworkClient.MessageListener {
+public class LiveBiddingController implements Initializable, MessageListener {
 
   public static String targetAuctionId = null;
 

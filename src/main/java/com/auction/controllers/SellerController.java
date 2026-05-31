@@ -8,6 +8,7 @@ import com.auction.models.user.UserRole;
 import com.auction.models.user.permission.PermissionStrategy;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
+import com.auction.network.MessageListener;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
@@ -48,7 +49,7 @@ import javafx.util.Duration;
 /**
  * Điều khiển màn hình của Seller (Người bán) để tạo và quản lý các phiên đấu giá.
  */
-public class SellerController implements Initializable, NetworkClient.MessageListener {
+public class SellerController implements Initializable, MessageListener {
 
   @FXML private HBox titleBar;
   @FXML private Label lblStatus;

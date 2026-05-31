@@ -4,6 +4,7 @@ import com.auction.App;
 import com.auction.models.user.UserRole;
 import com.auction.network.ActionType;
 import com.auction.network.ClientMessage;
+import com.auction.network.MessageListener;
 import com.auction.network.NetworkClient;
 import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
@@ -32,7 +33,7 @@ import javafx.util.Duration;
 /**
  * Điều khiển luồng Đăng nhập và Đăng ký của hệ thống đấu giá.
  */
-public class LoginController implements Initializable, NetworkClient.MessageListener {
+public class LoginController implements Initializable, MessageListener {
 
   @FXML
   private VBox authContainer;
@@ -68,9 +69,6 @@ public class LoginController implements Initializable, NetworkClient.MessageList
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-    // Khởi tạo kết nối tới server trước tiên để đảm bảo tín hiệu luôn sẵn sàng
-    NetworkClient.getInstance().connect();
-
     // Các logic lắng nghe sự kiện
     NetworkClient.getInstance().addListener(this);
     setupUndecoratedWindowHandle(rb);
