@@ -8,11 +8,11 @@
 .root {
   -fx-background-color: #0a0a0a;
   -fx-font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui;
-  -fx-font-size: 13px;
+  -fx-font-size: 14px;
 }
 
 .label {
-  -fx-text-fill: #e2e8f0;
+  -fx-text-fill: #f8f9fa;
 }
 
 /* --- ROYAL GOLD TEXT --- */
@@ -367,4 +367,35 @@
     -fx-background-insets: 0, 2;
     -fx-background-radius: 5px;
     -fx-padding: 3px;
+}
+
+/* --- NAVIGATION BAR --- */
+.nav-link {
+  -fx-background-color: transparent;
+  -fx-text-fill: #e2e8f0;
+  -fx-font-family: 'Plus Jakarta Sans';
+  -fx-font-weight: 600;
+  -fx-font-size: 15px;
+  -fx-cursor: hand;
+  -fx-padding: 8px 15px;
+}
+.nav-link:hover {
+  -fx-text-fill: #d4af37;
+  -fx-background-color: rgba(255,255,255,0.05);
+  -fx-background-radius: 5px;
+}
+
+.nav-icon-btn {
+  -fx-background-color: rgba(212, 175, 55, 0.1);
+  -fx-text-fill: #d4af37;
+  -fx-font-family: 'Plus Jakarta Sans';
+  -fx-font-weight: bold;
+  -fx-border-color: rgba(212, 175, 55, 0.5);
+  -fx-border-radius: 5px;
+  -fx-background-radius: 5px;
+  -fx-cursor: hand;
+  -fx-padding: 6px 12px;
+}
+.nav-icon-btn:hover {
+  -fx-background-color: rgba(212, 175, 55, 0.3);
 }

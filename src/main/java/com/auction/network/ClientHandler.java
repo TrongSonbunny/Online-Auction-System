@@ -2,7 +2,7 @@ package com.auction.network;
 
 import com.auction.backend.observer.AuctionObserver;
 import com.auction.backend.observer.FrontendNotifier;
-import com.auction.models.bid.Transaction; // ĐÃ FIX: Import chuẩn xác đường dẫn mà sếp tìm thấy
+import com.auction.models.bid.Transaction;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;

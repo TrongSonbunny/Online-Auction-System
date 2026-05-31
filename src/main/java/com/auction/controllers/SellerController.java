@@ -25,6 +25,7 @@ import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -82,11 +83,11 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   private boolean isEditMode = false;
   private Auction selectedAuctionForEdit = null;
 
-  // ĐÃ SỬA: Tách dòng khai báo TypeAdapter để độ dài luôn nhỏ hơn 100 ký tự
+  // Gson bỏ qua việc khởi tạo PaymentStrategy
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
-          (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> LocalDateTime.parse(
-              json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+          (JsonDeserializer<LocalDateTime>) (json, type, ctx) ->
+              LocalDateTime.parse(json.getAsString(), DateTimeFormatter.ISO_LOCAL_DATE_TIME))
       .registerTypeAdapter(PermissionStrategy.class,
           (JsonDeserializer<PermissionStrategy>) (json, type, ctx) -> null)
       .registerTypeAdapter(PaymentStrategy.class,
@@ -117,20 +118,17 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   }
 
   private void setupTableColumns() {
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
 
-    // ĐÃ SỬA: Tách dòng các CellValueFactory dài để tránh lỗi LineLength tiềm ẩn
     colId.setCellValueFactory(d -> new SimpleStringProperty(
         d.getValue() != null ? d.getValue().getAuctionId() : ""));
         
     colName.setCellValueFactory(d -> new SimpleStringProperty(
-        d.getValue() != null && d.getValue().getItem() != null 
+        d.getValue() != null && d.getValue().getItem() != null
             ? d.getValue().getItem().getName() : "Unknown"));
             
     colCurrentPrice.setCellValueFactory(d -> new SimpleObjectProperty<>(
         d.getValue() != null ? d.getValue().getCurrentHighestBid() : 0.0));
-    
-    // Đã dời xuống đây để không vi phạm quy tắc khoảng cách sử dụng
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
     
     colStartTime.setCellValueFactory(d -> {
       Auction a = d.getValue();
@@ -224,17 +222,134 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
             String.format(Locale.US,
                 "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
                     + "rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",
-                (Math.sin(gradientOffset) * 0.1 + 0.9), 
+                (Math.sin(gradientOffset) * 0.1 + 0.9),
                 (Math.cos(gradientOffset) * 0.1 + 0.9)));
       }
     };
     meshGradientTimer.start();
   }
 
+  /**
+   * Tạo hiệu ứng rung lắc (shake) khi có lỗi nhập liệu.
+   *
+   * @param node thành phần giao diện cần rung lắc
+   */
+  private void triggerShakeAnimation(Node node) {
+    TranslateTransition shake = new TranslateTransition(Duration.millis(100), node);
+    shake.setFromX(0);
+    shake.setToX(5);
+    shake.setCycleCount(4);
+    shake.setAutoReverse(true);
+    shake.play();
+  }
+
+  /**
+   * Kiểm tra tính hợp lệ của form bằng hình ảnh trực quan.
+   *
+   * @return true nếu hợp lệ
+   */
+  private boolean validateInputs() {
+    boolean isValid = true;
+
+    // Reset styles
+    if (txtName != null) {
+      txtName.setStyle("");
+    }
+    if (txtDescription != null) {
+      txtDescription.setStyle("");
+    }
+    if (cbCategory != null) {
+      cbCategory.setStyle("");
+    }
+    if (txtCondition != null) {
+      txtCondition.setStyle("");
+    }
+    if (txtEstimatedPrice != null) {
+      txtEstimatedPrice.setStyle("");
+    }
+    if (txtStartingPrice != null) {
+      txtStartingPrice.setStyle("");
+    }
+    if (txtDuration != null) {
+      txtDuration.setStyle("");
+    }
+
+    if (txtName != null && txtName.getText().trim().isEmpty()) {
+      txtName.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtName);
+      isValid = false;
+    }
+    if (txtDescription != null && txtDescription.getText().trim().isEmpty()) {
+      txtDescription.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtDescription);
+      isValid = false;
+    }
+    if (cbCategory != null && cbCategory.getValue() == null) {
+      cbCategory.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(cbCategory);
+      isValid = false;
+    }
+    if (txtCondition != null && txtCondition.getText().trim().isEmpty()) {
+      txtCondition.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+      triggerShakeAnimation(txtCondition);
+      isValid = false;
+    }
+
+    if (txtEstimatedPrice != null) {
+      if (txtEstimatedPrice.getText().trim().isEmpty()) {
+        txtEstimatedPrice.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+        triggerShakeAnimation(txtEstimatedPrice);
+        isValid = false;
+      } else {
+        try {
+          Double.parseDouble(txtEstimatedPrice.getText());
+        } catch (NumberFormatException e) {
+          txtEstimatedPrice.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+          triggerShakeAnimation(txtEstimatedPrice);
+          isValid = false;
+        }
+      }
+    }
+
+    if (txtStartingPrice != null) {
+      if (txtStartingPrice.getText().trim().isEmpty()) {
+        txtStartingPrice.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+        triggerShakeAnimation(txtStartingPrice);
+        isValid = false;
+      } else {
+        try {
+          Double.parseDouble(txtStartingPrice.getText());
+        } catch (NumberFormatException e) {
+          txtStartingPrice.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+          triggerShakeAnimation(txtStartingPrice);
+          isValid = false;
+        }
+      }
+    }
+
+    if (txtDuration != null) {
+      if (txtDuration.getText().trim().isEmpty()) {
+        txtDuration.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+        triggerShakeAnimation(txtDuration);
+        isValid = false;
+      } else {
+        try {
+          Long.parseLong(txtDuration.getText());
+        } catch (NumberFormatException e) {
+          txtDuration.setStyle("-fx-border-color: #ff4444; -fx-border-width: 2;");
+          triggerShakeAnimation(txtDuration);
+          isValid = false;
+        }
+      }
+    }
+
+    return isValid;
+  }
+
   @FXML
   private void handleCreateOrUpdateAuction(ActionEvent event) {
     if (!validateInputs()) {
-      setStatus("Vui lòng điền đầy đủ thông tin chi tiết vật phẩm!", true);
+      setStatus("Vui lòng điền đúng và đủ thông tin bắt buộc (viền đỏ)!", true);
       return;
     }
 
@@ -338,16 +453,6 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     NetworkClient.getInstance().sendMessage(cancelReq);
   }
 
-  private boolean validateInputs() {
-    return txtName != null && !txtName.getText().trim().isEmpty()
-        && txtDescription != null && !txtDescription.getText().trim().isEmpty()
-        && cbCategory != null && cbCategory.getValue() != null
-        && txtCondition != null && !txtCondition.getText().trim().isEmpty()
-        && txtEstimatedPrice != null && !txtEstimatedPrice.getText().trim().isEmpty()
-        && txtStartingPrice != null && !txtStartingPrice.getText().trim().isEmpty()
-        && txtDuration != null && !txtDuration.getText().trim().isEmpty();
-  }
-
   @FXML
   private void handleRefresh(ActionEvent event) {
     setStatus("Đang làm mới danh sách đấu giá...", false);
@@ -369,6 +474,30 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
       btnSubmit.setText("LƯU DỮ LIỆU (NOT OPEN)");
     }
     clearInputs();
+    
+    // Đặt lại style nếu trước đó đang báo lỗi
+    if (txtName != null) {
+      txtName.setStyle("");
+    }
+    if (txtDescription != null) {
+      txtDescription.setStyle("");
+    }
+    if (cbCategory != null) {
+      cbCategory.setStyle("");
+    }
+    if (txtCondition != null) {
+      txtCondition.setStyle("");
+    }
+    if (txtEstimatedPrice != null) {
+      txtEstimatedPrice.setStyle("");
+    }
+    if (txtStartingPrice != null) {
+      txtStartingPrice.setStyle("");
+    }
+    if (txtDuration != null) {
+      txtDuration.setStyle("");
+    }
+
     setStatus("Đã làm mới form niêm yết.", false);
   }
 
@@ -377,7 +506,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     Platform.runLater(() -> {
       
       if (ActionType.GET_ALL_AUCTIONS.name().equals(response.getAction())) {
-        Object dataSource = response.getData() != null 
+        Object dataSource = response.getData() != null
             ? response.getData() : response.getAuctions();
         if (dataSource != null) {
           String json = gson.toJson(dataSource);
@@ -385,12 +514,11 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
           
           if (list != null) {
             myAuctions.setAll(list.stream()
-                .filter(a -> a.getSeller() != null 
+                .filter(a -> a.getSeller() != null
                     && a.getSeller().getUserId().equals(App.loggedInUserId))
                 .toList());
           }
         }
-      // ĐÃ SỬA: Gom cụm đóng ngoặc và thụt lề chuẩn 2 khoảng trắng (Dòng 268 - 273 cũ)
       } else if (ActionType.CREATE_AUCTION.name().equals(response.getAction())
           || ActionType.UPDATE_AUCTION.name().equals(response.getAction())
           || ActionType.START_AUCTION.name().equals(response.getAction())
@@ -398,7 +526,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
           
         if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
           setStatus("THÀNH CÔNG! Đã cập nhật trạng thái phiên đấu giá.", false);
-          if (ActionType.CREATE_AUCTION.name().equals(response.getAction()) 
+          if (ActionType.CREATE_AUCTION.name().equals(response.getAction())
               || ActionType.UPDATE_AUCTION.name().equals(response.getAction())) {
             handleClearForm(null);
           }
@@ -464,7 +592,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
     }
   }
 
-  // ĐÃ SỬA: Tách các phương thức JavaFX viết tắt một dòng để không vi phạm quy tắc thụt lề block
+  // Tách các phương thức JavaFX viết tắt một dòng để không vi phạm quy tắc thụt lề block
   @FXML
   private void handleMinimize(ActionEvent event) {
     ((Stage) ((Node) event.getSource()).getScene().getWindow()).setIconified(true);
