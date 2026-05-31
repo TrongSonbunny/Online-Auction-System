@@ -63,7 +63,6 @@
                         <TableColumn fx:id="colName" prefWidth="250.0" text="TÊN SẢN PHẨM" />
                         <TableColumn fx:id="colSeller" prefWidth="150.0" text="NGƯỜI BÁN" />
                         <TableColumn fx:id="colPrice" prefWidth="150.0" text="GIÁ CAO NHẤT" />
-                        <TableColumn fx:id="colWinner" prefWidth="150.0" text="NGƯỜI THẮNG" />
                         <TableColumn fx:id="colTimeRemaining" prefWidth="150.0" text="CÒN LẠI" />
                         <TableColumn fx:id="colStatus" prefWidth="120.0" text="TRẠNG THÁI" />
                     </columns>

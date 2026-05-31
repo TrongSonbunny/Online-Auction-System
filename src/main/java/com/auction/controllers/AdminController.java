@@ -57,7 +57,6 @@ public class AdminController implements Initializable, NetworkClient.MessageList
   @FXML private TableColumn<Auction, String> colName;
   @FXML private TableColumn<Auction, String> colSeller;
   @FXML private TableColumn<Auction, Double> colPrice;
-  @FXML private TableColumn<Auction, String> colWinner; // Cột Người chiến thắng
   @FXML private TableColumn<Auction, String> colTimeRemaining;
   @FXML private TableColumn<Auction, String> colStatus;
 

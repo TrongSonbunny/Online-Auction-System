@@ -37,7 +37,6 @@
           <TableColumn fx:id="colId" prefWidth="70.0" text="ID" />
           <TableColumn fx:id="colName" prefWidth="150.0" text="TÊN VẬT PHẨM" />
           <TableColumn fx:id="colCurrentPrice" prefWidth="110.0" text="GIÁ HIỆN TẠI" />
-          <TableColumn fx:id="colWinner" prefWidth="120.0" text="NGƯỜI THẮNG" />
           <TableColumn fx:id="colStartTime" prefWidth="130.0" text="BẮT ĐẦU" />
           <TableColumn fx:id="colEndTime" prefWidth="130.0" text="KẾT THÚC" />
           <TableColumn fx:id="colDuration" prefWidth="80.0" text="THỜI LƯỢNG" />

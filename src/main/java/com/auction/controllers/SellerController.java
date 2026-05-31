@@ -57,7 +57,6 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   @FXML private TableColumn<Auction, String> colId;
   @FXML private TableColumn<Auction, String> colName;
   @FXML private TableColumn<Auction, Double> colCurrentPrice;
-  @FXML private TableColumn<Auction, String> colWinner; // Cột Người chiến thắng
   @FXML private TableColumn<Auction, String> colStartTime;
   @FXML private TableColumn<Auction, String> colEndTime;
   @FXML private TableColumn<Auction, String> colDuration;
