@@ -200,8 +200,12 @@
                 <configuration>
                     <excludes>
                         <exclude>com/auction/Main.class</exclude>
+                        <exclude>com/auction/App.class</exclude>
+                        <exclude>com/auction/Launcher.class</exclude>
                         <exclude>com/auction/backend/database/**</exclude>
                         <exclude>com/auction/network/**</exclude>
+                        <exclude>com/auction/controllers/**</exclude>
+                        <exclude>com/auction/utils/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>

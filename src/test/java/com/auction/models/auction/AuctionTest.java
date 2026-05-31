@@ -331,6 +331,157 @@ class AuctionTest {
     }
   }
 
+  // ──────── setDurationSeconds / getDurationSeconds ────────
+
+  @Nested
+  @DisplayName("setDurationSeconds / getDurationSeconds (EP + BVA)")
+  class DurationSeconds {
+
+    @Test
+    @DisplayName("EP-Valid: set và get durationSeconds đúng")
+    void setGetDuration_valid() {
+      Auction a = createPendingAuction(1000.0);
+      a.setDurationSeconds(3600);
+      assertEquals(3600, a.getDurationSeconds());
+    }
+
+    @Test
+    @DisplayName("BVA-Boundary: durationSeconds = 0")
+    void setDuration_zero() {
+      Auction a = createPendingAuction(1000.0);
+      a.setDurationSeconds(0);
+      assertEquals(0, a.getDurationSeconds());
+    }
+
+    @Test
+    @DisplayName("EP-Valid: durationSeconds lớn")
+    void setDuration_large() {
+      Auction a = createPendingAuction(1000.0);
+      a.setDurationSeconds(86400);
+      assertEquals(86400, a.getDurationSeconds());
+    }
+  }
+
+  // ──────── setStartingPrice ────────
+
+  @Nested
+  @DisplayName("setStartingPrice (EP + BVA)")
+  class SetStartingPrice {
+
+    @Test
+    @DisplayName("EP-Valid: setStartingPrice khi PENDING cập nhật cả currentHighestBid")
+    void setStartingPrice_pending_updatesBoth() {
+      Auction a = createPendingAuction(1000.0);
+      a.setStartingPrice(2000.0);
+      assertEquals(2000.0, a.getStartingPrice());
+      assertEquals(2000.0, a.getCurrentHighestBid());
+    }
+
+    @Test
+    @DisplayName("EP-Valid: setStartingPrice khi ACTIVE không cập nhật currentHighestBid")
+    void setStartingPrice_active_doesNotUpdateCurrentBid() {
+      Auction a = createActiveAuction(1000.0);
+      a.updateHighestBid(bidder, 1500.0);
+      a.setStartingPrice(500.0);
+      assertEquals(500.0, a.getStartingPrice());
+      assertEquals(1500.0, a.getCurrentHighestBid());
+    }
+
+    @Test
+    @DisplayName("BVA-Boundary: setStartingPrice = 0 hợp lệ")
+    void setStartingPrice_zero_valid() {
+      Auction a = createPendingAuction(1000.0);
+      a.setStartingPrice(0.0);
+      assertEquals(0.0, a.getStartingPrice());
+    }
+
+    @Test
+    @DisplayName("EP-Invalid: setStartingPrice âm ném BidException")
+    void setStartingPrice_negative_throws() {
+      Auction a = createPendingAuction(1000.0);
+      assertThrows(com.auction.exceptions.BidException.class,
+          () -> a.setStartingPrice(-1.0));
+    }
+  }
+
+  // ──────── setScheduledEndTime / getScheduledEndTime ────────
+
+  @Nested
+  @DisplayName("setScheduledEndTime / getScheduledEndTime")
+  class ScheduledEndTime {
+
+    @Test
+    @DisplayName("EP-Valid: set và get scheduledEndTime đúng")
+    void setGetScheduledEndTime_valid() {
+      Auction a = createPendingAuction(1000.0);
+      java.time.LocalDateTime time = java.time.LocalDateTime.now().plusHours(1);
+      a.setScheduledEndTime(time);
+      assertEquals(time, a.getScheduledEndTime());
+    }
+
+    @Test
+    @DisplayName("EP-Valid: setScheduledEndTime null được chấp nhận")
+    void setScheduledEndTime_null_accepted() {
+      Auction a = createPendingAuction(1000.0);
+      a.setScheduledEndTime(null);
+      assertNull(a.getScheduledEndTime());
+    }
+  }
+
+  // ──────── extendScheduledEndTime ────────
+
+  @Nested
+  @DisplayName("extendScheduledEndTime (EP)")
+  class ExtendScheduledEndTime {
+
+    @Test
+    @DisplayName("EP-Valid: gia hạn từ scheduledEndTime đã đặt")
+    void extend_fromExistingTime_adds() {
+      Auction a = createActiveAuction(1000.0);
+      java.time.LocalDateTime base = java.time.LocalDateTime.now().plusHours(1);
+      a.setScheduledEndTime(base);
+      a.extendScheduledEndTime(300);
+      assertEquals(base.plusSeconds(300), a.getScheduledEndTime());
+    }
+
+    @Test
+    @DisplayName("EP-Valid: gia hạn khi scheduledEndTime null — set từ now")
+    void extend_fromNull_setsFromNow() {
+      Auction a = createPendingAuction(1000.0);
+      assertNull(a.getScheduledEndTime());
+      a.extendScheduledEndTime(600);
+      assertNotNull(a.getScheduledEndTime());
+    }
+  }
+
+  // ──────── getLock ────────
+
+  @Test
+  @DisplayName("getLock trả về non-null khi tạo qua constructor")
+  void getLock_notNull() {
+    assertNotNull(createPendingAuction(1000.0).getLock());
+  }
+
+  // ──────── getCreatedAt / getStartTime / getEndTime ────────
+
+  @Test
+  @DisplayName("getCreatedAt non-null khi tạo auction")
+  void getCreatedAt_notNull() {
+    assertNotNull(createPendingAuction(500.0).getCreatedAt());
+  }
+
+  @Test
+  @DisplayName("getStartTime null trước khi start")
+  void getStartTime_nullBeforeStart() {
+    assertNull(createPendingAuction(500.0).getStartTime());
+  }
+
+  @Test
+  @DisplayName("getEndTime null trước khi finish/cancel")
+  void getEndTime_nullBeforeEnd() {
+    assertNull(createActiveAuction(500.0).getEndTime());
+  }
+
   // ──────── toString ────────
 
   @Test

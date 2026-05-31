@@ -44,7 +44,7 @@ public class App extends Application {
       System.out.println("Chưa tìm thấy logo4.png, sử dụng mặc định.");
     }
 
-    scene = new Scene(loadFxml("login"), 640, 480);
+    scene = new Scene(loadFxml("login"), 640, 580);
     stage.setScene(scene);
     WindowResizeUtils.addResizeListener(stage);
     stage.show();
