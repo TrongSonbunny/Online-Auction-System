@@ -65,8 +65,8 @@ public class LiveBiddingController implements Initializable, NetworkClient.Messa
   @FXML private Label lblError; // Label hiển thị lỗi giao diện
   
   @FXML private LineChart<String, Number> priceChart;
-  @FXML private CategoryAxis xAxis;
-  @FXML private NumberAxis yAxis;
+  @FXML private CategoryAxis categoryAxis;
+  @FXML private NumberAxis numberAxis;
   @FXML private ListView<String> listLiveHistory;
   
   @FXML private TextField txtLiveBidAmount;

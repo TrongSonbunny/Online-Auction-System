@@ -118,7 +118,7 @@ public class SellerController implements Initializable, NetworkClient.MessageLis
   }
 
   private void setupTableColumns() {
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
+    final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm:ss dd/MM");
 
     colId.setCellValueFactory(d -> new SimpleStringProperty(
         d.getValue() != null ? d.getValue().getAuctionId() : ""));

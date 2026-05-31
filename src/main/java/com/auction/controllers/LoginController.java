@@ -88,6 +88,7 @@ public class LoginController implements Initializable, NetworkClient.MessageList
 
   /**
    * Chạy hiệu ứng nền Mesh Gradient mượt mà (Đã tối ưu CPU).
+   *
    * @param targetNode node đích cần áp dụng hiệu ứng
    */
   private void startMeshGradientAnimation(Node targetNode) {
