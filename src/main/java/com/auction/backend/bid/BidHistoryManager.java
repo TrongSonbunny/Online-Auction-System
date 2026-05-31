@@ -5,17 +5,20 @@ import com.auction.models.bid.BidTransaction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Quản lý lịch sử bid transaction trong RAM.
  *
- * <p>Mọi thao tác đều {@code synchronized} để đảm bảo thread-safety khi nhiều
- * thread ghi bid cùng lúc (ví dụ: auto-bid cascade song song với bid thủ công).
+ * <p>Dùng {@link ReentrantLock} thay vì {@code synchronized} để đảm bảo thread-safety
+ * với virtual thread mà không pin carrier thread.
  * {@link #getBidHistory()} trả về unmodifiable list để tránh sửa ngoài.
  */
 public class BidHistoryManager {
 
   private final List<BidTransaction> bidHistory;
+
+  private final ReentrantLock lock = new ReentrantLock();
 
   /**
    * Constructor bid history manager.
@@ -29,7 +32,7 @@ public class BidHistoryManager {
    *
    * @param transaction bid transaction
    */
-  public synchronized void addTransaction(
+  public void addTransaction(
       BidTransaction transaction) {
 
     if (transaction == null) {
@@ -37,19 +40,28 @@ public class BidHistoryManager {
           "Transaction không được null.");
     }
 
-    bidHistory.add(transaction);
+    lock.lock();
+    try {
+      bidHistory.add(transaction);
+    } finally {
+      lock.unlock();
+    }
   }
 
   /**
    * Lấy toàn bộ lịch sử bid.
    *
-   * @return danh sách immutable
+   * @return snapshot immutable của lịch sử bid
    */
-  public synchronized List<BidTransaction>
-      getBidHistory() {
+  public List<BidTransaction> getBidHistory() {
 
-    return Collections.unmodifiableList(
-        bidHistory);
+    lock.lock();
+    try {
+      return Collections.unmodifiableList(
+          new ArrayList<>(bidHistory));
+    } finally {
+      lock.unlock();
+    }
   }
 
   /**
@@ -57,14 +69,26 @@ public class BidHistoryManager {
    *
    * @return tổng số bid
    */
-  public synchronized int getTotalBids() {
-    return bidHistory.size();
+  public int getTotalBids() {
+
+    lock.lock();
+    try {
+      return bidHistory.size();
+    } finally {
+      lock.unlock();
+    }
   }
 
   /**
    * Xóa toàn bộ lịch sử bid.
    */
-  public synchronized void clearHistory() {
-    bidHistory.clear();
+  public void clearHistory() {
+
+    lock.lock();
+    try {
+      bidHistory.clear();
+    } finally {
+      lock.unlock();
+    }
   }
 }

@@ -1,0 +1,401 @@
+/* =========================================================================
+   STYLE.CSS - ROYAL GOLD & NOIR THEME
+   Fonts: Montserrat (Titles/Prices), Plus Jakarta Sans (UI Components)
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Playfair+Display:ital,wght@1,700&family=Plus+Jakarta+Sans:wght@400;600&display=swap');
+
+.root {
+  -fx-background-color: #0a0a0a;
+  -fx-font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui;
+  -fx-font-size: 14px;
+}
+
+.label {
+  -fx-text-fill: #f8f9fa;
+}
+
+/* --- ROYAL GOLD TEXT --- */
+.gold-text {
+  -fx-text-fill: linear-gradient(to bottom, #f9f295, #e0aa3e, #b8860b, #e0aa3e, #f9f295);
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+}
+
+.header-text {
+  -fx-font-family: 'Montserrat';
+  -fx-font-size: 28pt;
+  -fx-font-weight: 900;
+  -fx-text-fill: linear-gradient(to bottom, #d4af37, #fcf6ba, #b8860b);
+  -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.4), 15, 0, 0, 0);
+}
+
+.price-text {
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+  -fx-font-size: 18pt;
+  -fx-text-fill: #d4af37;
+}
+
+/* --- BRANDING --- */
+.app-logo {
+  -fx-smooth: true;
+  -fx-cache: true;
+  -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.35), 20, 0.3, 0, 0);
+}
+
+/* --- LIQUID / MESH BACKGROUND --- */
+.mesh-gradient-bg {
+  -fx-background-color: linear-gradient(to bottom right, #0a0a0a, #1a1505, #050505);
+}
+
+/* --- GLASS PANEL CAO CẤP --- */
+.glass-panel {
+  -fx-background-color: rgba(20, 20, 20, 0.85);
+  -fx-background-radius: 25;
+  -fx-border-color: linear-gradient(to bottom right, #d4af37, transparent, #b8860b);
+  -fx-border-radius: 25;
+  -fx-border-width: 1.5;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.8), 20, 0, 0, 10);
+}
+
+.glass-card {
+  -fx-background-color: rgba(255, 255, 255, 0.04);
+  -fx-background-radius: 14;
+  -fx-border-color: rgba(212, 175, 55, 0.2);
+  -fx-border-radius: 14;
+  -fx-border-width: 1;
+  -fx-padding: 20;
+}
+
+/* --- TITLE BAR & WINDOW BUTTONS (FIXED SVG) --- */
+.title-bar {
+  -fx-background-color: #050505;
+  -fx-border-color: transparent transparent rgba(212, 175, 55, 0.3) transparent;
+  -fx-border-width: 0 0 1 0;
+  -fx-padding: 0 12;
+  -fx-min-height: 38px;
+}
+
+.title-bar-text {
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+  -fx-font-size: 11pt;
+  -fx-text-fill: #d4af37;
+  -fx-letter-spacing: 2;
+}
+
+.window-btn {
+  -fx-background-color: transparent;
+  -fx-cursor: hand;
+  -fx-min-width: 46px;
+  -fx-min-height: 38px;
+  -fx-padding: 0;
+  -fx-background-radius: 0;
+}
+
+.window-btn:hover {
+  -fx-background-color: rgba(212, 175, 55, 0.1);
+}
+
+.btn-close:hover {
+  -fx-background-color: #ff3333;
+}
+
+/* Điền màu (background-color) để hiện SVG */
+.icon-min {
+  -fx-shape: "M0 5h10v1H0z";
+  -fx-background-color: #d4af37; 
+  -fx-min-width: 10px; -fx-min-height: 1px;
+  -fx-max-width: 10px; -fx-max-height: 1px;
+}
+
+.icon-max {
+  -fx-shape: "M0 0v10h10V0H0zm9 9H1V1h8v8z";
+  -fx-background-color: #d4af37;
+  -fx-min-width: 10px; -fx-min-height: 10px;
+  -fx-max-width: 10px; -fx-max-height: 10px;
+}
+
+.icon-close {
+  -fx-shape: "M10 0.7L9.3 0 5 4.3 0.7 0 0 0.7 4.3 5 0 9.3l0.7 0.7 4.3-4.3 4.3 4.3 0.7-0.7L5.7 5z";
+  -fx-background-color: #d4af37;
+  -fx-min-width: 10px; -fx-min-height: 10px;
+  -fx-max-width: 10px; -fx-max-height: 10px;
+}
+
+.window-btn:hover .icon-min, 
+.window-btn:hover .icon-max, 
+.window-btn:hover .icon-close {
+  -fx-background-color: #ffffff;
+}
+
+/* --- INPUT & BUTTONS --- */
+.text-field, .password-field {
+  -fx-background-color: rgba(255, 255, 255, 0.05);
+  -fx-text-fill: #ffffff;
+  -fx-prompt-text-fill: #888888;
+  -fx-border-color: rgba(255, 255, 255, 0.15);
+  -fx-border-radius: 5;
+  -fx-background-radius: 5;
+  -fx-padding: 12 14;
+}
+
+.text-field:focused, .password-field:focused {
+  -fx-background-color: rgba(255, 255, 255, 0.08);
+  -fx-border-color: #d4af37;
+  -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.3), 10, 0, 0, 0);
+}
+
+.btn-primary {
+  -fx-background-color: linear-gradient(to bottom, #d4af37, #b8860b);
+  -fx-text-fill: #000000;
+  -fx-font-family: 'Montserrat';
+  -fx-font-weight: 900;
+  -fx-font-size: 12pt;
+  -fx-background-radius: 6;
+  -fx-cursor: hand;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.5), 10, 0, 0, 2);
+}
+
+.btn-primary:hover {
+  -fx-background-color: linear-gradient(to bottom, #fcf6ba, #d4af37);
+  -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.5), 15, 0, 0, 0);
+}
+
+.btn-primary:pressed {
+  -fx-background-color: #b8860b;
+  -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.5), 2, 0, 0, 1);
+}
+
+.button-link {
+  -fx-background-color: transparent;
+  -fx-text-fill: #a0aec0;
+  -fx-cursor: hand;
+  -fx-font-weight: bold;
+}
+
+.button-link:hover {
+  -fx-text-fill: #d4af37;
+  -fx-underline: true;
+}
+
+/* --- ROLE CARDS --- */
+.role-card {
+  -fx-background-color: rgba(255, 255, 255, 0.03);
+  -fx-border-color: #333333;
+  -fx-border-radius: 15;
+  -fx-background-radius: 15;
+  -fx-cursor: hand;
+  -fx-transition: all 0.3s ease;
+}
+
+.role-card:hover {
+  -fx-border-color: #d4af37;
+  -fx-background-color: rgba(212, 175, 55, 0.08);
+  -fx-scale-x: 1.05; 
+  -fx-scale-y: 1.05;
+  -fx-effect: dropshadow(three-pass-box, rgba(212, 175, 55, 0.3), 15, 0, 0, 0);
+}
+
+/* TableView Styling */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(212, 175, 55, 0.3);
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: rgba(212, 175, 55, 0.1);
+}
+
+.table-view .column-header, .table-view .filler {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(212, 175, 55, 0.2);
+    -fx-border-width: 0 1 1 0;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #d4af37;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-row-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.table-view .table-row-cell:filled:selected {
+    -fx-background-color: rgba(212, 175, 55, 0.2);
+}
+
+/* ComboBox Styling */
+.combo-box {
+    -fx-background-color: rgba(255, 255, 255, 0.05);
+    -fx-border-color: #333;
+    -fx-border-radius: 8;
+    -fx-text-fill: white;
+}
+
+.combo-box .list-view {
+    -fx-background-color: #1a1a1a;
+    -fx-border-color: #d4af37;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: white;
+}
+
+/* Action Buttons */
+.action-btn-outline {
+    -fx-background-color: transparent;
+    -fx-border-color: #d4af37;
+    -fx-text-fill: #d4af37;
+    -fx-cursor: hand;
+}
+
+.action-btn-danger {
+    -fx-background-color: transparent;
+    -fx-border-color: #ff4444;
+    -fx-text-fill: #ff4444;
+    -fx-cursor: hand;
+}
+
+/* =========================================================================
+   PREMIUM FORM ADDITIONS
+   ========================================================================= */
+
+/* Label sang trọng cho phần Form input */
+.premium-label {
+    -fx-text-fill: #d4af37;
+    -fx-font-family: 'Plus Jakarta Sans';
+    -fx-font-weight: 600;
+    -fx-font-size: 11pt;
+    -fx-letter-spacing: 0.5;
+}
+
+/* Đảm bảo TextArea cũng tuân thủ style của text-field */
+.text-area {
+    -fx-font-family: 'Plus Jakarta Sans';
+    -fx-font-size: 13px;
+}
+
+/* Đảm bảo ScrollPane bên trong Form trong suốt hoàn toàn */
+.glass-panel ScrollPane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.glass-panel ScrollPane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Tinh chỉnh thanh cuộn (ScrollBar) cho tinh tế hơn */
+.glass-panel ScrollPane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px;
+}
+.glass-panel ScrollPane .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(212, 175, 55, 0.2);
+    -fx-background-radius: 4;
+}
+.glass-panel ScrollPane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: rgba(212, 175, 55, 0.5);
+}
+.glass-panel ScrollPane .scroll-bar:vertical .increment-button,
+.glass-panel ScrollPane .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+    -fx-pref-height: 0;
+}
+
+/* ComboBox Premium tinh chỉnh */
+.combo-box .list-cell {
+    -fx-background-color: transparent;
+}
+.combo-box .list-cell:hover {
+    -fx-background-color: rgba(212, 175, 55, 0.1);
+}
+
+/* --- LIVE BIDDING DASHBOARD STYLES --- */
+.dark-list-view {
+    -fx-background-color: transparent;
+    -fx-border-color: rgba(212, 175, 55, 0.3);
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+.dark-list-view .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #ccc;
+    -fx-font-family: 'Plus Jakarta Sans';
+    -fx-padding: 5 10;
+}
+.dark-list-view .list-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.dark-tab-pane .tab-header-background {
+    -fx-background-color: transparent;
+}
+.dark-tab-pane .tab {
+    -fx-background-color: rgba(255,255,255,0.05);
+    -fx-text-base-color: #aaa;
+}
+.dark-tab-pane .tab:selected {
+    -fx-background-color: rgba(212, 175, 55, 0.2);
+    -fx-text-base-color: #d4af37;
+}
+
+/* Biểu đồ Real-time */
+.live-chart {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-border-color: rgba(212, 175, 55, 0.2);
+    -fx-border-radius: 5;
+}
+.live-chart .chart-plot-background {
+    -fx-background-color: transparent;
+}
+.live-chart .chart-vertical-grid-lines,
+.live-chart .chart-horizontal-grid-lines {
+    -fx-stroke: rgba(255, 255, 255, 0.05);
+}
+.live-chart .chart-series-line {
+    -fx-stroke: #00ff00;
+    -fx-stroke-width: 2px;
+}
+.live-chart .chart-line-symbol {
+    -fx-background-color: #00ff00, white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 5px;
+    -fx-padding: 3px;
+}
+
+/* --- NAVIGATION BAR --- */
+.nav-link {
+  -fx-background-color: transparent;
+  -fx-text-fill: #e2e8f0;
+  -fx-font-family: 'Plus Jakarta Sans';
+  -fx-font-weight: 600;
+  -fx-font-size: 15px;
+  -fx-cursor: hand;
+  -fx-padding: 8px 15px;
+}
+.nav-link:hover {
+  -fx-text-fill: #d4af37;
+  -fx-background-color: rgba(255,255,255,0.05);
+  -fx-background-radius: 5px;
+}
+
+.nav-icon-btn {
+  -fx-background-color: rgba(212, 175, 55, 0.1);
+  -fx-text-fill: #d4af37;
+  -fx-font-family: 'Plus Jakarta Sans';
+  -fx-font-weight: bold;
+  -fx-border-color: rgba(212, 175, 55, 0.5);
+  -fx-border-radius: 5px;
+  -fx-background-radius: 5px;
+  -fx-cursor: hand;
+  -fx-padding: 6px 12px;
+}
+.nav-icon-btn:hover {
+  -fx-background-color: rgba(212, 175, 55, 0.3);
+}

@@ -1,0 +1,77 @@
+package com.auction;
+
+import com.auction.network.NetworkClient;
+import com.auction.utils.WindowResizeUtils;
+import java.io.IOException;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+
+/**
+ * Lớp khởi chạy ứng dụng JavaFX cho hệ thống đấu giá.
+ */
+public class App extends Application {
+
+  private static Scene scene;
+
+  // LƯU TRỮ ĐỊNH DANH NGƯỜI DÙNG DƯỚI DẠNG CHUỖI (STRING)
+  public static String loggedInEmail;
+  public static String loggedInPassword;
+  public static String loggedInUserId;
+
+  @Override
+  public void init() throws Exception {
+    NetworkClient.getInstance().connect();
+  }
+
+  @Override
+  public void stop() throws Exception {
+    NetworkClient.getInstance().close();
+  }
+
+  @Override
+  public void start(Stage stage) throws IOException {
+    stage.initStyle(StageStyle.UNDECORATED);
+    try {
+      Image appIcon = new Image(
+          App.class.getResourceAsStream("/com/auction/views/assets/logo4.png"));
+      stage.getIcons().add(appIcon);
+    } catch (Exception e) {
+      System.out.println("Chưa tìm thấy logo4.png, sử dụng mặc định.");
+    }
+
+    scene = new Scene(loadFxml("login"), 640, 580);
+    stage.setScene(scene);
+    WindowResizeUtils.addResizeListener(stage);
+    stage.show();
+  }
+
+  /**
+   * Thay đổi root FXML của scene hiện tại.
+   *
+   * @param fxml Tên file FXML cần load (không bao gồm đuôi .fxml)
+   * @throws IOException Nếu có lỗi khi load file FXML
+   */
+  public static void setRoot(String fxml) throws IOException {
+    // ĐÃ FIX TẬN GỐC: KHÔNG gọi clearListeners() ở đây nữa.
+    // Việc dọn dẹp Listener cũ đã được xử lý TỰ ĐỘNG và AN TOÀN bên trong hàm
+    // NetworkClient.getInstance().addListener() mỗi khi một Controller mới được
+    // khởi tạo.
+    // Xóa dòng này giúp tránh việc Controller cũ bị "bóp nghẹt" trước khi kịp in ra
+    // lỗi (nếu có).
+    scene.setRoot(loadFxml(fxml));
+  }
+
+  private static Parent loadFxml(String fxml) throws IOException {
+    FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("views/" + fxml + ".fxml"));
+    return fxmlLoader.load();
+  }
+
+  public static void main(String[] args) {
+    launch();
+  }
+}

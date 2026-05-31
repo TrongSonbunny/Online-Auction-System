@@ -8,7 +8,6 @@ import com.auction.models.bid.AutoBid;
 import com.auction.models.bid.BidTransaction;
 import com.auction.models.user.Bidder;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,9 +16,8 @@ import java.util.Optional;
  *
  * <p>Logic ưu tiên:
  * <ol>
- *   <li>Bidder có maxBid cao hơn thắng.
- *   <li>Nếu maxBid bằng nhau, bidder đăng ký trước thắng.
- *   <li>Auto-bid cascade tiếp tục cho đến khi không còn ai có thể outbid.
+ *   <li>Auto-bid chỉ kích hoạt khi chính bidder đó bị vượt giá (outbid).
+ *   <li>Cascade tiếp tục cho đến khi không còn ai phản ứng được.
  * </ol>
  */
 public class AutoBidService {
@@ -79,7 +77,8 @@ public class AutoBidService {
 
     AutoBid autoBid;
 
-    synchronized (auction) {
+    auction.getLock().lock();
+    try {
 
       if (!auction.isActive()) {
         throw new AuctionException(
@@ -102,26 +101,38 @@ public class AutoBidService {
               increment);
 
       autoBidManager.addAutoBid(autoBid);
+
+    } finally {
+      auction.getLock().unlock();
     }
 
     return autoBid;
   }
 
   /**
-   * Xử lý toàn bộ auto-bid cascade sau khi có bid mới.
+   * Xử lý auto-bid cascade sau khi có bid mới.
+   *
+   * <p>Chỉ kích hoạt auto-bid cho {@code outbidBidder} — người vừa bị vượt giá.
+   * Nếu auto-bid đó fires và vượt lại người bid vừa rồi, vòng lặp tiếp tục
+   * tìm auto-bid của người bị vượt kế tiếp (cascade).
    *
    * @param auction auction cần xử lý auto-bid
+   * @param outbidBidder bidder vừa bị vượt giá
    * @return danh sách transaction auto-bid đã tạo
    */
   public List<BidTransaction> processAutoBids(
-      Auction auction) {
+      Auction auction,
+      Bidder outbidBidder) {
 
     List<BidTransaction> createdTransactions =
         new ArrayList<>();
 
+    Bidder currentOutbid = outbidBidder;
+
     while (true) {
 
-      synchronized (auction) {
+      auction.getLock().lock();
+      try {
 
         if (!auction.isActive()) {
           break;
@@ -130,13 +141,10 @@ public class AutoBidService {
         double currentBid =
             auction.getCurrentHighestBid();
 
-        Bidder currentBidder =
-            auction.getCurrentHighestBidder();
-
         Optional<AutoBid> bestOpt =
-            findBestEligible(
+            findAutoForOutbidBidder(
                 auction.getAuctionId(),
-                currentBidder,
+                currentOutbid,
                 currentBid);
 
         if (bestOpt.isEmpty()) {
@@ -157,6 +165,9 @@ public class AutoBidService {
           break;
         }
 
+        final Bidder currentBidder =
+            auction.getCurrentHighestBidder();
+
         auction.updateHighestBid(
             best.getBidder(),
             nextBid);
@@ -176,6 +187,11 @@ public class AutoBidService {
 
         createdTransactions.add(
             transaction);
+
+        currentOutbid = currentBidder;
+
+      } finally {
+        auction.getLock().unlock();
       }
     }
 
@@ -205,17 +221,24 @@ public class AutoBidService {
   }
 
   /**
-   * Tìm auto-bid tốt nhất đủ điều kiện outbid.
+   * Tìm auto-bid của {@code outbidBidder} còn đủ điều kiện phản ứng.
+   *
+   * <p>So sánh bằng userId (không phải tham chiếu object) vì mỗi request
+   * load user mới từ DB, tạo ra các instance khác nhau cho cùng một người dùng.
    *
    * @param auctionId mã auction
-   * @param currentBidder bidder đang dẫn đầu
+   * @param outbidBidder bidder vừa bị vượt giá
    * @param currentBid giá hiện tại
-   * @return optional auto-bid tốt nhất
+   * @return optional auto-bid nếu còn đủ điều kiện
    */
-  private Optional<AutoBid> findBestEligible(
+  private Optional<AutoBid> findAutoForOutbidBidder(
       String auctionId,
-      Bidder currentBidder,
+      Bidder outbidBidder,
       double currentBid) {
+
+    if (outbidBidder == null) {
+      return Optional.empty();
+    }
 
     List<AutoBid> autoBids =
         autoBidManager.getAutoBidsForAuction(
@@ -223,15 +246,10 @@ public class AutoBidService {
 
     return autoBids.stream()
         .filter(ab ->
-            ab.getBidder() != currentBidder)
+            ab.getBidder().getUserId()
+                .equals(outbidBidder.getUserId()))
         .filter(ab ->
             ab.getMaxBid() > currentBid)
-        .sorted(
-            Comparator
-                .comparingDouble(AutoBid::getMaxBid)
-                .reversed()
-                .thenComparing(
-                    AutoBid::getRegisteredAt))
         .findFirst();
   }
 }

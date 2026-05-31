@@ -97,13 +97,18 @@ public class BidService {
       double amount) {
 
     BidTransaction manualTransaction;
+    final Bidder previousHighestBidder;
 
-    synchronized (auction) {
+    auction.getLock().lock();
+    try {
 
       bidValidator.validateBid(
           auction,
           bidder,
           amount);
+
+      previousHighestBidder =
+          auction.getCurrentHighestBidder();
 
       auction.updateHighestBid(
           bidder,
@@ -119,6 +124,9 @@ public class BidService {
 
       bidHistoryManager.addTransaction(
           manualTransaction);
+
+    } finally {
+      auction.getLock().unlock();
     }
 
     publishBidEvent(
@@ -132,7 +140,8 @@ public class BidService {
 
     List<BidTransaction> autoBidTransactions =
         processAutoBids(
-            auction);
+            auction,
+            previousHighestBidder);
 
     return new BidResult(
         manualTransaction,
@@ -146,7 +155,8 @@ public class BidService {
    * @return danh sách auto-bid transaction
    */
   private List<BidTransaction> processAutoBids(
-      Auction auction) {
+      Auction auction,
+      Bidder previousHighestBidder) {
 
     if (autoBidService == null) {
       return Collections.emptyList();
@@ -154,7 +164,8 @@ public class BidService {
 
     List<BidTransaction> transactions =
         autoBidService.processAutoBids(
-            auction);
+            auction,
+            previousHighestBidder);
 
     for (BidTransaction transaction : transactions) {
       publishBidEvent(

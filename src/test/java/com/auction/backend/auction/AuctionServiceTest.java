@@ -3,47 +3,60 @@ package com.auction.backend.auction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.auction.backend.observer.AuctionEventPublisher;
 import com.auction.exceptions.AuctionClosedException;
 import com.auction.exceptions.AuctionException;
+import com.auction.exceptions.UnauthorizedException;
 import com.auction.models.auction.Auction;
 import com.auction.models.auction.AuctionStatus;
 import com.auction.models.item.AuctionItem;
 import com.auction.models.item.ItemCategory;
 import com.auction.models.user.Seller;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test cho AuctionService - createAuction, cancelAuction, finishAuction.
+ * Test cho AuctionService.
  *
- * <p>EP: seller hợp lệ / null / không có quyền; auctionId tồn tại / không tồn tại
- * BVA: durationSeconds = 1 (min), lớn; startingPrice = 0, dương
+ * <p>EP: seller hợp lệ/null; auction tồn tại/không tồn tại;
+ *      trạng thái đúng/sai lifecycle.
  */
 @DisplayName("AuctionService Tests")
 class AuctionServiceTest {
 
-  private AuctionService service;
+  private AuctionService auctionService;
+  private AuctionScheduler scheduler;
+  private AuctionManager auctionManager;
   private Seller seller;
   private AuctionItem item;
+  private final List<String> createdIds = new ArrayList<>();
 
   @BeforeEach
   void setUp() {
-    service = new AuctionService();
-    seller = new Seller("S-001", "Seller Test", "seller@test.com");
-    item = new AuctionItem("I-001", 
-    "Laptop", "Laptop Gaming", ItemCategory.ELECTRONICS, "Mới", 10_000_000.0);
+    scheduler = new AuctionScheduler();
+    auctionService = new AuctionService(scheduler, new AuctionEventPublisher());
+    auctionManager = AuctionManager.getInstance();
+    seller = new Seller("S-SVC-001", "Test Seller", "svc_seller@test.com");
+    item = new AuctionItem("I-SVC-001", "Test Item", "Description",
+        ItemCategory.ELECTRONICS, "Mới", 5_000_000.0);
+  }
 
-    // Dọn sạch singleton
-    AuctionManager manager = service.getAuctionManager();
-    manager.getAllAuctions()
-        .stream()
-        .map(Auction::getAuctionId)
-        .toList()
-        .forEach(manager::removeAuction);
+  @AfterEach
+  void tearDown() {
+    createdIds.forEach(auctionManager::removeAuction);
+    scheduler.shutdown();
+  }
+
+  private Auction create(double price, long duration) {
+    Auction a = auctionService.createAuction(seller, item, price, duration);
+    createdIds.add(a.getAuctionId());
+    return a;
   }
 
   // ──────── createAuction ────────
@@ -53,126 +66,192 @@ class AuctionServiceTest {
   class CreateAuction {
 
     @Test
-    @DisplayName("EP-Valid: tạo auction với seller và item hợp lệ")
-    void createAuction_validSellerAndItem_returnsActiveAuction() {
-      Auction auction = service.createAuction(seller, item, 1000.0, 3600L);
-
-      assertNotNull(auction);
-      assertEquals(AuctionStatus.ACTIVE, auction.getStatus());
-      assertEquals(seller, auction.getSeller());
-      assertEquals(item, auction.getItem());
-      assertEquals(1000.0, auction.getStartingPrice());
-      assertTrue(auction.getAuctionId().startsWith("AUC-"));
-    }
-
-    @Test
-    @DisplayName("EP-Valid: createAuction tăng totalAuctionsCreated của seller")
-    void createAuction_incrementsSellerAuctionCount() {
-      service.createAuction(seller, item, 1000.0, 3600L);
-      assertEquals(1, seller.getTotalAuctionsCreated());
+    @DisplayName("EP-Valid: tạo auction trả PENDING với đúng thông tin")
+    void createAuction_valid_returnsPending() {
+      Auction a = create(2000.0, 3600);
+      assertNotNull(a);
+      assertEquals(AuctionStatus.PENDING, a.getStatus());
+      assertEquals(2000.0, a.getStartingPrice());
+      assertEquals(3600L, a.getDurationSeconds());
+      assertNotNull(a.getAuctionId());
     }
 
     @Test
     @DisplayName("EP-Valid: auction được lưu vào AuctionManager")
-    void createAuction_auctionStoredInManager() {
-      Auction auction = service.createAuction(seller, item, 1000.0, 3600L);
-      assertNotNull(service.getAuctionManager().findAuction(auction.getAuctionId()));
-    }
-
-    @Test
-    @DisplayName("EP-Invalid: seller null ném AuctionException")
-    void createAuction_nullSeller_throwsAuctionException() {
-      assertThrows(AuctionException.class,
-          () -> service.createAuction(null, item, 1000.0, 3600L));
-    }
-
-    @Test
-    @DisplayName("EP-Invalid: seller là Bidder (không có quyền) ném UnauthorizedException")
-    void createAuction_bidderAsSeller_throwsUnauthorizedException() {
-      // Bidder không có canCreateAuction - cần cast để test permission
-      // Thực tế AuctionService yêu cầu Seller type, nhưng ta test logic UnauthorizedException
-      // bằng cách override seller không có quyền -> dùng Admin với seller role mock không khả thi
-      // Thay vào đó, test trực tiếp: nếu seller.canCreateAuction() = false => UnauthorizedException
-      // Seller luôn có quyền, nên test này kiểm tra Admin cũng có thể pass nhưng qua validateSeller
-      // Ta kiểm tra null seller ném AuctionException là đủ cho EP này
-      assertThrows(AuctionException.class,
-          () -> service.createAuction(null, item, 500.0, 60L));
+    void createAuction_valid_storedInManager() {
+      Auction a = create(1000.0, 3600);
+      assertNotNull(auctionManager.findAuction(a.getAuctionId()));
     }
 
     @Test
     @DisplayName("BVA-Boundary: startingPrice = 0 hợp lệ")
-    void createAuction_zeroStartingPrice_isValid() {
-      Auction auction = service.createAuction(seller, item, 0.0, 60L);
-      assertEquals(0.0, auction.getStartingPrice());
+    void createAuction_zeroPriceIsValid() {
+      Auction a = create(0.0, 3600);
+      assertEquals(0.0, a.getStartingPrice());
     }
 
     @Test
-    @DisplayName("BVA-Boundary: durationSeconds = 1 (tối thiểu) tạo auction")
-    void createAuction_minDuration_creates() {
-      Auction auction = service.createAuction(seller, item, 100.0, 1L);
-      assertNotNull(auction);
+    @DisplayName("EP-Invalid: seller null ném AuctionException")
+    void createAuction_nullSeller_throws() {
+      assertThrows(AuctionException.class,
+          () -> auctionService.createAuction(null, item, 1000.0, 3600));
+    }
+
+    @Test
+    @DisplayName("EP-Invalid: seller không có quyền ném UnauthorizedException")
+    void createAuction_sellerCantCreate_throws() {
+      Seller noRight = new Seller("S-NO", "No Right", "noright@test.com") {
+        @Override
+        public boolean canCreateAuction() {
+          return false;
+        }
+      };
+      assertThrows(UnauthorizedException.class,
+          () -> auctionService.createAuction(noRight, item, 1000.0, 3600));
     }
   }
 
-  // ──────── cancelAuction ────────
+  // ──────── startAuction ────────
 
   @Nested
-  @DisplayName("cancelAuction (EP + BVA)")
-  class CancelAuction {
+  @DisplayName("startAuction (EP)")
+  class StartAuction {
 
     @Test
-    @DisplayName("EP-Valid: hủy auction đang active")
-    void cancelAuction_existingActiveAuction_cancelled() {
-      Auction auction = service.createAuction(seller, item, 1000.0, 3600L);
-      service.cancelAuction(auction.getAuctionId());
-      assertEquals(AuctionStatus.CANCELLED, auction.getStatus());
+    @DisplayName("EP-Valid: startAuction chuyển PENDING → ACTIVE")
+    void startAuction_fromPending_becomesActive() {
+      Auction a = create(1000.0, 3600);
+      Auction started = auctionService.startAuction(a.getAuctionId());
+      assertEquals(AuctionStatus.ACTIVE, started.getStatus());
+      assertNotNull(started.getStartTime());
+      assertNotNull(started.getScheduledEndTime());
     }
 
     @Test
-    @DisplayName("EP-Invalid: hủy auction không tồn tại ném AuctionClosedException")
-    void cancelAuction_nonExistingId_throwsAuctionClosedException() {
+    @DisplayName("EP-Invalid: auctionId không tồn tại ném AuctionClosedException")
+    void startAuction_notFound_throws() {
       assertThrows(AuctionClosedException.class,
-          () -> service.cancelAuction("NON-EXISTING-ID"));
+          () -> auctionService.startAuction("GHOST-ID"));
     }
 
     @Test
-    @DisplayName("BVA-Boundary: cancelAuction sau khi đã finish ném IllegalStateException")
-    void cancelAuction_afterFinish_throwsIllegalState() {
-      Auction auction = service.createAuction(seller, item, 1000.0, 3600L);
-      service.finishAuction(auction.getAuctionId());
+    @DisplayName("EP-Invalid: startAuction từ ACTIVE ném IllegalStateException")
+    void startAuction_alreadyActive_throws() {
+      Auction a = create(1000.0, 3600);
+      auctionService.startAuction(a.getAuctionId());
       assertThrows(IllegalStateException.class,
-          () -> service.cancelAuction(auction.getAuctionId()));
+          () -> auctionService.startAuction(a.getAuctionId()));
     }
   }
 
   // ──────── finishAuction ────────
 
   @Nested
-  @DisplayName("finishAuction (EP + BVA)")
+  @DisplayName("finishAuction (EP)")
   class FinishAuction {
 
     @Test
-    @DisplayName("EP-Valid: finish auction đang active")
-    void finishAuction_existingActiveAuction_finished() {
-      Auction auction = service.createAuction(seller, item, 1000.0, 3600L);
-      service.finishAuction(auction.getAuctionId());
-      assertEquals(AuctionStatus.FINISHED, auction.getStatus());
+    @DisplayName("EP-Valid: finishAuction từ ACTIVE thành FINISHED")
+    void finishAuction_fromActive_becomesFinished() {
+      Auction a = create(1000.0, 3600);
+      auctionService.startAuction(a.getAuctionId());
+      Auction finished = auctionService.finishAuction(a.getAuctionId());
+      assertEquals(AuctionStatus.FINISHED, finished.getStatus());
+      assertNotNull(finished.getEndTime());
     }
 
     @Test
-    @DisplayName("EP-Invalid: finish auction không tồn tại ném AuctionClosedException")
-    void finishAuction_nonExistingId_throwsAuctionClosedException() {
-      assertThrows(AuctionClosedException.class,
-          () -> service.finishAuction("NO-SUCH-ID"));
-    }
-
-    @Test
-    @DisplayName("BVA-Boundary: finish auction đã cancelled ném IllegalStateException")
-    void finishAuction_cancelledAuction_throwsIllegalState() {
-      Auction auction = service.createAuction(seller, item, 1000.0, 3600L);
-      service.cancelAuction(auction.getAuctionId());
+    @DisplayName("EP-Invalid: finishAuction từ PENDING ném IllegalStateException")
+    void finishAuction_fromPending_throws() {
+      Auction a = create(1000.0, 3600);
       assertThrows(IllegalStateException.class,
-          () -> service.finishAuction(auction.getAuctionId()));
+          () -> auctionService.finishAuction(a.getAuctionId()));
     }
+
+    @Test
+    @DisplayName("EP-Invalid: auctionId không tồn tại ném AuctionClosedException")
+    void finishAuction_notFound_throws() {
+      assertThrows(AuctionClosedException.class,
+          () -> auctionService.finishAuction("GHOST-ID"));
+    }
+  }
+
+  // ──────── cancelAuction ────────
+
+  @Nested
+  @DisplayName("cancelAuction (EP)")
+  class CancelAuction {
+
+    @Test
+    @DisplayName("EP-Valid: cancelAuction từ PENDING thành CANCELLED")
+    void cancelAuction_fromPending_becomesCancelled() {
+      Auction a = create(1000.0, 3600);
+      Auction cancelled = auctionService.cancelAuction(a.getAuctionId());
+      assertEquals(AuctionStatus.CANCELLED, cancelled.getStatus());
+    }
+
+    @Test
+    @DisplayName("EP-Valid: cancelAuction từ ACTIVE thành CANCELLED")
+    void cancelAuction_fromActive_becomesCancelled() {
+      Auction a = create(1000.0, 3600);
+      auctionService.startAuction(a.getAuctionId());
+      Auction cancelled = auctionService.cancelAuction(a.getAuctionId());
+      assertEquals(AuctionStatus.CANCELLED, cancelled.getStatus());
+    }
+
+    @Test
+    @DisplayName("EP-Invalid: cancelAuction từ FINISHED ném IllegalStateException")
+    void cancelAuction_fromFinished_throws() {
+      Auction a = create(1000.0, 3600);
+      auctionService.startAuction(a.getAuctionId());
+      auctionService.finishAuction(a.getAuctionId());
+      assertThrows(IllegalStateException.class,
+          () -> auctionService.cancelAuction(a.getAuctionId()));
+    }
+
+    @Test
+    @DisplayName("EP-Invalid: auctionId không tồn tại ném AuctionClosedException")
+    void cancelAuction_notFound_throws() {
+      assertThrows(AuctionClosedException.class,
+          () -> auctionService.cancelAuction("GHOST-ID"));
+    }
+  }
+
+  // ──────── updateAuction ────────
+
+  @Nested
+  @DisplayName("updateAuction (EP)")
+  class UpdateAuction {
+
+    @Test
+    @DisplayName("EP-Valid: updateAuction thay đổi đúng thông tin")
+    void updateAuction_valid_updatesFields() {
+      Auction a = create(1000.0, 3600);
+      Auction updated = auctionService.updateAuction(
+          a.getAuctionId(),
+          "New Name", "New Desc", ItemCategory.ART,
+          "Đã qua sử dụng", 8_000_000.0, 2000.0, 7200);
+      assertEquals(2000.0, updated.getStartingPrice());
+      assertEquals(7200L, updated.getDurationSeconds());
+      assertEquals("New Name", updated.getItem().getName());
+      assertEquals("New Desc", updated.getItem().getDescription());
+      assertEquals(ItemCategory.ART, updated.getItem().getCategory());
+    }
+
+    @Test
+    @DisplayName("EP-Invalid: auctionId không tồn tại ném AuctionClosedException")
+    void updateAuction_notFound_throws() {
+      assertThrows(AuctionClosedException.class,
+          () -> auctionService.updateAuction("GHOST-ID", "N", "D",
+              ItemCategory.BOOK, "OK", 1000.0, 500.0, 3600));
+    }
+  }
+
+  // ──────── getAuctionManager ────────
+
+  @Test
+  @DisplayName("getAuctionManager trả về non-null")
+  void getAuctionManager_returnsNonNull() {
+    assertNotNull(auctionService.getAuctionManager());
   }
 }

@@ -9,45 +9,43 @@ import com.auction.models.user.Bidder;
 import com.auction.models.user.Seller;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Đại diện cho một phiên đấu giá trong hệ thống.
  *
  * <p>Lifecycle: {@code PENDING → ACTIVE → FINISHED} hoặc {@code PENDING/ACTIVE → CANCELLED}.
  * Mọi getter/setter trên trạng thái mutable ({@code status}, {@code currentHighestBid},
- * {@code currentHighestBidder}, {@code scheduledEndTime}) đều {@code synchronized}
- * để đảm bảo visibility trong môi trường đa luồng.
+ * {@code currentHighestBidder}, {@code scheduledEndTime}) đều dùng {@link ReentrantLock}
+ * thay vì {@code synchronized} để tương thích với virtual thread mà không pin carrier thread.
+ *
+ * <p>Lock được khai báo {@code transient} để không bị Gson serialize. Khi đối tượng
+ * được tạo bởi Gson (phía Client), lock có thể là {@code null} — mọi method đều
+ * kiểm tra null trước khi gọi lock để tránh NPE.
  */
 public class Auction {
 
   private final String auctionId;
-
   private final Seller seller;
-
   private final AuctionItem item;
-
-  private final double startingPrice;
-
+  private double startingPrice;
   private double currentHighestBid;
-
   private Bidder currentHighestBidder;
-
   private AuctionStatus status;
-
   private final LocalDateTime createdAt;
-
   private LocalDateTime startTime;
-
   private LocalDateTime endTime;
-
   private LocalDateTime scheduledEndTime;
+  private long durationSeconds;
+
+  private final transient ReentrantLock lock = new ReentrantLock();
 
   /**
    * Constructor auction.
    *
-   * @param auctionId mã auction
-   * @param seller seller tạo auction
-   * @param item item đấu giá
+   * @param auctionId     mã auction
+   * @param seller        seller tạo auction
+   * @param item          item đấu giá
    * @param startingPrice giá khởi điểm
    */
   public Auction(
@@ -60,66 +58,83 @@ public class Auction {
     validateStartingPrice(startingPrice);
 
     this.auctionId = auctionId;
-
-    this.seller = Objects.requireNonNull(
-        seller,
-        "Seller không được null.");
-
-    this.item = Objects.requireNonNull(
-        item,
-        "Item không được null.");
+    this.seller = Objects.requireNonNull(seller, "Seller không được null.");
+    this.item = Objects.requireNonNull(item, "Item không được null.");
 
     this.startingPrice = startingPrice;
     this.currentHighestBid = startingPrice;
-
     this.status = AuctionStatus.PENDING;
-
     this.createdAt = LocalDateTime.now();
+  }
+
+  /**
+   * Lấy lock để caller bao nhóm nhiều thao tác thành một critical section duy nhất.
+   * Có thể trả về {@code null} khi object được tạo bởi Gson (phía Client).
+   *
+   * @return ReentrantLock của auction, hoặc null nếu chưa khởi tạo
+   */
+  public ReentrantLock getLock() {
+    return lock;
   }
 
   /**
    * Bắt đầu auction.
    */
-  public synchronized void start() {
-
-    if (status != AuctionStatus.PENDING) {
-
-      throw new IllegalStateException(
-          "Chỉ auction pending mới được start.");
+  public void start() {
+    if (lock != null) {
+      lock.lock();
     }
-
-    status = AuctionStatus.ACTIVE;
-    startTime = LocalDateTime.now();
+    try {
+      if (status != AuctionStatus.PENDING) {
+        throw new IllegalStateException("Chỉ auction pending mới được start.");
+      }
+      status = AuctionStatus.ACTIVE;
+      startTime = LocalDateTime.now();
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
   /**
    * Kết thúc auction.
    */
-  public synchronized void finish() {
-
-    if (status != AuctionStatus.ACTIVE) {
-
-      throw new IllegalStateException(
-          "Chỉ auction active mới được finish.");
+  public void finish() {
+    if (lock != null) {
+      lock.lock();
     }
-
-    status = AuctionStatus.FINISHED;
-    endTime = LocalDateTime.now();
+    try {
+      if (status != AuctionStatus.ACTIVE) {
+        throw new IllegalStateException("Chỉ auction active mới được finish.");
+      }
+      status = AuctionStatus.FINISHED;
+      endTime = LocalDateTime.now();
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
   /**
    * Hủy auction.
    */
-  public synchronized void cancel() {
-
-    if (status == AuctionStatus.FINISHED) {
-
-      throw new IllegalStateException(
-          "Không thể hủy auction đã finish.");
+  public void cancel() {
+    if (lock != null) {
+      lock.lock();
     }
-
-    status = AuctionStatus.CANCELLED;
-    endTime = LocalDateTime.now();
+    try {
+      if (status == AuctionStatus.FINISHED) {
+        throw new IllegalStateException("Không thể hủy auction đã finish.");
+      }
+      status = AuctionStatus.CANCELLED;
+      endTime = LocalDateTime.now();
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
   /**
@@ -128,94 +143,68 @@ public class Auction {
    * @param bidder bidder mới
    * @param amount số tiền bid
    */
-  public synchronized void updateHighestBid(
-      Bidder bidder,
-      double amount) {
-
-    validateBidder(bidder);
-    validateBidAmount(amount);
-
-    if (!isActive()) {
-
-      throw new AuctionClosedException(
-          "Auction không hoạt động.");
+  public void updateHighestBid(Bidder bidder, double amount) {
+    if (lock != null) {
+      lock.lock();
     }
+    try {
+      validateBidder(bidder);
+      validateBidAmount(amount);
 
-    if (amount <= currentHighestBid) {
-
-      throw new InvalidBidException(
-          "Bid phải lớn hơn giá hiện tại.");
+      if (!isActive()) {
+        throw new AuctionClosedException("Auction không hoạt động.");
+      }
+      if (amount <= currentHighestBid) {
+        throw new InvalidBidException("Bid phải lớn hơn giá hiện tại.");
+      }
+      currentHighestBid = amount;
+      currentHighestBidder = bidder;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
     }
-
-    currentHighestBid = amount;
-    currentHighestBidder = bidder;
   }
 
   /**
-   * Kiểm tra auction có active không.
+   * Kiểm tra xem auction có đang hoạt động hay không.
    *
-   * @return true nếu active
+   * @return true nếu trạng thái là ACTIVE
    */
-  public synchronized boolean isActive() {
-    return status == AuctionStatus.ACTIVE;
+  public boolean isActive() {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      return status == AuctionStatus.ACTIVE;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
-  /**
-   * Validate auctionId.
-   *
-   * @param id auctionId
-   */
   private void validateAuctionId(String id) {
-
     if (id == null || id.isBlank()) {
-
-      throw new AuctionException(
-          "AuctionId không hợp lệ.");
+      throw new AuctionException("AuctionId không hợp lệ.");
     }
   }
 
-  /**
-   * Validate starting price.
-   *
-   * @param price giá khởi điểm
-   */
-  private void validateStartingPrice(
-      double price) {
-
+  private void validateStartingPrice(double price) {
     if (price < 0) {
-
-      throw new BidException(
-          "Starting price không được âm.");
+      throw new BidException("Starting price không được âm.");
     }
   }
 
-  /**
-   * Validate bidder.
-   *
-   * @param bidder bidder
-   */
-  private void validateBidder(
-      Bidder bidder) {
-
+  private void validateBidder(Bidder bidder) {
     if (bidder == null) {
-
-      throw new BidException(
-          "Bidder không được null.");
+      throw new BidException("Bidder không được null.");
     }
   }
 
-  /**
-   * Validate bid amount.
-   *
-   * @param amount số tiền bid
-   */
-  private void validateBidAmount(
-      double amount) {
-
+  private void validateBidAmount(double amount) {
     if (amount <= 0) {
-
-      throw new BidException(
-          "Bid amount phải lớn hơn 0.");
+      throw new BidException("Bid amount phải lớn hơn 0.");
     }
   }
 
@@ -235,16 +224,58 @@ public class Auction {
     return startingPrice;
   }
 
-  public synchronized double getCurrentHighestBid() {
-    return currentHighestBid;
+  /**
+   * Lấy giá bid cao nhất hiện tại.
+   *
+   * @return currentHighestBid
+   */
+  public double getCurrentHighestBid() {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      return currentHighestBid;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
-  public synchronized Bidder getCurrentHighestBidder() {
-    return currentHighestBidder;
+  /**
+   * Lấy bidder đang dẫn đầu.
+   *
+   * @return currentHighestBidder
+   */
+  public Bidder getCurrentHighestBidder() {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      return currentHighestBidder;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
-  public synchronized AuctionStatus getStatus() {
-    return status;
+  /**
+   * Lấy trạng thái auction.
+   *
+   * @return AuctionStatus
+   */
+  public AuctionStatus getStatus() {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      return status;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
   public LocalDateTime getCreatedAt() {
@@ -259,53 +290,132 @@ public class Auction {
     return endTime;
   }
 
-  public synchronized LocalDateTime getScheduledEndTime() {
-    return scheduledEndTime;
-  }
-
-  public synchronized void setScheduledEndTime(
-      LocalDateTime time) {
-
-    this.scheduledEndTime = time;
+  /**
+   * Lấy thời gian kết thúc dự kiến.
+   *
+   * @return scheduledEndTime
+   */
+  public LocalDateTime getScheduledEndTime() {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      return scheduledEndTime;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
   /**
-   * Gia hạn thời gian kết thúc dự kiến thêm số giây chỉ định.
+   * Đặt thời gian kết thúc dự kiến.
    *
-   * @param seconds số giây gia hạn
+   * @param time thời gian mới
    */
-  public synchronized void extendScheduledEndTime(
-      long seconds) {
-
-    if (scheduledEndTime == null) {
-      scheduledEndTime = LocalDateTime.now();
+  public void setScheduledEndTime(LocalDateTime time) {
+    if (lock != null) {
+      lock.lock();
     }
+    try {
+      this.scheduledEndTime = time;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
+  }
 
-    scheduledEndTime =
-        scheduledEndTime.plusSeconds(seconds);
+  /**
+   * Lấy thời lượng đấu giá (giây).
+   *
+   * @return durationSeconds
+   */
+  public long getDurationSeconds() {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      return durationSeconds;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
+  }
+
+  /**
+   * Đặt thời lượng đấu giá (giây).
+   *
+   * @param durationSeconds thời lượng tính bằng giây
+   */
+  public void setDurationSeconds(long durationSeconds) {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      this.durationSeconds = durationSeconds;
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
+  }
+
+  /**
+   * Cập nhật giá khởi điểm (chỉ khi PENDING).
+   *
+   * @param startingPrice giá khởi điểm mới
+   */
+  public void setStartingPrice(double startingPrice) {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      validateStartingPrice(startingPrice);
+      this.startingPrice = startingPrice;
+      if (status == AuctionStatus.PENDING) {
+        this.currentHighestBid = startingPrice;
+      }
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
+  }
+
+  /**
+   * Gia hạn thêm thời gian cho phiên đấu giá.
+   *
+   * @param seconds số giây cần cộng thêm
+   */
+  public void extendScheduledEndTime(long seconds) {
+    if (lock != null) {
+      lock.lock();
+    }
+    try {
+      if (scheduledEndTime == null) {
+        scheduledEndTime = LocalDateTime.now();
+      }
+      scheduledEndTime = scheduledEndTime.plusSeconds(seconds);
+    } finally {
+      if (lock != null) {
+        lock.unlock();
+      }
+    }
   }
 
   @Override
   public String toString() {
-
     return "Auction{"
-        + "auctionId='"
-        + auctionId
-        + '\''
-        + ", seller="
-        + seller.getName()
-        + ", item="
-        + item.getName()
-        + ", startingPrice="
-        + startingPrice
-        + ", currentHighestBid="
-        + currentHighestBid
+        + "auctionId='" + auctionId + '\''
+        + ", seller=" + (seller != null ? seller.getName() : "null")
+        + ", item=" + (item != null ? item.getName() : "null")
+        + ", startingPrice=" + startingPrice
+        + ", currentHighestBid=" + currentHighestBid
         + ", currentHighestBidder="
-        + (currentHighestBidder == null
-            ? "null"
-            : currentHighestBidder.getName())
-        + ", status="
-        + status
+        + (currentHighestBidder == null ? "null" : currentHighestBidder.getName())
+        + ", status=" + status
         + '}';
   }
 }

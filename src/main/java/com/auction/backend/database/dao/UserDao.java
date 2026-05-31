@@ -1,6 +1,7 @@
 package com.auction.backend.database.dao;
 
 import com.auction.backend.database.DatabaseConnection;
+import com.auction.backend.util.PasswordHasher;
 import com.auction.exceptions.AuctionException;
 import com.auction.models.user.User;
 import com.auction.models.user.UserFactory;
@@ -54,7 +55,7 @@ public class UserDao {
 
       statement.setString(
           4,
-          password);
+          PasswordHasher.hash(password));
 
       statement.setString(
           5,
@@ -230,9 +231,9 @@ public class UserDao {
           statement.executeQuery()) {
 
         if (resultSet.next()) {
-          return resultSet
-              .getString("password")
-              .equals(password);
+          return PasswordHasher.verify(
+              password,
+              resultSet.getString("password"));
         }
       }
 
