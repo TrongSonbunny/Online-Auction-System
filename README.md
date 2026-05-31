@@ -140,7 +140,7 @@ Kết quả khi server khởi động thành công:
 Mở **terminal 2**, chạy:
 
 ```bash
-java --enable-native-access=ALL-UNNAMED -jar target/client.jar
+java -jar target/client.jar
 ```
 
 Client sẽ kết nối tới server tại `127.0.0.1:8080` và hiển thị màn hình đăng nhập.
