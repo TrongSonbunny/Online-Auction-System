@@ -100,26 +100,20 @@ Online-Auction-System/
 
 ## Vị trí file JAR
 
-Sau khi build (`mvn package -DskipTests`), hai file JAR nằm tại:
-
-| File | Vị trí | Kích thước |
-|---|---|---|
-| **Server** | `target/server.jar` | ~20 MB |
-| **Client** | `target/client.jar` | ~28 MB (có JavaFX) |
-
+Hai file client.jar và server.jar đã được đóng gói sẵn trong mục Releases/v2.0 trên Repository GitHub của nhóm
 ---
 
 ## Hướng dẫn chạy
 
 > **Thứ tự bắt buộc: chạy Server trước, rồi mới chạy Client.**
 
-### Bước 1 — vào github
+### Bước 1 — Vào GitHub
 
-vào github, vào mục release,tải 2 file server.jar và client.jar xuống
+Vào Repository GitHub của nhóm. Vào phần Releases góc bên tay phải, chọn mục v2.0. Tải 2 file client.jar và server.jar về máy
 
 ### Bước 2 — Chạy Server
 
-Mở **terminal 1**, chạy:
+Mở **terminal 1** ở thư mục chứa hai file .jar, chạy:
 
 ```bash
 java -jar server.jar
