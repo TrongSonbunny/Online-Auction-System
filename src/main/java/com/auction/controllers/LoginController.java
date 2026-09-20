@@ -92,10 +92,17 @@ public class LoginController implements Initializable, MessageListener {
    */
   private void startMeshGradientAnimation(Node targetNode) {
     meshGradientTimer = new AnimationTimer() {
-      // Giảm tốc độ thay đổi để tối ưu hiệu năng
+      private long lastUpdate = 0;
+
+      // Giới hạn ~12fps: setStyle() ép JavaFX parse lại CSS cả cây node, chạy mỗi
+      // frame (~60fps) là nguyên nhân giật/lag chính. Throttle giảm tải ~5 lần.
       @Override
       public void handle(long now) {
-        gradientOffset += 0.0002; 
+        if (now - lastUpdate < 80_000_000L) {
+          return;
+        }
+        lastUpdate = now;
+        gradientOffset += 0.001;
         targetNode.setStyle(
             "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
                 + "rgba(26, 21, 5, " + (Math.sin(gradientOffset) * 0.1 + 0.9) + "), "

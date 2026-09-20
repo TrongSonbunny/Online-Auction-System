@@ -23,6 +23,17 @@ public final class ClientActionHandler {
   }
 
   /**
+   * Buộc khởi tạo sớm command map (và do đó là shared {@link CommandContext} cùng
+   * toàn bộ observer dùng chung). Gọi lúc server khởi động để đảm bảo publisher
+   * đã sẵn sàng trước khi client đầu tiên kết nối và đăng ký observer real-time.
+   *
+   * @return số lượng command đã đăng ký
+   */
+  public static int warmUp() {
+    return COMMAND_MAP.size();
+  }
+
+  /**
    * Xử lý action từ client.
    *
    * @param clientMessage dữ liệu client gửi lên

@@ -3,6 +3,8 @@ package com.auction.backend.observer;
 import com.auction.exceptions.AuctionException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Publisher trong Observer pattern — quản lý danh sách observer và phân phối event.
@@ -12,6 +14,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * {@link #publishEvent} duyệt toàn bộ observer và gọi {@code update()} lần lượt.
  */
 public class AuctionEventPublisher {
+
+  private static final Logger logger =
+      Logger.getLogger(AuctionEventPublisher.class.getName());
 
   private final List<AuctionObserver>
       observers;
@@ -70,7 +75,20 @@ public class AuctionEventPublisher {
     for (AuctionObserver observer
         : observers) {
 
-      observer.update(event);
+      // Cô lập lỗi từng observer: một client mất kết nối (socket lỗi) hoặc một
+      // observer ném exception KHÔNG được phép chặn các observer còn lại
+      // (đặc biệt là persistence và các client khác đang xem real-time).
+      try {
+        observer.update(event);
+      } catch (Exception ex) {
+        logger.log(
+            Level.WARNING,
+            "Observer "
+                + observer
+                + " xử lý event thất bại: "
+                + ex.getMessage(),
+            ex);
+      }
     }
   }
 

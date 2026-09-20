@@ -26,6 +26,7 @@ import java.util.ResourceBundle;
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.RotateTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
@@ -85,6 +86,9 @@ public class PrimaryController implements Initializable, MessageListener {
   private double offsetY = 0;
   private long lastAutoRefreshTime = 0;
 
+  // Gộp nhiều EVENT real-time liên tiếp thành một lần refresh — chống bão refresh.
+  private final PauseTransition refreshDebounce = new PauseTransition(Duration.millis(250));
+
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> {
@@ -113,6 +117,7 @@ public class PrimaryController implements Initializable, MessageListener {
         });
 
     NetworkClient.getInstance().addListener(this);
+    refreshDebounce.setOnFinished(e -> refreshData());
     refreshData();
     startCountdownTimer();
   }
@@ -297,9 +302,36 @@ public class PrimaryController implements Initializable, MessageListener {
           }
         }
       } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
-        refreshData();
+        handleRealtimeEvent(response);
       }
     });
+  }
+
+  /**
+   * Xử lý EVENT real-time: thông báo cá nhân (vd: bạn vừa thắng phiên) hiện popup;
+   * event dữ liệu kích hoạt làm mới danh sách (đã gộp/debounce).
+   *
+   * @param response gói EVENT từ server
+   */
+  private void handleRealtimeEvent(ServerMessage response) {
+    JsonObject evt = null;
+    try {
+      String msg = response.getMessage();
+      if (msg != null && !msg.isBlank()) {
+        evt = gson.fromJson(msg, JsonObject.class);
+      }
+    } catch (Exception e) {
+      evt = null;
+    }
+
+    if (evt != null && evt.has("recipient")) {
+      if (evt.has("message") && !evt.get("message").isJsonNull()) {
+        showAlert("THÔNG BÁO", evt.get("message").getAsString());
+      }
+      return;
+    }
+
+    refreshDebounce.playFromStart();
   }
 
   private void startCountdownTimer() {

@@ -14,6 +14,7 @@ import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.net.URL;
@@ -25,6 +26,7 @@ import java.util.ResourceBundle;
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
@@ -82,7 +84,10 @@ public class SellerController implements Initializable, MessageListener {
   private double offsetX = 0;
   private double offsetY = 0;
   private long lastAutoRefreshTime = 0; // ĐÃ THÊM: Chống Spam Request
-  
+
+  // Gộp nhiều EVENT real-time liên tiếp thành một lần refresh — chống bão refresh.
+  private final PauseTransition refreshDebounce = new PauseTransition(Duration.millis(250));
+
   private boolean isEditMode = false;
   private Auction selectedAuctionForEdit = null;
 
@@ -102,8 +107,9 @@ public class SellerController implements Initializable, MessageListener {
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     NetworkClient.getInstance().addListener(this);
+    refreshDebounce.setOnFinished(e -> requestAuctionsData());
     setupUndecoratedWindowHandle();
-    
+
     if (cbCategory != null) {
       cbCategory.setItems(FXCollections.observableArrayList(ItemCategory.values()));
     }
@@ -236,9 +242,16 @@ public class SellerController implements Initializable, MessageListener {
 
   private void startMeshGradientAnimation(Node targetNode) {
     meshGradientTimer = new AnimationTimer() {
+      private long lastUpdate = 0;
+
       @Override
       public void handle(long now) {
-        gradientOffset += 0.0005;
+        // Giới hạn ~12fps: tránh parse lại CSS cả cây node mỗi frame (gây lag).
+        if (now - lastUpdate < 80_000_000L) {
+          return;
+        }
+        lastUpdate = now;
+        gradientOffset += 0.0025;
         targetNode.setStyle(
             String.format(Locale.US,
                 "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
@@ -557,10 +570,40 @@ public class SellerController implements Initializable, MessageListener {
           setStatus("LỖI: " + response.getMessage(), true);
         }
       } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
-        requestAuctionsData();
+        handleRealtimeEvent(response);
       }
-      
+
     });
+  }
+
+  /**
+   * Xử lý EVENT real-time: thông báo cá nhân (sản phẩm của seller có biến động)
+   * hiện lên dòng trạng thái; event dữ liệu kích hoạt refresh (đã gộp/debounce).
+   *
+   * @param response gói EVENT từ server
+   */
+  private void handleRealtimeEvent(ServerMessage response) {
+    JsonObject evt = parseEventMessage(response.getMessage());
+
+    if (evt != null && evt.has("recipient")) {
+      if (evt.has("message") && !evt.get("message").isJsonNull()) {
+        setStatus(evt.get("message").getAsString(), false);
+      }
+      return;
+    }
+
+    refreshDebounce.playFromStart();
+  }
+
+  private JsonObject parseEventMessage(String message) {
+    if (message == null || message.isBlank()) {
+      return null;
+    }
+    try {
+      return gson.fromJson(message, JsonObject.class);
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   private void setStatus(String msg, boolean isError) {

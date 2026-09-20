@@ -91,6 +91,14 @@
 
       <Label fx:id="lblError" textFill="#ff4444" style="-fx-font-weight: bold;" wrapText="true"/>
 
+      <VBox fx:id="paymentBox" visible="false" managed="false" spacing="8"
+            style="-fx-background-color: rgba(212,175,55,0.12); -fx-padding: 12; -fx-background-radius: 8; -fx-border-color: rgba(212,175,55,0.5); -fx-border-radius: 8;">
+         <Label text="🏆 BẠN ĐÃ THẮNG — THANH TOÁN" styleClass="gold-text" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+         <ComboBox fx:id="cbPaymentMethod" maxWidth="Infinity" promptText="Chọn phương thức thanh toán"/>
+         <Button fx:id="btnPay" text="THANH TOÁN NGAY" onAction="#handlePay" styleClass="btn-primary" maxWidth="Infinity" prefHeight="40"/>
+         <Label fx:id="lblPaymentStatus" wrapText="true" textFill="#d4af37"/>
+      </VBox>
+
       <VBox VBox.vgrow="ALWAYS" spacing="5">
          <Label text="📋 LỊCH SỬ GIAO DỊCH" styleClass="premium-label"/>
          <ListView fx:id="listLiveHistory" styleClass="dark-list-view" VBox.vgrow="ALWAYS" />

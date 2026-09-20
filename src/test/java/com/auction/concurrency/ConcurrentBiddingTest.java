@@ -184,8 +184,8 @@ class ConcurrentBiddingTest {
 
       // Kiểm tra: bid cuối cùng >= starting price
       double finalHighest = auctionForTest.getCurrentHighestBid();
-      assertTrue(finalHighest >= 1000.0,
-          "Final highest bid phải >= starting price 1000");
+      assertTrue(finalHighest >= 1001.0,
+          "Final highest bid phải >= starting price 1001");
 
       // Đảm bảo highest bid hợp lý (không vượt max bid amount)
       double maxBid = 1001.0 + (THREAD_COUNT - 1) * 50.0;

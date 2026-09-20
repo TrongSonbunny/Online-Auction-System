@@ -26,6 +26,7 @@ import java.util.ResourceBundle;
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
@@ -40,10 +41,13 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -74,6 +78,11 @@ public class LiveBiddingController implements Initializable, MessageListener {
   @FXML private TextField txtMaxBid;
   @FXML private TextField txtIncrement;
 
+  @FXML private VBox paymentBox;
+  @FXML private ComboBox<String> cbPaymentMethod;
+  @FXML private Button btnPay;
+  @FXML private Label lblPaymentStatus;
+
   private final ObservableList<String> historyData = FXCollections.observableArrayList();
   private XYChart.Series<String, Number> priceSeries;
   
@@ -82,11 +91,15 @@ public class LiveBiddingController implements Initializable, MessageListener {
   private AnimationTimer meshGradientTimer;
   private Auction currentAuction;
   
-  private double lastKnownPrice = 0.0; 
+  private double lastKnownPrice = 0.0;
   private double offsetX = 0;
   private double offsetY = 0;
   private boolean hasRequestedFinish = false;
   private boolean isFirstLoad = true;
+
+  // Gộp nhiều EVENT real-time liên tiếp (bid dồn dập, cascade auto-bid) thành MỘT
+  // lần fetch lại lịch sử/biểu đồ — chống "bão refresh" gây giật lag.
+  private final PauseTransition refreshDebounce = new PauseTransition(Duration.millis(250));
 
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
@@ -111,9 +124,20 @@ public class LiveBiddingController implements Initializable, MessageListener {
     priceSeries = new XYChart.Series<>();
     priceChart.getData().add(priceSeries);
     listLiveHistory.setItems(historyData);
-    
+
+    if (cbPaymentMethod != null) {
+      cbPaymentMethod.setItems(FXCollections.observableArrayList("MOMO", "BANK", "VNPAY"));
+      cbPaymentMethod.getSelectionModel().selectFirst();
+    }
+
     NetworkClient.getInstance().addListener(this);
-    
+
+    // Khi hết thời gian chờ (250ms im lặng) mới reconcile lịch sử + biểu đồ một lần.
+    refreshDebounce.setOnFinished(e -> {
+      requestAuctionsData();
+      requestBidHistory();
+    });
+
     if (targetAuctionId != null) {
       requestAuctionsData();
       requestBidHistory();
@@ -219,8 +243,29 @@ public class LiveBiddingController implements Initializable, MessageListener {
       }
     }
     
+    // Hiện ô thanh toán nếu phiên đã kết thúc và người đang xem là người thắng.
+    updatePaymentVisibility(auction);
+
     // Đánh dấu đã qua lần tải dữ liệu đầu tiên
     isFirstLoad = false;
+  }
+
+  /**
+   * Bật/tắt ô thanh toán: chỉ hiện khi phiên đã FINISHED và người đang đăng nhập
+   * chính là người thắng cuộc.
+   *
+   * @param auction phiên đấu giá hiện tại
+   */
+  private void updatePaymentVisibility(Auction auction) {
+    if (paymentBox == null) {
+      return;
+    }
+    boolean isWinner = "FINISHED".equals(auction.getStatus().name())
+        && auction.getCurrentHighestBidder() != null
+        && App.loggedInUserId != null
+        && App.loggedInUserId.equals(auction.getCurrentHighestBidder().getUserId());
+    paymentBox.setVisible(isWinner);
+    paymentBox.setManaged(isWinner);
   }
 
   /**
@@ -471,6 +516,60 @@ public class LiveBiddingController implements Initializable, MessageListener {
     }
   }
 
+  @FXML
+  private void handlePay(ActionEvent event) {
+    if (currentAuction == null) {
+      return;
+    }
+
+    String method = cbPaymentMethod != null && cbPaymentMethod.getValue() != null
+        ? cbPaymentMethod.getValue() : "MOMO";
+
+    if (btnPay != null) {
+      btnPay.setDisable(true);
+    }
+    if (lblPaymentStatus != null) {
+      lblPaymentStatus.setStyle("-fx-text-fill: #d4af37;");
+      lblPaymentStatus.setText("⏳ Đang xử lý thanh toán qua " + method + "...");
+    }
+
+    ClientMessage payReq = ClientMessage.builder()
+        .action(ActionType.PAY)
+        .userId(App.loggedInUserId)
+        .auctionId(currentAuction.getAuctionId())
+        .paymentMethod(method)
+        .build();
+    NetworkClient.getInstance().sendMessage(payReq);
+  }
+
+  /**
+   * Xử lý phản hồi PAY thành công từ server (số tiền đã được tính lại trên server).
+   *
+   * @param response gói phản hồi PAY
+   */
+  private void handlePaymentResponse(ServerMessage response) {
+    String msg = "Thanh toán thành công!";
+    if (response.getData() != null) {
+      JsonElement el = gson.toJsonTree(response.getData());
+      if (el.isJsonObject()) {
+        JsonObject obj = el.getAsJsonObject();
+        if (obj.has("message") && !obj.get("message").isJsonNull()) {
+          msg = obj.get("message").getAsString();
+        }
+      }
+    }
+
+    if (lblPaymentStatus != null) {
+      lblPaymentStatus.setStyle("-fx-text-fill: #00ff00; -fx-font-weight: bold;");
+      lblPaymentStatus.setText("✅ " + msg);
+    }
+    if (btnPay != null) {
+      btnPay.setDisable(true);
+      btnPay.setText("ĐÃ THANH TOÁN");
+    }
+    showAlert("THANH TOÁN THÀNH CÔNG", msg);
+  }
+
   @Override
   public void onMessageReceived(ServerMessage response) {
     Platform.runLater(() -> {
@@ -497,8 +596,7 @@ public class LiveBiddingController implements Initializable, MessageListener {
           }
         }
       } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
-        requestAuctionsData();
-        requestBidHistory(); 
+        handleRealtimeEvent(response);
       } else if (ActionType.BID.name().equals(response.getAction())) {
         if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
           boolean outbidByAuto = false;
@@ -520,8 +618,7 @@ public class LiveBiddingController implements Initializable, MessageListener {
                     + "đẩy giá lên cao hơn!");
           }
           txtLiveBidAmount.clear();
-          requestAuctionsData();
-          requestBidHistory();
+          refreshDebounce.playFromStart();
         } else {
           // Xử lý lỗi trả về nếu có
           if (lblError != null) {
@@ -544,7 +641,22 @@ public class LiveBiddingController implements Initializable, MessageListener {
             showAlert("TỪ CHỐI BOT", response.getMessage());
           }
         }
+      } else if (ActionType.PAY.name().equals(response.getAction())) {
+        if (ServerMessage.STATUS_SUCCESS.equals(response.getStatus())) {
+          handlePaymentResponse(response);
+        }
       } else if ("EXECUTION_ERROR".equals(response.getAction())) {
+        // Nếu một lượt thanh toán đang chờ (status bắt đầu bằng ⏳) mà server báo
+        // lỗi → mở lại nút để người dùng thử lại với phương thức khác.
+        if (lblPaymentStatus != null && lblPaymentStatus.getText() != null
+            && lblPaymentStatus.getText().startsWith("⏳")) {
+          if (btnPay != null) {
+            btnPay.setDisable(false);
+          }
+          lblPaymentStatus.setStyle("-fx-text-fill: #ff4444;");
+          lblPaymentStatus.setText("❌ " + response.getMessage());
+        }
+
         // LỚP PHÒNG THỦ 2: Bắt trọn vẹn lỗi Hệ Thống từ Server
         // (VD: Phiên đấu giá đóng, ID sai...)
         if (lblError != null) {
@@ -555,6 +667,75 @@ public class LiveBiddingController implements Initializable, MessageListener {
         }
       }
     });
+  }
+
+  /**
+   * Xử lý EVENT real-time đẩy từ server (qua FrontendNotificationObserver).
+   * Cập nhật giá tức thì cho cảm giác mượt, rồi gộp các event để reconcile một lần.
+   *
+   * @param response gói EVENT từ server
+   */
+  private void handleRealtimeEvent(ServerMessage response) {
+    JsonObject evt = parseEventMessage(response.getMessage());
+
+    // Thông báo cá nhân (seller/winner) đã được xử lý ở nơi khác (popup thắng,
+    // trạng thái dẫn đầu/bị vượt) — phòng Live bỏ qua để tránh trùng lặp.
+    if (evt != null && evt.has("recipient")) {
+      return;
+    }
+
+    // Event dữ liệu: hiển thị ngay giá mới (không chờ round-trip), sau đó debounce
+    // để vẽ lại biểu đồ + lịch sử một lần duy nhất dù có bao nhiêu event dồn dập.
+    if (evt != null) {
+      applyInstantPrice(evt);
+    }
+    refreshDebounce.playFromStart();
+  }
+
+  private JsonObject parseEventMessage(String message) {
+    if (message == null || message.isBlank()) {
+      return null;
+    }
+    try {
+      return gson.fromJson(message, JsonObject.class);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  /**
+   * Cập nhật ngay nhãn giá từ payload của event (nếu đúng phiên đang xem).
+   *
+   * @param evt JSON event đã parse
+   */
+  private void applyInstantPrice(JsonObject evt) {
+    if (targetAuctionId == null) {
+      return;
+    }
+    if (evt.has("auctionId") && !evt.get("auctionId").isJsonNull()
+        && !targetAuctionId.equals(evt.get("auctionId").getAsString())) {
+      return;
+    }
+    if (!evt.has("payload") || evt.get("payload").isJsonNull()
+        || !evt.get("payload").isJsonObject()) {
+      return;
+    }
+
+    JsonObject payload = evt.getAsJsonObject("payload");
+    Double price = null;
+    if (payload.has("bidAmount") && !payload.get("bidAmount").isJsonNull()) {
+      price = payload.get("bidAmount").getAsDouble();
+    } else if (payload.has("currentHighestBid")
+        && !payload.get("currentHighestBid").isJsonNull()) {
+      price = payload.get("currentHighestBid").getAsDouble();
+    }
+
+    if (price != null && price > 0) {
+      lastKnownPrice = price;
+      if (lblLiveCurrentPrice != null) {
+        lblLiveCurrentPrice.setText(String.format("%,.0f VNĐ", price));
+      }
+    }
   }
 
   private void startCountdownTimer() {
@@ -585,9 +766,18 @@ public class LiveBiddingController implements Initializable, MessageListener {
 
   private void startMeshGradientAnimation(Node targetNode) {
     meshGradientTimer = new AnimationTimer() {
+      private long lastUpdate = 0;
+
       @Override
       public void handle(long now) {
-        gradientOffset += 0.0005;
+        // Giới hạn ~12fps. setStyle() buộc JavaFX parse lại CSS của cả cây node —
+        // chạy mỗi frame (~60fps) là nguyên nhân giật/lag chính. Throttle ở đây
+        // giảm tải ~5 lần mà mắt thường gần như không phân biệt được.
+        if (now - lastUpdate < 80_000_000L) {
+          return;
+        }
+        lastUpdate = now;
+        gradientOffset += 0.0025;
         targetNode.setStyle(String.format(Locale.US,
             "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
                 + "rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",

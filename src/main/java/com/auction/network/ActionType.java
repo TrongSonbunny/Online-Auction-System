@@ -51,5 +51,8 @@ public enum ActionType {
   CANCEL_AUTO_BID,
 
   /** Lấy lịch sử giao dịch của một phiên đấu giá. */
-  GET_BID_HISTORY
+  GET_BID_HISTORY,
+
+  /** Thanh toán cho phiên đấu giá đã thắng (chỉ người thắng). */
+  PAY
 }

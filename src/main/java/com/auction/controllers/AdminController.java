@@ -12,6 +12,7 @@ import com.auction.network.ServerMessage;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.net.URL;
@@ -23,6 +24,7 @@ import java.util.ResourceBundle;
 import javafx.animation.Animation;
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
@@ -70,6 +72,9 @@ public class AdminController implements Initializable, MessageListener {
   private double offsetY = 0;
   private long lastAutoRefreshTime = 0;
 
+  // Gộp nhiều EVENT real-time liên tiếp thành một lần refresh — chống bão refresh.
+  private final PauseTransition refreshDebounce = new PauseTransition(Duration.millis(250));
+
   private final Gson gson = new GsonBuilder()
       .registerTypeAdapter(LocalDateTime.class,
           (JsonDeserializer<LocalDateTime>) (json, type, ctx) -> {
@@ -98,9 +103,10 @@ public class AdminController implements Initializable, MessageListener {
     }
 
     NetworkClient.getInstance().addListener(this);
+    refreshDebounce.setOnFinished(e -> refreshData());
     refreshData();
     startCountdownTimer();
-    
+
     Platform.runLater(() -> {
       if (titleBar != null && titleBar.getScene() != null) {
         startMeshGradientAnimation(titleBar.getScene().getRoot());
@@ -305,9 +311,31 @@ public class AdminController implements Initializable, MessageListener {
           showAlert("LỖI", response.getMessage());
         }
       } else if (ServerMessage.ACTION_EVENT.equals(response.getAction())) {
-        refreshData();
+        // Thông báo cá nhân không cần refresh; event dữ liệu → refresh (debounce).
+        if (!isPersonalEvent(response)) {
+          refreshDebounce.playFromStart();
+        }
       }
     });
+  }
+
+  /**
+   * Kiểm tra EVENT có phải thông báo cá nhân (seller/winner) hay không.
+   *
+   * @param response gói EVENT từ server
+   * @return true nếu là thông báo cá nhân (có trường "recipient")
+   */
+  private boolean isPersonalEvent(ServerMessage response) {
+    try {
+      String msg = response.getMessage();
+      if (msg == null || msg.isBlank()) {
+        return false;
+      }
+      JsonObject evt = gson.fromJson(msg, JsonObject.class);
+      return evt != null && evt.has("recipient");
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   private void startCountdownTimer() {
@@ -335,9 +363,16 @@ public class AdminController implements Initializable, MessageListener {
 
   private void startMeshGradientAnimation(Node targetNode) {
     meshGradientTimer = new AnimationTimer() {
+      private long lastUpdate = 0;
+
       @Override
       public void handle(long now) {
-        gradientOffset += 0.0005;
+        // Giới hạn ~12fps: tránh parse lại CSS cả cây node mỗi frame (gây lag).
+        if (now - lastUpdate < 80_000_000L) {
+          return;
+        }
+        lastUpdate = now;
+        gradientOffset += 0.0025;
         targetNode.setStyle(String.format(Locale.US,
             "-fx-background-color: linear-gradient(to bottom right, #0a0a0a, "
                 + "rgba(26, 21, 5, %f), rgba(5, 5, 5, %f));",

@@ -37,6 +37,7 @@ public final class ClientCommandFactory {
     commands.put(ActionType.UPDATE_AUCTION, new UpdateAuctionCommand(context));
     commands.put(ActionType.START_AUCTION, new StartAuctionCommand(context));
     commands.put(ActionType.GET_BID_HISTORY, new GetBidHistoryCommand(context));
+    commands.put(ActionType.PAY, new PaymentCommand(context));
 
     return commands;
   }

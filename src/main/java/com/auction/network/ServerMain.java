@@ -35,6 +35,11 @@ public class ServerMain {
     try {
       databaseManager.initializeDatabase();
       logger.info("Khởi tạo cơ sở dữ liệu thành công.");
+
+      // Khởi tạo sớm command system + observer dùng chung (persistence, admin
+      // audit, personal notifications) để publisher sẵn sàng trước khi có client.
+      int commandCount = ClientActionHandler.warmUp();
+      logger.info("Khởi tạo {} command và hệ thống observer thành công.", commandCount);
     } catch (Exception e) {
       logger.error("Lỗi khởi tạo hệ thống. Đang dừng server.", e);
       System.exit(1);

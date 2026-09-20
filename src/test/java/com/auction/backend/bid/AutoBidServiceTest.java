@@ -108,7 +108,7 @@ class AutoBidServiceTest {
     }
 
     @Test
-    @DisplayName("BVA-Boundary: maxBid = currentHighestBid ném BidException")
+    @DisplayName("a-Boundary: maxBid = currentHighestBid ném BidException")
     void register_maxBidEqualsCurrent_throws() {
       assertThrows(BidException.class,
           () -> autoBidService.registerAutoBid(activeAuction, bidder1, 1000.0, 500.0));

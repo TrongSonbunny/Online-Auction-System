@@ -43,6 +43,8 @@ public class ClientMessage {
 
   private long durationSeconds;
 
+  private String paymentMethod;
+
   /**
    * Constructor mặc định cho JSON parser.
    */
@@ -419,6 +421,26 @@ public class ClientMessage {
   }
 
   /**
+   * Lấy phương thức thanh toán (MOMO, BANK, VNPAY).
+   *
+   * @return phương thức thanh toán
+   */
+  public String getPaymentMethod() {
+    return paymentMethod;
+  }
+
+  /**
+   * Cập nhật phương thức thanh toán.
+   *
+   * @param paymentMethod phương thức thanh toán
+   */
+  public void setPaymentMethod(
+      String paymentMethod) {
+
+    this.paymentMethod = paymentMethod;
+  }
+
+  /**
    * Builder tạo ClientMessage.
    */
   public static final class Builder {
@@ -663,6 +685,19 @@ public class ClientMessage {
         long durationSeconds) {
 
       message.setDurationSeconds(durationSeconds);
+      return this;
+    }
+
+    /**
+     * Gán phương thức thanh toán cho message.
+     *
+     * @param paymentMethod phương thức thanh toán (MOMO, BANK, VNPAY)
+     * @return builder hiện tại
+     */
+    public Builder paymentMethod(
+        String paymentMethod) {
+
+      message.setPaymentMethod(paymentMethod);
       return this;
     }
 

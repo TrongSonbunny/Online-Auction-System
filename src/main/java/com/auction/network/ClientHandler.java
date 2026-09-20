@@ -1,8 +1,9 @@
 package com.auction.network;
 
-import com.auction.backend.observer.AuctionObserver;
 import com.auction.backend.observer.FrontendNotifier;
+import com.auction.backend.observer.observers.FrontendNotificationObserver;
 import com.auction.models.bid.Transaction;
+import com.auction.network.command.CommandContext;
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
@@ -17,10 +18,8 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,16 +43,17 @@ public class ClientHandler implements Runnable, FrontendNotifier {
 
   private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
 
-  // Danh sách tập trung chứa các Client đang online để phát sóng Real-time
-  private static final List<ClientHandler> activeClients = new CopyOnWriteArrayList<>();
+  // Registry userId -> handler: dùng để định tuyến thông báo cá nhân
+  // (seller/winner) tới đúng socket và để dọn dẹp khi client ngắt kết nối.
+  private static final Map<String, ClientHandler> onlineUsers = new ConcurrentHashMap<>();
 
   private final Socket clientSocket;
   private final Gson gson;
 
-  // High-performance thread-safe map to track which auctions this user is
-  // watching.
-  // This allows us to remove observers cleanly if the client disconnects.
-  private final Map<String, AuctionObserver> activeObservers = new ConcurrentHashMap<>();
+  // Observer đẩy cập nhật real-time (giá/trạng thái) tới CHÍNH client này.
+  // Đăng ký vào publisher dùng chung khi kết nối, gỡ ra khi ngắt kết nối —
+  // chống "ghost observer" và rò rỉ bộ nhớ.
+  private FrontendNotificationObserver frontendObserver;
 
   private PrintWriter writer;
   private String authenticatedUserId;
@@ -96,9 +96,6 @@ public class ClientHandler implements Runnable, FrontendNotifier {
               }
             })
         .create();
-
-    // Ghi danh Client vào "Phòng chat chung" ngay khi kết nối
-    activeClients.add(this);
   }
 
   /** Main execution loop for the client connection. */
@@ -113,6 +110,10 @@ public class ClientHandler implements Runnable, FrontendNotifier {
           PrintWriter out = new PrintWriter(os, true)) {
         this.writer = out;
         logger.info("New connection established from: {}", clientSocket.getRemoteSocketAddress());
+
+        // Đăng ký observer real-time: từ giờ mọi AuctionEvent (bid mới, mở/đóng
+        // phiên, gia hạn...) sẽ được đẩy thẳng tới client này qua sendNotification.
+        registerFrontendObserver();
 
         String jsonInput;
         while ((jsonInput = reader.readLine()) != null) {
@@ -136,9 +137,11 @@ public class ClientHandler implements Runnable, FrontendNotifier {
       // 1. Parse the JSON into our standard ClientMessage object
       ClientMessage request = gson.fromJson(rawJson, ClientMessage.class);
 
-      // 2. Identity Management: Once logged in, we track the userId for this socket.
+      // 2. Identity Management: Once logged in, we track the userId for this socket
+      // and publish it to the online-user registry (for personal notifications).
       if (authenticatedUserId == null && request.getUserId() != null) {
         this.authenticatedUserId = request.getUserId();
+        onlineUsers.put(this.authenticatedUserId, this);
       }
 
       // 3. Command Pattern Execution:
@@ -155,18 +158,10 @@ public class ClientHandler implements Runnable, FrontendNotifier {
 
       sendToClient(response);
 
-      // =====================================================================
-      // ĐÃ FIX: Tận dụng cơ chế phát sóng EVENT có sẵn để đồng bộ giá Real-time
-      // =====================================================================
-      ActionType action = request.getAction();
-      if (action == ActionType.BID || action == ActionType.CREATE_AUCTION) {
-        for (ClientHandler client : activeClients) {
-          // Báo hiệu EVENT cho các Client KHÁC để họ làm mới màn hình ngay lập tức
-          if (client != this) {
-            client.sendNotification("ALL", "UPDATE_PRICE");
-          }
-        }
-      }
+      // Real-time sync giờ do Observer pattern đảm nhiệm: các service backend
+      // publish AuctionEvent, và FrontendNotificationObserver (đăng ký ở mỗi
+      // ClientHandler) đẩy thẳng payload tới mọi client đang online. Không cần
+      // broadcast "UPDATE_PRICE" thủ công và bắt client refresh toàn bộ nữa.
 
     } catch (Exception e) {
       logger.error("Error processing request: {}", e.getMessage());
@@ -202,24 +197,54 @@ public class ClientHandler implements Runnable, FrontendNotifier {
   }
 
   /**
+   * Tra cứu socket của một user đang online để gửi thông báo cá nhân.
+   * Dùng bởi {@link PersonalNotificationObserver} để định tuyến tới seller/winner.
+   *
+   * @param userId mã user cần tìm
+   * @return notifier (ClientHandler) của user, hoặc {@code null} nếu họ offline
+   */
+  public static FrontendNotifier getOnlineUser(String userId) {
+    if (userId == null) {
+      return null;
+    }
+    return onlineUsers.get(userId);
+  }
+
+  /**
+   * Đăng ký observer real-time của connection này vào publisher dùng chung.
+   * Nếu publisher chưa sẵn sàng (server chưa khởi tạo command context) thì bỏ qua
+   * an toàn — client vẫn nhận response trực tiếp như bình thường.
+   */
+  private void registerFrontendObserver() {
+    CommandContext context = CommandContext.getShared();
+    if (context == null) {
+      logger.warn("Shared CommandContext chưa sẵn sàng; bỏ qua đăng ký observer real-time.");
+      return;
+    }
+    this.frontendObserver = new FrontendNotificationObserver(this);
+    context.getEventPublisher().addObserver(this.frontendObserver);
+  }
+
+  /**
    * Prevents "Ghost Observers" and memory leaks.
-   * When a user disconnects, we must remove their observers from the backend
-   * Auction objects.
+   * When a user disconnects, we unregister their real-time observer from the
+   * shared publisher and drop them from the online-user registry.
    */
   private void cleanup() {
     logger.info("Cleaning up resources for user: {}", authenticatedUserId);
 
-    // Xóa Client khỏi danh sách Online khi họ thoát App
-    activeClients.remove(this);
+    // Gỡ observer real-time khỏi publisher dùng chung (chống ghost observer).
+    CommandContext context = CommandContext.getShared();
+    if (context != null && frontendObserver != null) {
+      context.getEventPublisher().removeObserver(frontendObserver);
+    }
+    this.frontendObserver = null;
 
-    // Iterate through all auctions this client was watching and unregister them.
-    activeObservers.forEach(
-        (auctionId, observer) -> {
-          // Access your AuctionManager/Service here to remove the observer.
-          // Example: auctionService.removeObserver(auctionId, observer);
-        });
-
-    activeObservers.clear();
+    // Gỡ khỏi registry online — chỉ gỡ nếu mapping vẫn trỏ tới chính handler này
+    // (tránh xóa nhầm khi user mở connection mới).
+    if (authenticatedUserId != null) {
+      onlineUsers.remove(authenticatedUserId, this);
+    }
 
     try {
       if (!clientSocket.isClosed()) {
